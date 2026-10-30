@@ -207,7 +207,7 @@ export default function ProfileScreen() {
                     {item.mode.replace(/_/g, ' ').toUpperCase()}
                   </Text>
                   <Text style={styles.historyDate}>
-                    {formatTimestamp(item.timestamp)}
+                    {formatTimestamp(item.completedAt || item.startedAt)}
                   </Text>
                 </View>
 
@@ -268,13 +268,15 @@ export default function ProfileScreen() {
             <View style={styles.modalRow}>
               <Text style={styles.modalLabel}>Queen Covered</Text>
               <Text style={styles.modalValue}>
-                {selectedMatch.queenPocketed ? 'Yes' : 'No'}
+                {selectedMatch.winnerId && selectedMatch.finalScores[selectedMatch.winnerId]?.queenPocketed
+                  ? 'Yes'
+                  : 'No'}
               </Text>
             </View>
             <View style={styles.modalRow}>
               <Text style={styles.modalLabel}>Local Sync Status</Text>
               <Text style={[styles.modalValue, { color: THEME.colors.accent }]}>
-                {selectedMatch.isSyncedToCloud ? 'Synced to Cloud' : 'Stored in SQLite'}
+                {selectedMatch.isSynced ? 'Synced to Cloud' : 'Stored in SQLite'}
               </Text>
             </View>
           </View>
