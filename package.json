@@ -1,0 +1,21 @@
+{
+  "name": "carromverse-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CarromVerse - Premium Mobile Carrom Game Monorepo",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "start": "npm --workspace=@carromverse/mobile run start",
+    "android": "npm --workspace=@carromverse/mobile run android",
+    "ios": "npm --workspace=@carromverse/mobile run ios",
+    "web": "npm --workspace=@carromverse/mobile run web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
