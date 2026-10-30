@@ -75,7 +75,7 @@ export default function GameResultScreen() {
       <GameCard elevated style={styles.scoreCard}>
         {players.map((p, idx) => {
           const isWinner = idx === 0;
-          const score = scores[p.id]?.score ?? (isWinner ? 25 : 14);
+          const score = scores[p.id]?.points ?? (isWinner ? 25 : 14);
           return (
             <View
               key={p.id}

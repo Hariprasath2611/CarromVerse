@@ -4,13 +4,15 @@ import { THEME } from '../constants/theme';
 
 export interface BoardPreviewProps {
   size?: number;
+  theme?: 'classic' | 'emerald' | 'mahogany' | string;
   themeColor?: string;
   style?: ViewStyle;
 }
 
 export const BoardPreview: React.FC<BoardPreviewProps> = ({
   size = 220,
-  themeColor = THEME.colors.primary,
+  theme = 'classic',
+  themeColor,
   style,
 }) => {
   const frameWidth = size * 0.08;
@@ -20,11 +22,25 @@ export const BoardPreview: React.FC<BoardPreviewProps> = ({
   const queenSize = centerSize * 0.28;
   const coinSize = queenSize * 0.85;
 
+  const surfaceBg =
+    theme === 'emerald'
+      ? '#064E3B'
+      : theme === 'mahogany'
+      ? '#4A1D13'
+      : THEME.colors.playingSurface;
+
+  const frameColor =
+    theme === 'emerald'
+      ? '#0F291E'
+      : theme === 'mahogany'
+      ? '#2A0D08'
+      : THEME.colors.woodBorder;
+
   return (
     <View
       style={[
         styles.outerFrame,
-        { width: size, height: size, borderColor: THEME.colors.woodBorder },
+        { width: size, height: size, borderColor: frameColor },
         style,
       ]}
     >
@@ -39,7 +55,7 @@ export const BoardPreview: React.FC<BoardPreviewProps> = ({
         <View
           style={[
             styles.playingSurface,
-            { width: innerSize, height: innerSize },
+            { width: innerSize, height: innerSize, backgroundColor: surfaceBg },
           ]}
         >
           {/* Pockets at 4 corners */}
@@ -48,74 +64,31 @@ export const BoardPreview: React.FC<BoardPreviewProps> = ({
           <View style={[styles.pocket, { bottom: 2, right: 2, width: pocketSize, height: pocketSize, borderRadius: pocketSize / 2 }]} />
           <View style={[styles.pocket, { bottom: 2, left: 2, width: pocketSize, height: pocketSize, borderRadius: pocketSize / 2 }]} />
 
-          {/* 4 Baselines */}
-          <View style={[styles.baselineHorizontal, { top: innerSize * 0.16, width: innerSize * 0.62 }]} />
-          <View style={[styles.baselineHorizontal, { bottom: innerSize * 0.16, width: innerSize * 0.62 }]} />
-          <View style={[styles.baselineVertical, { left: innerSize * 0.16, height: innerSize * 0.62 }]} />
-          <View style={[styles.baselineVertical, { right: innerSize * 0.16, height: innerSize * 0.62 }]} />
+          {/* Baselines */}
+          <View style={[styles.baselineHorizontal, { top: innerSize * 0.16, width: innerSize * 0.65 }]} />
+          <View style={[styles.baselineHorizontal, { bottom: innerSize * 0.16, width: innerSize * 0.65 }]} />
+          <View style={[styles.baselineVertical, { left: innerSize * 0.16, height: innerSize * 0.65 }]} />
+          <View style={[styles.baselineVertical, { right: innerSize * 0.16, height: innerSize * 0.65 }]} />
 
-          {/* Center Floral Mandala */}
+          {/* Center Circle */}
           <View
             style={[
               styles.centerCircle,
-              {
-                width: centerSize,
-                height: centerSize,
-                borderRadius: centerSize / 2,
-                borderColor: themeColor,
-              },
+              { width: centerSize, height: centerSize, borderRadius: centerSize / 2 },
             ]}
           >
-            {/* Inner Ring */}
+            {/* Red Queen in center */}
             <View
               style={[
-                styles.innerRing,
-                {
-                  width: centerSize * 0.65,
-                  height: centerSize * 0.65,
-                  borderRadius: (centerSize * 0.65) / 2,
-                  borderColor: themeColor,
-                },
+                styles.queen,
+                { width: queenSize, height: queenSize, borderRadius: queenSize / 2 },
               ]}
-            >
-              {/* Queen (Red) */}
-              <View
-                style={[
-                  styles.queenCoin,
-                  {
-                    width: queenSize,
-                    height: queenSize,
-                    borderRadius: queenSize / 2,
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Orbiting Coin Dots */}
-            {[0, 60, 120, 180, 240, 300].map((deg, idx) => {
-              const rad = (deg * Math.PI) / 180;
-              const r = centerSize * 0.38;
-              const x = r * Math.cos(rad);
-              const y = r * Math.sin(rad);
-              const isWhite = idx % 2 === 0;
-
-              return (
-                <View
-                  key={deg}
-                  style={[
-                    styles.miniCoin,
-                    {
-                      width: coinSize,
-                      height: coinSize,
-                      borderRadius: coinSize / 2,
-                      backgroundColor: isWhite ? THEME.colors.coinWhite : THEME.colors.coinBlack,
-                      borderColor: isWhite ? '#CBD5E1' : '#334155',
-                      transform: [{ translateX: x }, { translateY: y }],
-                    },
-                  ]}
-                />
-              );
-            })}
+            />
+            {/* Surrounding Carrom Men */}
+            <View style={[styles.coin, styles.coinWhite, { width: coinSize, height: coinSize, borderRadius: coinSize / 2, top: 4, left: centerSize * 0.4 }]} />
+            <View style={[styles.coin, styles.coinBlack, { width: coinSize, height: coinSize, borderRadius: coinSize / 2, bottom: 4, left: centerSize * 0.4 }]} />
+            <View style={[styles.coin, styles.coinWhite, { width: coinSize, height: coinSize, borderRadius: coinSize / 2, left: 4, top: centerSize * 0.4 }]} />
+            <View style={[styles.coin, styles.coinBlack, { width: coinSize, height: coinSize, borderRadius: coinSize / 2, right: 4, top: centerSize * 0.4 }]} />
           </View>
         </View>
       </View>
@@ -125,63 +98,64 @@ export const BoardPreview: React.FC<BoardPreviewProps> = ({
 
 const styles = StyleSheet.create({
   outerFrame: {
-    backgroundColor: THEME.colors.woodDark,
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 4,
+    backgroundColor: THEME.colors.woodPrimary,
+    borderWidth: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     ...THEME.shadows.card,
   },
   cushion: {
-    backgroundColor: THEME.colors.woodPrimary,
-    borderRadius: THEME.borderRadius.sm,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playingSurface: {
-    backgroundColor: THEME.colors.playingSurface,
-    borderRadius: THEME.borderRadius.xs,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
   pocket: {
     position: 'absolute',
-    backgroundColor: '#0F0C0A',
-    borderWidth: 1.5,
-    borderColor: '#475569',
+    backgroundColor: '#0a0a0a',
+    borderColor: '#3D1D0E',
+    borderWidth: 2,
+    zIndex: 2,
   },
   baselineHorizontal: {
     position: 'absolute',
     height: 1.5,
-    backgroundColor: '#A0522D',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   baselineVertical: {
     position: 'absolute',
     width: 1.5,
-    backgroundColor: '#A0522D',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   centerCircle: {
-    position: 'absolute',
     borderWidth: 1.5,
-    borderStyle: 'dashed',
+    borderColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
-  innerRing: {
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  queenCoin: {
+  queen: {
     backgroundColor: THEME.colors.queenRed,
-    borderWidth: 1,
-    borderColor: '#FEF08A',
+    borderColor: '#7F1D1D',
+    borderWidth: 1.5,
+    zIndex: 3,
   },
-  miniCoin: {
+  coin: {
     position: 'absolute',
     borderWidth: 1,
+    zIndex: 2,
+  },
+  coinWhite: {
+    backgroundColor: THEME.colors.coinWhite,
+    borderColor: '#D1D5DB',
+  },
+  coinBlack: {
+    backgroundColor: THEME.colors.coinBlack,
+    borderColor: '#0F172A',
   },
 });

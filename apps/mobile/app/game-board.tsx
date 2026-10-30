@@ -215,7 +215,7 @@ export default function GameBoardScreen() {
                   {p.name}
                 </Text>
                 <Text style={styles.badgeScore}>
-                  {scores[p.id]?.score ?? (p.assignedCoinType === 'white' ? pocketedWhiteCount * 2 : pocketedBlackCount)} pts
+                  {scores[p.id]?.points ?? (p.assignedCoinType === 'white' ? pocketedWhiteCount * 2 : pocketedBlackCount)} pts
                 </Text>
               </View>
             </View>

@@ -23,14 +23,18 @@ export const CARROM_STICKERS: StickerItem[] = [
 export interface StickersModalProps {
   visible: boolean;
   onClose: () => void;
-  onSendSticker: (sticker: StickerItem) => void;
+  onSendSticker?: (sticker: StickerItem) => void;
+  onSelectSticker?: (sticker: StickerItem) => void;
 }
 
 export const StickersModal: React.FC<StickersModalProps> = ({
   visible,
   onClose,
   onSendSticker,
+  onSelectSticker,
 }) => {
+  const handleSelect = onSelectSticker || onSendSticker || (() => {});
+
   return (
     <Modal
       visible={visible}
@@ -43,13 +47,13 @@ export const StickersModal: React.FC<StickersModalProps> = ({
           <Pressable
             key={item.id}
             onPress={() => {
-              onSendSticker(item);
+              handleSelect(item);
               onClose();
             }}
             style={({ pressed }) => [styles.stickerBtn, pressed && styles.pressed]}
           >
             <Text style={styles.emoji}>{item.emoji}</Text>
-            <Text style={styles.stickerText}>{item.text}</Text>
+            <Text style={styles.text}>{item.text}</Text>
           </Pressable>
         ))}
       </View>
@@ -61,32 +65,31 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
     justifyContent: 'space-between',
-    paddingVertical: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
   },
   stickerBtn: {
     width: '48%',
     backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 1.2,
     borderColor: THEME.colors.border,
-    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderRadius: THEME.borderRadius.md,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+  },
+  pressed: {
+    borderColor: THEME.colors.accent,
+    backgroundColor: THEME.colors.surfaceHighlight,
+    transform: [{ scale: 0.97 }],
   },
   emoji: {
     fontSize: 28,
     marginBottom: 4,
   },
-  stickerText: {
-    color: THEME.colors.textPrimary,
+  text: {
     fontSize: THEME.typography.fontSize.caption,
     fontWeight: THEME.typography.fontWeight.semibold,
-  },
-  pressed: {
-    backgroundColor: THEME.colors.surfaceHighlight,
-    borderColor: THEME.colors.accent,
-    transform: [{ scale: 0.96 }],
+    color: THEME.colors.textPrimary,
   },
 });

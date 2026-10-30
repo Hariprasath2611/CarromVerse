@@ -10,6 +10,9 @@ export interface ProfileHeaderProps {
   level: number;
   currentExp: number;
   maxExp?: number;
+  nextLevelExp?: number;
+  rankTitle?: string;
+  avatarEmoji?: string;
   avatarUrl?: string;
   style?: ViewStyle;
 }
@@ -20,14 +23,20 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   level,
   currentExp,
   maxExp = 1000,
+  nextLevelExp,
+  rankTitle = 'BOARD GRANDMASTER',
+  avatarEmoji,
   avatarUrl,
   style,
 }) => {
+  const targetExp = nextLevelExp ?? maxExp;
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.topRow}>
         <PlayerAvatar
           name={username}
+          avatarUrl={avatarEmoji || avatarUrl}
           size={68}
           level={level}
           isActive
@@ -37,7 +46,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <Text style={styles.email}>{email || 'Offline Guest Account'}</Text>
           <View style={styles.badgeRow}>
             <View style={styles.tierPill}>
-              <Text style={styles.tierText}>🏆 MASTER TIER</Text>
+              <Text style={styles.tierText}>🏆 {rankTitle}</Text>
             </View>
           </View>
         </View>
@@ -46,7 +55,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <LevelProgress
         level={level}
         currentExp={currentExp}
-        maxExp={maxExp}
+        maxExp={targetExp}
         style={styles.progress}
       />
     </View>
@@ -56,9 +65,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.lg,
-    borderWidth: 1.2,
-    borderColor: THEME.colors.borderHighlight,
+    borderRadius: THEME.borderRadius.xl,
+    borderColor: THEME.colors.border,
+    borderWidth: 1.5,
     padding: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
     ...THEME.shadows.card,
@@ -73,33 +82,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   username: {
-    color: THEME.colors.textPrimary,
     fontSize: THEME.typography.fontSize.title,
-    fontWeight: THEME.typography.fontWeight.heavy,
-    letterSpacing: 0.3,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   email: {
-    color: THEME.colors.textMuted,
     fontSize: THEME.typography.fontSize.caption,
+    color: THEME.colors.textSecondary,
     marginTop: 2,
-    marginBottom: 6,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 6,
   },
   tierPill: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderColor: THEME.colors.goldPrimary,
+    backgroundColor: 'rgba(22, 163, 74, 0.2)',
+    borderColor: THEME.colors.primary,
     borderWidth: 1,
+    borderRadius: THEME.borderRadius.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: THEME.borderRadius.full,
   },
   tierText: {
-    color: THEME.colors.goldBright,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.accent,
     letterSpacing: 0.5,
   },
   progress: {

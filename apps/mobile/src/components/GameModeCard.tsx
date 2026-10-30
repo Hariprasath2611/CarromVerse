@@ -4,9 +4,12 @@ import { THEME } from '../constants/theme';
 import { Badge } from './Badge';
 
 export interface GameModeCardProps {
-  id: string;
+  id?: string;
+  mode?: string;
   title: string;
-  playersLabel: string;
+  subtitle?: string;
+  playersLabel?: string;
+  playerCount?: string;
   description: string;
   icon: string;
   isSelected: boolean;
@@ -17,7 +20,9 @@ export interface GameModeCardProps {
 
 export const GameModeCard: React.FC<GameModeCardProps> = ({
   title,
+  subtitle,
   playersLabel,
+  playerCount,
   description,
   icon,
   isSelected,
@@ -25,6 +30,8 @@ export const GameModeCard: React.FC<GameModeCardProps> = ({
   onSelect,
   style,
 }) => {
+  const displayLabel = playerCount || playersLabel || '2 Players';
+
   return (
     <Pressable
       onPress={onSelect}
@@ -41,19 +48,20 @@ export const GameModeCard: React.FC<GameModeCardProps> = ({
         </View>
         <View style={styles.badges}>
           {isTeam && <Badge label="2 vs 2" variant="wood" style={styles.badge} />}
-          <Badge label={playersLabel} variant={isSelected ? 'success' : 'muted'} />
+          <Badge label={displayLabel} variant={isSelected ? 'success' : 'muted'} />
         </View>
       </View>
 
       <Text style={[styles.title, isSelected && styles.selectedTitle]}>{title}</Text>
+      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       <Text style={styles.description}>{description}</Text>
 
-      <View style={styles.footer}>
-        <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
-          {isSelected && <View style={styles.radioDot} />}
+      <View style={styles.indicatorRow}>
+        <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+          {isSelected && <View style={styles.radioInner} />}
         </View>
-        <Text style={[styles.statusText, isSelected && styles.selectedStatusText]}>
-          {isSelected ? 'Mode Selected' : 'Tap to Select'}
+        <Text style={[styles.selectText, isSelected && styles.selectTextActive]}>
+          {isSelected ? 'Selected' : 'Select Mode'}
         </Text>
       </View>
     </Pressable>
@@ -67,90 +75,96 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: THEME.colors.border,
     padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
     ...THEME.shadows.card,
   },
   selectedCard: {
     borderColor: THEME.colors.accent,
-    backgroundColor: THEME.colors.surfaceHighlight,
-    ...THEME.shadows.emeraldGlow,
+    backgroundColor: 'rgba(22, 163, 74, 0.12)',
   },
   pressed: {
-    transform: [{ scale: 0.985 }],
     opacity: 0.9,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: THEME.borderRadius.md,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: THEME.colors.surface,
+    borderColor: THEME.colors.border,
     borderWidth: 1,
-    borderColor: THEME.colors.borderHighlight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 24,
+    fontSize: 22,
   },
   badges: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   badge: {
-    marginRight: 4,
+    marginRight: 6,
   },
   title: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.subtitle,
+    fontSize: THEME.typography.fontSize.bodyLg,
     fontWeight: THEME.typography.fontWeight.bold,
-    marginBottom: 4,
+    color: THEME.colors.textPrimary,
+    marginTop: 4,
   },
   selectedTitle: {
     color: THEME.colors.accent,
   },
-  description: {
-    color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.bodySm,
-    lineHeight: 20,
-    marginBottom: THEME.spacing.md,
+  subtitle: {
+    fontSize: THEME.typography.fontSize.caption,
+    color: THEME.colors.accent,
+    fontWeight: THEME.typography.fontWeight.medium,
+    marginTop: 2,
+    marginBottom: 4,
   },
-  footer: {
+  description: {
+    fontSize: THEME.typography.fontSize.caption,
+    color: THEME.colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 2,
+    marginBottom: THEME.spacing.sm,
+  },
+  indicatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: THEME.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.border,
   },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 2,
-    borderColor: THEME.colors.textMuted,
+    borderColor: THEME.colors.borderHighlight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 8,
   },
-  radioCircleSelected: {
+  radioOuterSelected: {
     borderColor: THEME.colors.accent,
   },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  radioInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: THEME.colors.accent,
   },
-  statusText: {
+  selectText: {
+    fontSize: 11,
+    fontWeight: 'bold',
     color: THEME.colors.textMuted,
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.semibold,
   },
-  selectedStatusText: {
+  selectTextActive: {
     color: THEME.colors.accent,
   },
 });
