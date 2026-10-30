@@ -1,17 +1,21 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
+import { TextureManager } from '../rendering/TextureManager.js';
+import { getBoardTheme } from '../board/BoardThemes.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
   }
 
-  public preload(): void {
-    // Phase 1.1 uses procedural vector graphics for premium sharpness at any DPI
-    // Future audio/spritesheet preloads will hook in here
-  }
-
   public create(): void {
-    this.scene.start('CarromBoardScene');
+    const initialThemeId = (this.game.registry.get('themeId') as string) || 'forest';
+    const theme = getBoardTheme(initialThemeId);
+
+    // Procedurally generate all coin, striker, pocket, and shadow textures
+    const textureManager = new TextureManager(this, theme);
+    textureManager.generateAllTextures(theme);
+
+    // Transition to Preload Scene
+    this.scene.start('PreloadScene');
   }
 }
-
