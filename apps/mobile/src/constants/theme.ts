@@ -74,10 +74,17 @@ export const THEME = {
     successBg: 'rgba(16, 185, 129, 0.15)',
     error: '#EF4444',
     errorBg: 'rgba(239, 68, 68, 0.15)',
+    danger: '#EF4444',
+    dangerBg: 'rgba(239, 68, 68, 0.15)',
     warning: '#F59E0B',
     warningBg: 'rgba(245, 158, 11, 0.15)',
     info: '#3B82F6',
     infoBg: 'rgba(59, 130, 246, 0.15)',
+
+    // Compatibility Tokens
+    surfaceBorder: '#234734',
+    goldBorder: '#B45309',
+    woodGlow: 'rgba(210, 125, 45, 0.35)',
 
     // Overlays
     overlay: 'rgba(7, 19, 14, 0.75)',
@@ -107,10 +114,15 @@ export const THEME = {
       caption: 12,
       bodySm: 14,
       body: 16,
+      bodyMd: 16,
+      bodyLg: 18,
       subtitle: 18,
       title: 22,
+      h3: 22,
       headline: 28,
+      h2: 28,
       display: 34,
+      h1: 34,
     },
     lineHeight: {
       caption: 16,

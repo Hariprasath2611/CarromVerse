@@ -7,7 +7,7 @@ import Animated, {
 import { THEME } from '../constants/theme';
 
 export interface ToggleProps {
-  label: string;
+  label?: string;
   description?: string;
   value: boolean;
   onValueChange: (val: boolean) => void;
@@ -34,10 +34,12 @@ export const Toggle: React.FC<ToggleProps> = ({
       onPress={() => !disabled && onValueChange(!value)}
       style={[styles.container, disabled && styles.disabled, style]}
     >
-      <View style={styles.textContainer}>
-        <Text style={styles.label}>{label}</Text>
-        {!!description && <Text style={styles.description}>{description}</Text>}
-      </View>
+      {(!!label || !!description) && (
+        <View style={styles.textContainer}>
+          {!!label && <Text style={styles.label}>{label}</Text>}
+          {!!description && <Text style={styles.description}>{description}</Text>}
+        </View>
+      )}
 
       <View style={[styles.track, value ? styles.trackActive : styles.trackInactive]}>
         <Animated.View style={[styles.thumb, value ? styles.thumbActive : styles.thumbInactive, animatedThumb]} />
