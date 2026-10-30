@@ -1,57 +1,87 @@
 /**
- * CarromVerse Premium Dark Theme Design System
- * Aesthetic: Regal Dark Woods, Polished Ivory & Royal Gold Highlights
+ * CarromVerse Forest Emerald Design System
+ * Theme: FOREST EMERALD
+ * Palette:
+ * - Primary: #16A34A
+ * - Secondary: #064E3B
+ * - Accent: #4ADE80
+ * - Background: #07130E
+ * - Surface: #10251A
+ * - Card: #143322
+ * - Primary Text: #FFFFFF
+ * - Secondary Text: #A7B8AD
+ * - Border: #234734
+ * - Wood: Natural warm brown (#8B4513, #A0522D, #5C2C16, #D27D2D)
  */
 
 export const THEME = {
   colors: {
-    // Backgrounds
-    background: '#0D0A08',        // Obsidian Dark Wood
-    backgroundSecondary: '#16110E',
-    surface: '#201814',           // Polished Rosewood surface
-    surfaceElevated: '#2A1F1A',   // Elevated card container
-    surfaceHighlight: '#3B2C24',  // Active/pressed surface
-    surfaceBorder: '#48352A',     // Subtle dark wood border
+    // Dominant Forest Emerald Palette
+    primary: '#16A34A',              // Vibrant Emerald Green
+    primaryHover: '#15803D',
+    primaryGlow: 'rgba(22, 163, 74, 0.35)',
 
-    // Wooden Accents
-    woodDark: '#3D2314',
-    woodPrimary: '#8B4513',       // Saddle Wood
-    woodMedium: '#A0522D',       // Sienna
-    woodLight: '#CD853F',        // Peru Wood
-    woodGlow: '#DEB887',         // Burlywood highlight
+    secondary: '#064E3B',            // Deep Forest Pine Green
+    secondaryHover: '#043427',
 
-    // Royal Gold Highlights
-    goldPrimary: '#D4AF37',      // Metallic Gold
-    goldBright: '#FFD700',       // Vivid Imperial Gold
-    goldLight: '#F5E086',        // Soft Gold Tint
-    goldDark: '#8C7322',         // Antique Bronze Gold
-    goldBorder: 'rgba(212, 175, 55, 0.35)',
+    accent: '#4ADE80',               // Radiant Mint / Lime Accent
+    accentGlow: 'rgba(74, 222, 128, 0.4)',
+
+    background: '#07130E',           // Deep Obsidian Green
+    backgroundSecondary: '#0B1C15',
+    backgroundGradient: ['#07130E', '#0B1C15'],
+
+    surface: '#10251A',              // Dark Emerald Surface
+    surfaceElevated: '#143322',      // Elevated Card Surface
+    surfaceHighlight: '#1A3F2B',     // Active / Pressed surface
+    card: '#143322',                 // Standard Card Green
+
+    border: '#234734',               // Muted Emerald Border
+    borderHighlight: '#2E6145',      // Focused Border
+    borderActive: '#4ADE80',
 
     // Typography
-    textPrimary: '#FFF9EC',      // Warm Ivory
-    textSecondary: '#C8BEB2',    // Polished Bone
-    textMuted: '#7D7166',        // Ash Muted
-    textGold: '#FFD700',
-    textInverse: '#0D0A08',
+    textPrimary: '#FFFFFF',          // Pure Crisp White
+    textSecondary: '#A7B8AD',        // Soft Sage Gray
+    textMuted: '#6B8576',            // Muted Moss
+    textAccent: '#4ADE80',           // Accent Mint
+    textInverse: '#07130E',          // Dark contrast on bright buttons
 
-    // Game Elements
-    queenRed: '#C0292B',
-    queenGlow: 'rgba(192, 41, 43, 0.4)',
-    coinWhite: '#F8F6F0',
-    coinBlack: '#1C1512',
+    // Natural Warm Wood (for Carrom Board and Frame)
+    woodDark: '#451F0D',
+    woodPrimary: '#8B4513',          // Saddle Brown
+    woodMedium: '#A0522D',          // Warm Sienna
+    woodLight: '#CD853F',           // Peru Light Wood
+    woodWarm: '#D27D2D',            // Lacquered Teak
+    woodBorder: '#5C2C16',
+    playingSurface: '#E6CCA0',      // Polished Maple Board Face
 
-    // Feedback & System
-    success: '#27AE60',
-    successBg: 'rgba(39, 174, 96, 0.15)',
-    error: '#E74C3C',
-    errorBg: 'rgba(231, 76, 60, 0.15)',
-    warning: '#F39C12',
-    warningBg: 'rgba(243, 156, 18, 0.15)',
-    info: '#3498DB',
+    // Game Pieces
+    queenRed: '#DC2626',
+    queenGlow: 'rgba(220, 38, 38, 0.45)',
+    coinWhite: '#F8F9FA',
+    coinBlack: '#18241C',
+
+    // Gold for rewards, coins balance, and achievements (used sparingly)
+    goldPrimary: '#F59E0B',
+    goldBright: '#FBBF24',
+    goldDark: '#B45309',
+    goldGlow: 'rgba(245, 158, 11, 0.35)',
+    goldBadgeBg: 'rgba(245, 158, 11, 0.15)',
+
+    // System Status
+    success: '#10B981',
+    successBg: 'rgba(16, 185, 129, 0.15)',
+    error: '#EF4444',
+    errorBg: 'rgba(239, 68, 68, 0.15)',
+    warning: '#F59E0B',
+    warningBg: 'rgba(245, 158, 11, 0.15)',
+    info: '#3B82F6',
+    infoBg: 'rgba(59, 130, 246, 0.15)',
 
     // Overlays
-    overlay: 'rgba(13, 10, 8, 0.75)',
-    overlayHeavy: 'rgba(13, 10, 8, 0.92)',
+    overlay: 'rgba(7, 19, 14, 0.75)',
+    overlayHeavy: 'rgba(7, 19, 14, 0.92)',
   },
 
   spacing: {
@@ -108,8 +138,15 @@ export const THEME = {
       shadowRadius: 8,
       elevation: 6,
     },
+    emeraldGlow: {
+      shadowColor: '#16A34A',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.45,
+      shadowRadius: 12,
+      elevation: 8,
+    },
     goldGlow: {
-      shadowColor: '#D4AF37',
+      shadowColor: '#F59E0B',
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.45,
       shadowRadius: 12,
@@ -119,4 +156,3 @@ export const THEME = {
 } as const;
 
 export type AppTheme = typeof THEME;
-
