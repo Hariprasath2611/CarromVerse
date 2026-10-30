@@ -1,286 +1,528 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Badge, Button, Card, Header, ScreenContainer } from '../../src/components';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  CoinBalance,
+  DailyRewardsModal,
+  GameCard,
+  Modal,
+  PlayerAvatar,
+  PrimaryButton,
+  ScreenContainer,
+  SecondaryButton,
+} from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import { useUserStore } from '../../src/store/userStore';
+import { useEconomyStore } from '../../src/store/economyStore';
 import { useGameSetupStore } from '../../src/store/gameSetupStore';
-import { useGameSessionStore } from '../../src/store/gameSessionStore';
-import { GameMode } from '@carromverse/shared-types';
-import { GAME_MODE_DEFINITIONS, createDefaultGameConfig } from '@carromverse/game-logic';
 import { THEME } from '../../src/constants/theme';
-import { NetworkService } from '../../src/services/sync/networkService';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const profile = useUserStore((state) => state.profile);
-  const { selectedMode, setGameMode, players } = useGameSetupStore();
-  const { isPlaying, startSession, endSession, currentTurn, scores } = useGameSessionStore();
+  const { coins, notifications, hasUnclaimedDailyReward, markNotificationsAsRead, addCoins } =
+    useEconomyStore();
+  const { setGameMode } = useGameSetupStore();
 
-  const isOnline = NetworkService.isOnline();
-  const displayName = profile?.username || user?.displayName || 'Guest Player';
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  const handleStartGame = (mode: GameMode) => {
-    setGameMode(mode);
-    const config = createDefaultGameConfig(mode);
-    startSession(config, players);
+  const displayName = profile?.username || user?.displayName || 'Grand Striker';
+  const playerLevel = profile?.level || 12;
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handlePlayOffline = () => {
+    router.push('/game-mode');
+  };
+
+  const handlePracticeSolo = () => {
+    setGameMode('practice');
+    router.push('/game-board');
+  };
+
+  const handleOpenCustomize = () => {
+    router.push('/(tabs)/customize');
+  };
+
+  const handleAddCoins = () => {
+    Alert.alert('Free Coins Refill', 'Claim +500 free practice coins?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Claim',
+        onPress: () => {
+          addCoins(500);
+        },
+      },
+    ]);
   };
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      {/* Top Profile / Status Bar */}
+      {/* TOP SECTION: Profile, Level, Balance, Notifications, Settings */}
       <View style={styles.topBar}>
-        <View style={styles.userInfo}>
-          <Text style={styles.greeting}>Welcome,</Text>
-          <Text style={styles.userName}>{displayName}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.profileSection}
+          activeOpacity={0.8}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
+          <PlayerAvatar name={displayName} size={48} level={playerLevel} showHalo />
+          <View style={styles.nameLevelWrap}>
+            <Text style={styles.usernameText} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>LEVEL {playerLevel}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
 
-        <View style={styles.statusBadges}>
-          <Badge
-            label={isOnline ? 'Online' : 'Offline'}
-            variant={isOnline ? 'success' : 'wood'}
-          />
-          {user ? (
-            <Badge label="Cloud Active" variant="gold" />
-          ) : (
-            <Badge label="Guest Mode" variant="muted" />
-          )}
+        <View style={styles.topRightControls}>
+          <CoinBalance balance={coins} onAddPress={handleAddCoins} />
+
+          {/* Notifications Trigger */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => {
+              setShowNotifications(true);
+              markNotificationsAsRead();
+            }}
+          >
+            <Text style={styles.iconButtonEmoji}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Settings Trigger */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push('/settings')}
+          >
+            <Text style={styles.iconButtonEmoji}>⚙️</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Active Game Banner if session is currently active */}
-      {isPlaying && (
-        <Card elevated highlighted style={styles.activeGameCard}>
-          <View style={styles.activeHeader}>
-            <Text style={styles.activeTitle}>Active Match in Progress</Text>
-            <Badge label={selectedMode.replace(/_/g, ' ')} variant="gold" />
+      {/* PROMOTIONAL HERO BANNER */}
+      <GameCard elevated style={styles.heroBanner}>
+        <View style={styles.bannerTagRow}>
+          <View style={styles.liveSeasonBadge}>
+            <View style={styles.pulsingDot} />
+            <Text style={styles.liveSeasonText}>SEASON 1: EMERALD ARENA</Text>
           </View>
-          <Text style={styles.activeTurn}>
-            Turn #{currentTurn?.turnNumber} • Player {currentTurn?.activePlayerId}
-          </Text>
-          <Button
-            title="Conclude / Forfeit Match"
-            variant="danger"
-            onPress={endSession}
-            style={styles.concludeButton}
-          />
-        </Card>
-      )}
+          <Text style={styles.trophyIcon}>🏆</Text>
+        </View>
 
-      {/* Game Mode Selector Cards */}
-      <Text style={styles.sectionTitle}>SELECT GAME MODE</Text>
+        <Text style={styles.bannerHeading}>Master the Board</Text>
+        <Text style={styles.bannerSubheading}>
+          Realistic carrom physics, fluid striker controls & offline multiplayer showdowns.
+        </Text>
 
-      <Card
-        elevated
-        highlighted={selectedMode === 'two_player_individual'}
-        style={styles.modeCard}
+        <View style={styles.bannerStatsRow}>
+          <View style={styles.bannerStatItem}>
+            <Text style={styles.bannerStatValue}>100%</Text>
+            <Text style={styles.bannerStatLabel}>Offline Play</Text>
+          </View>
+          <View style={styles.statSeparator} />
+          <View style={styles.bannerStatItem}>
+            <Text style={styles.bannerStatValue}>2 to 4</Text>
+            <Text style={styles.bannerStatLabel}>Players Shared</Text>
+          </View>
+          <View style={styles.statSeparator} />
+          <View style={styles.bannerStatItem}>
+            <Text style={styles.bannerStatValue}>2v2</Text>
+            <Text style={styles.bannerStatLabel}>Team Battles</Text>
+          </View>
+        </View>
+      </GameCard>
+
+      {/* MAIN ACTION SECTION */}
+      <View style={styles.actionsContainer}>
+        {/* Play Offline Hero Button */}
+        <PrimaryButton
+          title="Play Offline Match"
+          subtitle="2P, 3P, 4P & 2v2 Team Battles"
+          onPress={handlePlayOffline}
+          variant="emerald"
+          size="large"
+          icon="🎯"
+          style={styles.mainActionButton}
+        />
+
+        <View style={styles.secondaryActionsRow}>
+          <View style={styles.halfButtonWrap}>
+            <SecondaryButton
+              title="Practice Solo"
+              onPress={handlePracticeSolo}
+              variant="surface"
+              size="medium"
+              icon="🎯"
+            />
+          </View>
+          <View style={styles.halfButtonWrap}>
+            <SecondaryButton
+              title="Customize Gear"
+              onPress={handleOpenCustomize}
+              variant="surface"
+              size="medium"
+              icon="🎨"
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* DAILY REWARDS SECTION */}
+      <GameCard elevated style={styles.dailyRewardCard}>
+        <View style={styles.dailyRewardHeader}>
+          <View style={styles.dailyRewardTitleRow}>
+            <Text style={styles.giftEmoji}>🎁</Text>
+            <View>
+              <Text style={styles.dailyRewardTitle}>Daily Login Rewards</Text>
+              <Text style={styles.dailyRewardSubtitle}>
+                {hasUnclaimedDailyReward
+                  ? 'Your day reward is waiting to be claimed!'
+                  : 'Streak active! Return tomorrow for higher rewards.'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <PrimaryButton
+          title={hasUnclaimedDailyReward ? 'Claim Daily Reward' : 'View 7-Day Calendar'}
+          onPress={() => setShowDailyRewards(true)}
+          variant={hasUnclaimedDailyReward ? 'gold' : 'forest'}
+          size="small"
+          style={styles.claimButton}
+        />
+      </GameCard>
+
+      {/* QUICK STATS SNAPSHOT */}
+      <Text style={styles.sectionTitle}>YOUR CAREER OVERVIEW</Text>
+      <View style={styles.statsGrid}>
+        <GameCard style={styles.statMiniCard}>
+          <Text style={styles.statMiniEmoji}>🎖️</Text>
+          <Text style={styles.statMiniValue}>{profile?.totalMatches || 34}</Text>
+          <Text style={styles.statMiniLabel}>Total Matches</Text>
+        </GameCard>
+
+        <GameCard style={styles.statMiniCard}>
+          <Text style={styles.statMiniEmoji}>👑</Text>
+          <Text style={styles.statMiniValue}>{profile?.wins || 26}</Text>
+          <Text style={styles.statMiniLabel}>Victories</Text>
+        </GameCard>
+
+        <GameCard style={styles.statMiniCard}>
+          <Text style={styles.statMiniEmoji}>🔥</Text>
+          <Text style={styles.statMiniValue}>76%</Text>
+          <Text style={styles.statMiniLabel}>Win Rate</Text>
+        </GameCard>
+      </View>
+
+      {/* MODALS */}
+      <DailyRewardsModal
+        visible={showDailyRewards}
+        onClose={() => setShowDailyRewards(false)}
+      />
+
+      <Modal
+        visible={showNotifications}
+        title="Inbox & Updates"
+        onClose={() => setShowNotifications(false)}
       >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => handleStartGame('two_player_individual')}
-        >
-          <View style={styles.modeHeader}>
-            <Text style={styles.modeName}>2-Player Duel</Text>
-            <Badge label="2 Players" variant="gold" />
-          </View>
-          <Text style={styles.modeDesc}>
-            Classic head-to-head showdown. White vs Black, battle for the Queen with cover.
-          </Text>
-          <Button
-            title="Play 2-Player Duel"
-            variant={selectedMode === 'two_player_individual' ? 'primary' : 'wood'}
-            onPress={() => handleStartGame('two_player_individual')}
-            style={styles.playButton}
-          />
-        </TouchableOpacity>
-      </Card>
-
-      <Card
-        elevated
-        highlighted={selectedMode === 'three_player_individual'}
-        style={styles.modeCard}
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => handleStartGame('three_player_individual')}
-        >
-          <View style={styles.modeHeader}>
-            <Text style={styles.modeName}>3-Player Free-for-All</Text>
-            <Badge label="3 Players" variant="wood" />
-          </View>
-          <Text style={styles.modeDesc}>
-            Dynamic points carrom. Every coin pocketed counts towards your personal score.
-          </Text>
-          <Button
-            title="Play 3-Player Match"
-            variant={selectedMode === 'three_player_individual' ? 'primary' : 'wood'}
-            onPress={() => handleStartGame('three_player_individual')}
-            style={styles.playButton}
-          />
-        </TouchableOpacity>
-      </Card>
-
-      <Card
-        elevated
-        highlighted={selectedMode === 'four_player_team'}
-        style={styles.modeCard}
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => handleStartGame('four_player_team')}
-        >
-          <View style={styles.modeHeader}>
-            <Text style={styles.modeName}>4-Player Doubles (2 vs 2)</Text>
-            <Badge label="Team Mode" variant="gold" />
-          </View>
-          <Text style={styles.modeDesc}>
-            Team A vs Team B. Partners sit opposite each other sharing points and coordinating shots.
-          </Text>
-          <Button
-            title="Play Team Doubles"
-            variant={selectedMode === 'four_player_team' ? 'primary' : 'wood'}
-            onPress={() => handleStartGame('four_player_team')}
-            style={styles.playButton}
-          />
-        </TouchableOpacity>
-      </Card>
-
-      <Card
-        elevated
-        highlighted={selectedMode === 'four_player_individual'}
-        style={styles.modeCard}
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => handleStartGame('four_player_individual')}
-        >
-          <View style={styles.modeHeader}>
-            <Text style={styles.modeName}>4-Player Individual</Text>
-            <Badge label="4 Players" variant="wood" />
-          </View>
-          <Text style={styles.modeDesc}>
-            Four competitors around all four baselines. High tension free-for-all carrom.
-          </Text>
-          <Button
-            title="Play 4-Player Battle"
-            variant={selectedMode === 'four_player_individual' ? 'primary' : 'wood'}
-            onPress={() => handleStartGame('four_player_individual')}
-            style={styles.playButton}
-          />
-        </TouchableOpacity>
-      </Card>
-
-      <Card
-        elevated
-        highlighted={selectedMode === 'practice'}
-        style={styles.modeCard}
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => handleStartGame('practice')}
-        >
-          <View style={styles.modeHeader}>
-            <Text style={styles.modeName}>Solo Practice Mode</Text>
-            <Badge label="Solo" variant="muted" />
-          </View>
-          <Text style={styles.modeDesc}>
-            Unlimited practice turns. Refine striker placement, rebound angles, and trick shots.
-          </Text>
-          <Button
-            title="Start Solo Practice"
-            variant={selectedMode === 'practice' ? 'primary' : 'outline'}
-            onPress={() => handleStartGame('practice')}
-            style={styles.playButton}
-          />
-        </TouchableOpacity>
-      </Card>
+        <ScrollView style={styles.notificationsList}>
+          {notifications.map((item) => (
+            <View key={item.id} style={styles.notificationItem}>
+              <Text style={styles.notifIcon}>📢</Text>
+              <View style={styles.notifBody}>
+                <Text style={styles.notifTitle}>{item.title}</Text>
+                <Text style={styles.notifMsg}>{item.message}</Text>
+                <Text style={styles.notifDate}>{item.date}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </Modal>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    paddingBottom: THEME.spacing.xxl,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.surfaceBorder,
+    marginBottom: THEME.spacing.md,
   },
-  userInfo: {
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
-  greeting: {
-    color: THEME.colors.textMuted,
-    fontSize: THEME.typography.fontSize.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  nameLevelWrap: {
+    marginLeft: THEME.spacing.sm,
+    flex: 1,
   },
-  userName: {
-    color: THEME.colors.goldBright,
-    fontSize: THEME.typography.fontSize.title,
+  usernameText: {
+    fontSize: THEME.typography.fontSize.bodyLg,
     fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
-  statusBadges: {
+  levelBadge: {
+    backgroundColor: THEME.colors.secondary,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.sm,
+    borderColor: THEME.colors.primary,
+    borderWidth: 1,
+    marginTop: 2,
+  },
+  levelBadgeText: {
+    fontSize: 9,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.accent,
+    letterSpacing: 0.5,
+  },
+  topRightControls: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'center',
   },
-  sectionTitle: {
-    color: THEME.colors.textMuted,
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.heavy,
-    letterSpacing: 1.5,
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: THEME.colors.surface,
+    borderColor: THEME.colors.border,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: THEME.spacing.xs,
+    position: 'relative',
+  },
+  iconButtonEmoji: {
+    fontSize: 16,
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: THEME.colors.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  heroBanner: {
+    padding: THEME.spacing.lg,
+    backgroundColor: THEME.colors.card,
+    borderColor: THEME.colors.border,
+    borderWidth: 1,
     marginBottom: THEME.spacing.md,
-    marginTop: THEME.spacing.sm,
+    position: 'relative',
   },
-  modeCard: {
-    marginBottom: THEME.spacing.md,
-  },
-  modeHeader: {
+  bannerTagRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: THEME.spacing.xs,
   },
-  modeName: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.subtitle,
-    fontWeight: THEME.typography.fontWeight.bold,
+  liveSeasonBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: THEME.borderRadius.full,
+    borderColor: THEME.colors.primary,
+    borderWidth: 1,
   },
-  modeDesc: {
-    color: THEME.colors.textSecondary,
+  pulsingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.colors.accent,
+    marginRight: 6,
+  },
+  liveSeasonText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: THEME.colors.accent,
+    letterSpacing: 0.5,
+  },
+  trophyIcon: {
+    fontSize: 22,
+  },
+  bannerHeading: {
+    fontSize: THEME.typography.fontSize.h2,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+    marginTop: THEME.spacing.xs,
+  },
+  bannerSubheading: {
     fontSize: THEME.typography.fontSize.bodySm,
-    lineHeight: 20,
+    color: THEME.colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  bannerStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.border,
+  },
+  bannerStatItem: {
+    alignItems: 'center',
+  },
+  bannerStatValue: {
+    fontSize: THEME.typography.fontSize.bodyLg,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.accent,
+  },
+  bannerStatLabel: {
+    fontSize: 10,
+    color: THEME.colors.textMuted,
+    marginTop: 2,
+  },
+  statSeparator: {
+    width: 1,
+    height: 24,
+    backgroundColor: THEME.colors.border,
+  },
+  actionsContainer: {
     marginBottom: THEME.spacing.md,
   },
-  playButton: {
-    height: 44,
+  mainActionButton: {
+    marginBottom: THEME.spacing.sm,
   },
-  activeGameCard: {
-    marginBottom: THEME.spacing.lg,
-    borderColor: THEME.colors.goldBright,
+  secondaryActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  activeHeader: {
+  halfButtonWrap: {
+    flex: 0.485,
+  },
+  dailyRewardCard: {
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    borderColor: THEME.colors.border,
+  },
+  dailyRewardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: THEME.spacing.sm,
   },
-  activeTitle: {
-    color: THEME.colors.goldBright,
-    fontSize: THEME.typography.fontSize.body,
+  dailyRewardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  giftEmoji: {
+    fontSize: 28,
+    marginRight: THEME.spacing.sm,
+  },
+  dailyRewardTitle: {
+    fontSize: THEME.typography.fontSize.bodyMd,
     fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
-  activeTurn: {
+  dailyRewardSubtitle: {
+    fontSize: THEME.typography.fontSize.caption,
     color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.bodySm,
-    marginVertical: THEME.spacing.sm,
+    marginTop: 2,
   },
-  concludeButton: {
-    height: 38,
+  claimButton: {
     marginTop: THEME.spacing.xs,
   },
+  sectionTitle: {
+    fontSize: THEME.typography.fontSize.caption,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textMuted,
+    letterSpacing: 1,
+    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statMiniCard: {
+    flex: 0.31,
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  statMiniEmoji: {
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  statMiniValue: {
+    fontSize: THEME.typography.fontSize.h3,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+  },
+  statMiniLabel: {
+    fontSize: 10,
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  notificationsList: {
+    maxHeight: 350,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    paddingVertical: THEME.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.border,
+  },
+  notifIcon: {
+    fontSize: 20,
+    marginRight: THEME.spacing.sm,
+    marginTop: 2,
+  },
+  notifBody: {
+    flex: 1,
+  },
+  notifTitle: {
+    fontSize: THEME.typography.fontSize.bodySm,
+    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
+  },
+  notifMsg: {
+    fontSize: THEME.typography.fontSize.caption,
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
+  },
+  notifDate: {
+    fontSize: 10,
+    color: THEME.colors.textMuted,
+    marginTop: 4,
+  },
 });
-
