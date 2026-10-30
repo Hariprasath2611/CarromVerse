@@ -34,6 +34,7 @@ export * from './input/PointerInput.js';
 export * from './assets/AssetRegistry.js';
 
 // Phase 1.1 Foundation & Bridge Compatibility
+export * from './bridge/phaserHtmlGenerator.js';
 export * from './bridge/WebviewBridge.js';
 export * from './core/CarromEngine.js';
 export * from './physics/CarromPhysicsWorld.js';
