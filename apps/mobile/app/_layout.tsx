@@ -39,13 +39,19 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: THEME.colors.background },
-          animation: 'fade',
+          animation: 'slide_from_right',
         }}
       >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="game-mode" />
+        <Stack.Screen name="player-selection" />
+        <Stack.Screen name="game-config" />
+        <Stack.Screen name="lobby" />
+        <Stack.Screen name="game-board" options={{ animation: 'fade' }} />
+        <Stack.Screen name="game-result" options={{ animation: 'fade' }} />
         <Stack.Screen name="settings/index" />
       </Stack>
     </SafeAreaProvider>
