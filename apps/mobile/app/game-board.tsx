@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import {
   PauseModal,
+  PhaserCarromView,
   PlayerCard,
   PrimaryButton,
   ScreenContainer,
@@ -48,7 +49,7 @@ export default function GameBoardScreen() {
   const [activeSticker, setActiveSticker] = useState<{ emoji: string; text: string } | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(turnTimeLimitSec);
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
-  const [strikerOffset, setStrikerOffset] = useState(0); // slider -50 to 50
+  const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0); // slider -0.95 to 0.95
   const [pocketedWhiteCount, setPocketedWhiteCount] = useState(2);
   const [pocketedBlackCount, setPocketedBlackCount] = useState(1);
 

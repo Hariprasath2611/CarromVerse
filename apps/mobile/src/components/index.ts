@@ -21,3 +21,4 @@ export * from './DailyRewardsModal';
 export * from './StickersModal';
 export * from './PauseModal';
 export * from './ProfileHeader';
+export * from './PhaserCarromView';
