@@ -46,3 +46,4 @@ export class NetworkService {
     return () => this.listeners.delete(callback);
   }
 }
+

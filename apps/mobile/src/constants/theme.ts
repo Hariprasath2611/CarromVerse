@@ -119,3 +119,4 @@ export const THEME = {
 } as const;
 
 export type AppTheme = typeof THEME;
+

@@ -37,3 +37,4 @@ export interface AuthSessionUser {
   isAnonymous: boolean;
   emailVerified: boolean;
 }
+

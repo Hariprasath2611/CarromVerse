@@ -91,3 +91,4 @@ export function initializeFirebase(): {
 const { app, auth, firestore, storage } = initializeFirebase();
 
 export { app, auth, firestore, storage };
+

@@ -39,3 +39,4 @@ export class TypedEventEmitter<TMap extends Record<string, any>> {
     this.listeners = {};
   }
 }
+

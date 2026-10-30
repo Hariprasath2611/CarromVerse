@@ -19,3 +19,4 @@ export const COLLISION_MASKS = {
   // Pocket sensors detect coins and striker
   POCKET_SENSOR: COLLISION_CATEGORIES.STRIKER | COLLISION_CATEGORIES.COIN,
 } as const;
+

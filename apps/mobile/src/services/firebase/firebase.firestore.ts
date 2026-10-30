@@ -119,3 +119,4 @@ export async function syncMatchToFirestore(userId: string, match: GameResult): P
     syncedAt: serverTimestamp(),
   });
 }
+

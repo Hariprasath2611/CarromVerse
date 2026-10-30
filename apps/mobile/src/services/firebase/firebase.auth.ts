@@ -148,3 +148,4 @@ export function getCurrentUser(): AuthSessionUser | null {
   if (!auth) return null;
   return transformFirebaseUser(auth.currentUser);
 }
+

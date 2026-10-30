@@ -102,3 +102,4 @@ export type BridgeEvent =
   | AllBodiesSettledBridgeEvent
   | BaseBridgeEvent<'STRIKER_PLACED', { x: number; y: number }>
   | BaseBridgeEvent<'STRIKER_FIRED', { power: number; angle: number }>;
+

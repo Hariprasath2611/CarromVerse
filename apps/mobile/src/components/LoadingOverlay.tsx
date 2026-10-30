@@ -49,3 +49,4 @@ const styles = StyleSheet.create({
     fontWeight: THEME.typography.fontWeight.medium,
   },
 });
+

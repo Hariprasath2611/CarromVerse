@@ -227,3 +227,4 @@ const styles = StyleSheet.create({
     fontWeight: THEME.typography.fontWeight.bold,
   },
 });
+

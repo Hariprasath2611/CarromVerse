@@ -31,3 +31,4 @@ export const COIN_VISUAL_CONFIGS: Record<CoinType, CoinVisualConfig> = {
     label: 'Queen',
   },
 };
+

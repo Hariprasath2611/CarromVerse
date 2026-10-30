@@ -45,3 +45,4 @@ export function validateUsername(username: string): ValidationResult {
   }
   return { isValid: true };
 }
+

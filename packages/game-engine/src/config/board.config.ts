@@ -14,3 +14,4 @@ export const ENGINE_BOARD_CONFIG = {
     foulLineRedColor: 0x8b0000,    // Deep red baseline termination circles
   },
 };
+

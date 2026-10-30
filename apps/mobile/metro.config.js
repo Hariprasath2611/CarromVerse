@@ -19,3 +19,4 @@ config.resolver.nodeModulesPaths = [
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
 
 module.exports = config;
+

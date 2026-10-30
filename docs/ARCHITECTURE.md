@@ -142,3 +142,4 @@ State is organized into dedicated, orthogonal stores:
 3. **Storage Security Rules (`storage.rules`):**
    - Profile uploads are restricted to `profiles/{userId}/profile-image`, with strict content type checking (`image/jpeg`, `image/png`, `image/webp`) and a 5MB size limit.
    - Game assets and presets are strictly read-only for clients.
+

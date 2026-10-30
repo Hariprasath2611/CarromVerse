@@ -36,3 +36,4 @@ export interface PlayerSetupInfo {
   seat: PlayerSeat;
   teamId?: TeamId;
 }
+

@@ -31,3 +31,4 @@ export async function getProfileImageUrl(userId: string): Promise<string | null>
     return null;
   }
 }
+

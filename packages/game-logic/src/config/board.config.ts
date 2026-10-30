@@ -84,3 +84,4 @@ export const POCKET_POSITIONS: Vector2D[] = [
   { x: 945, y: 945 },   // Bottom-Right (Pocket 2)
   { x: 55, y: 945 },    // Bottom-Left (Pocket 3)
 ];
+

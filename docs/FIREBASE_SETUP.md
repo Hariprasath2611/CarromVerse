@@ -194,3 +194,4 @@ This guide provides step-by-step instructions for establishing the Firebase back
    - Navigate to **Settings** -> Click **Sign Out** -> Verify clean logout.
    - Log back in with the same credentials -> Verify session restored.
    - Force quit and reopen app -> Verify session persists via AsyncStorage.
+

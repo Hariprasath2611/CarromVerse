@@ -19,3 +19,4 @@ export interface NetworkState {
   isInternetReachable: boolean | null;
   connectionType: 'wifi' | 'cellular' | 'none' | 'unknown';
 }
+

@@ -60,3 +60,4 @@ function resolveConfig(): AppConfig {
 }
 
 export const APP_CONFIG = resolveConfig();
+

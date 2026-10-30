@@ -43,3 +43,4 @@ export const WORLD_PHYSICS_CONFIG = {
   positionIterations: 10,
   restVelocityThreshold: 0.08,       // Velocity below which body is considered at rest
 };
+

@@ -27,3 +27,4 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   language: 'en',
   onboarded: false,
 };
+

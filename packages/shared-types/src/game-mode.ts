@@ -30,3 +30,4 @@ export interface GameModeDefinition {
     queen: number;
   };
 }
+

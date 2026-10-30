@@ -19,3 +19,4 @@ export const STRIKER_CONFIG: StrikerVisualConfig = {
   maxForce: 0.18,               // Maximum impulse scalar for Matter body
   minForce: 0.015,
 };
+

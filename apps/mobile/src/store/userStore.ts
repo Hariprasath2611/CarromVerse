@@ -79,3 +79,4 @@ export const useUserStore = create<UserState>((set, get) => ({
     LocalStorageService.setCachedProfile(null).catch(() => {});
   },
 }));
+

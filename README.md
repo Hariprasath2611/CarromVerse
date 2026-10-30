@@ -99,3 +99,4 @@ npm run web
 
 - **Current Milestone:** Phase 1.1 — Project Foundation & Firebase Integration (Completed)
 - **Next Milestone:** Phase 1.2 — UI/UX & Interactive Design System
+

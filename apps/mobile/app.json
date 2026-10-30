@@ -16,7 +16,8 @@
       "bundleIdentifier": "com.carromverse.mobile"
     },
     "android": {
-      "package": "com.carromverse.mobile",
+      "package": "com.carromverse.game",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0F0C0A",
         "foregroundImage": "./assets/android-icon-foreground.png",

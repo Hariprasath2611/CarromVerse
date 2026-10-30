@@ -24,3 +24,4 @@ export interface CoinSetup {
   type: CoinType;
   position: Vector2D;
 }
+
