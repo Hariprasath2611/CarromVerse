@@ -1,6 +1,6 @@
 import { CoinType } from '@carromverse/shared-types';
 
-export interface CoinVisualConfig {
+export interface LegacyCoinVisualConfig {
   radius: number;
   primaryColor: number;
   rimColor: number;
@@ -8,7 +8,7 @@ export interface CoinVisualConfig {
   label: string;
 }
 
-export const COIN_VISUAL_CONFIGS: Record<CoinType, CoinVisualConfig> = {
+export const COIN_VISUAL_CONFIGS: Record<CoinType, LegacyCoinVisualConfig> = {
   white: {
     radius: 28,
     primaryColor: 0xf5f5dc,       // Ivory white

@@ -1,4 +1,4 @@
-export interface StrikerVisualConfig {
+export interface LegacyStrikerVisualConfig {
   radius: number;
   primaryColor: number;
   rimColor: number;
@@ -9,7 +9,7 @@ export interface StrikerVisualConfig {
   minForce: number;
 }
 
-export const STRIKER_CONFIG: StrikerVisualConfig = {
+export const STRIKER_CONFIG: LegacyStrikerVisualConfig = {
   radius: 38,
   primaryColor: 0x1f2937,       // Dark polished onyx acrylic
   rimColor: 0xd4af37,           // Brilliant gold edge
