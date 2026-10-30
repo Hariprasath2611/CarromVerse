@@ -3,24 +3,31 @@ import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { THEME } from '../constants/theme';
 
 export interface CoinBalanceProps {
-  amount: number;
+  amount?: number;
+  balance?: number;
   onPressPlus?: () => void;
+  onAddPress?: () => void;
   style?: ViewStyle;
 }
 
 export const CoinBalance: React.FC<CoinBalanceProps> = ({
   amount,
+  balance,
   onPressPlus,
+  onAddPress,
   style,
 }) => {
+  const displayAmount = balance ?? amount ?? 0;
+  const handlePlus = onAddPress || onPressPlus;
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.coinIcon}>
         <Text style={styles.coinSymbol}>🪙</Text>
       </View>
-      <Text style={styles.amountText}>{amount.toLocaleString()}</Text>
-      {onPressPlus && (
-        <Pressable onPress={onPressPlus} style={styles.plusBtn}>
+      <Text style={styles.amountText}>{displayAmount.toLocaleString()}</Text>
+      {handlePlus && (
+        <Pressable onPress={handlePlus} style={styles.plusBtn}>
           <Text style={styles.plusText}>+</Text>
         </Pressable>
       )}
@@ -48,23 +55,22 @@ const styles = StyleSheet.create({
   },
   amountText: {
     color: THEME.colors.goldBright,
-    fontSize: THEME.typography.fontSize.caption,
     fontWeight: THEME.typography.fontWeight.bold,
+    fontSize: THEME.typography.fontSize.bodySm,
     marginRight: 6,
-    letterSpacing: 0.3,
   },
   plusBtn: {
-    backgroundColor: THEME.colors.primary,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: THEME.colors.goldPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusText: {
-    color: THEME.colors.textPrimary,
-    fontSize: 12,
+    color: THEME.colors.textInverse,
+    fontSize: 14,
     fontWeight: 'bold',
-    lineHeight: 14,
+    lineHeight: 16,
   },
 });

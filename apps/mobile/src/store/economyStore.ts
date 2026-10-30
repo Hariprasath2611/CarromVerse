@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type CustomizationCategory = 'boards' | 'coins' | 'strikers' | 'board' | 'coin' | 'striker';
+
 export interface CustomizationItem {
   id: string;
   category: 'board' | 'coin' | 'striker';
@@ -8,6 +10,7 @@ export interface CustomizationItem {
   previewColor: string;
   price: number;
   isUnlocked: boolean;
+  isEquipped?: boolean;
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
 }
 
@@ -15,32 +18,13 @@ export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  timestamp: string;
+  date?: string;
+  timestamp?: string;
   read: boolean;
   type: 'reward' | 'system' | 'challenge';
 }
 
-interface EconomyState {
-  coins: number;
-  selectedBoardId: string;
-  selectedCoinId: string;
-  selectedStrikerId: string;
-  unlockedItems: string[];
-  dailyRewardClaimed: boolean;
-  dailyRewardStreak: number;
-  lastClaimDate: string | null;
-  notifications: NotificationItem[];
-
-  // Actions
-  addCoins: (amount: number) => void;
-  spendCoins: (amount: number) => boolean;
-  equipItem: (category: 'board' | 'coin' | 'striker', id: string) => void;
-  unlockItem: (id: string, price: number) => boolean;
-  claimDailyReward: () => number;
-  markNotificationsAsRead: () => void;
-}
-
-export const CUSTOMIZATION_ITEMS: Record<string, CustomizationItem[]> = {
+export const RAW_CUSTOMIZATION_ITEMS: Record<'board' | 'coin' | 'striker', CustomizationItem[]> = {
   board: [
     {
       id: 'board_classic',
@@ -179,75 +163,177 @@ export const CUSTOMIZATION_ITEMS: Record<string, CustomizationItem[]> = {
   ],
 };
 
-export const useEconomyStore = create<EconomyState>((set, get) => ({
-  coins: 2500,
-  selectedBoardId: 'board_forest',
-  selectedCoinId: 'coin_classic',
-  selectedStrikerId: 'striker_emerald',
-  unlockedItems: ['board_classic', 'board_forest', 'coin_classic', 'coin_wooden', 'striker_classic', 'striker_emerald'],
-  dailyRewardClaimed: false,
-  dailyRewardStreak: 3,
-  lastClaimDate: null,
-  notifications: [
-    {
-      id: 'notif_1',
-      title: 'Welcome Champion!',
-      message: 'Claim 500 bonus coins to kickstart your CarromVerse journey.',
-      timestamp: 'Just now',
-      read: false,
-      type: 'reward',
+export const CUSTOMIZATION_ITEMS = RAW_CUSTOMIZATION_ITEMS;
+
+interface EconomyState {
+  coins: number;
+  selectedBoardId: string;
+  selectedCoinId: string;
+  selectedStrikerId: string;
+  unlockedItems: string[];
+  dailyRewardClaimed: boolean;
+  dailyRewardStreak: number;
+  lastClaimDate: string | null;
+  hasUnclaimedDailyReward: boolean;
+  notifications: NotificationItem[];
+
+  boards: CustomizationItem[];
+  coinsItems: CustomizationItem[];
+  strikers: CustomizationItem[];
+
+  // Actions
+  addCoins: (amount: number) => void;
+  spendCoins: (amount: number) => boolean;
+  equipItem: (category: CustomizationCategory, id: string) => void;
+  unlockItem: (categoryOrId: CustomizationCategory | string, idOrPrice?: string | number) => boolean;
+  claimDailyReward: () => number;
+  markNotificationsAsRead: () => void;
+}
+
+function resolveItems(
+  cat: 'board' | 'coin' | 'striker',
+  unlockedIds: string[],
+  selectedId: string
+): CustomizationItem[] {
+  return RAW_CUSTOMIZATION_ITEMS[cat].map((item) => ({
+    ...item,
+    isUnlocked: item.price === 0 || unlockedIds.includes(item.id),
+    isEquipped: selectedId === item.id,
+  }));
+}
+
+const INITIAL_UNLOCKED = [
+  'board_classic',
+  'board_forest',
+  'coin_classic',
+  'coin_wooden',
+  'striker_classic',
+  'striker_emerald',
+];
+
+export const useEconomyStore = create<EconomyState>((set, get) => {
+  const selectedBoard = 'board_forest';
+  const selectedCoin = 'coin_classic';
+  const selectedStriker = 'striker_emerald';
+
+  return {
+    coins: 2500,
+    selectedBoardId: selectedBoard,
+    selectedCoinId: selectedCoin,
+    selectedStrikerId: selectedStriker,
+    unlockedItems: INITIAL_UNLOCKED,
+    dailyRewardClaimed: false,
+    dailyRewardStreak: 3,
+    lastClaimDate: null,
+    hasUnclaimedDailyReward: true,
+    notifications: [
+      {
+        id: 'notif_1',
+        title: 'Welcome Champion!',
+        message: 'Claim 500 bonus coins to kickstart your CarromVerse journey.',
+        date: 'Just now',
+        timestamp: 'Just now',
+        read: false,
+        type: 'reward',
+      },
+      {
+        id: 'notif_2',
+        title: 'Forest Emerald Theme',
+        message: 'The new Forest Emerald board has been unlocked for your account.',
+        date: '2 hours ago',
+        timestamp: '2 hours ago',
+        read: false,
+        type: 'system',
+      },
+    ],
+
+    boards: resolveItems('board', INITIAL_UNLOCKED, selectedBoard),
+    coinsItems: resolveItems('coin', INITIAL_UNLOCKED, selectedCoin),
+    strikers: resolveItems('striker', INITIAL_UNLOCKED, selectedStriker),
+
+    addCoins: (amount) => set((s) => ({ coins: s.coins + amount })),
+
+    spendCoins: (amount) => {
+      if (get().coins < amount) return false;
+      set((s) => ({ coins: s.coins - amount }));
+      return true;
     },
-    {
-      id: 'notif_2',
-      title: 'Forest Emerald Theme',
-      message: 'The new Forest Emerald board has been unlocked for your account.',
-      timestamp: '2 hours ago',
-      read: false,
-      type: 'system',
+
+    equipItem: (category, id) => {
+      const state = get();
+      if (!state.unlockedItems.includes(id)) return;
+
+      let bId = state.selectedBoardId;
+      let cId = state.selectedCoinId;
+      let sId = state.selectedStrikerId;
+
+      if (category === 'board' || category === 'boards') bId = id;
+      if (category === 'coin' || category === 'coins') cId = id;
+      if (category === 'striker' || category === 'strikers') sId = id;
+
+      set({
+        selectedBoardId: bId,
+        selectedCoinId: cId,
+        selectedStrikerId: sId,
+        boards: resolveItems('board', state.unlockedItems, bId),
+        coinsItems: resolveItems('coin', state.unlockedItems, cId),
+        strikers: resolveItems('striker', state.unlockedItems, sId),
+      });
     },
-  ],
 
-  addCoins: (amount) => set((s) => ({ coins: s.coins + amount })),
+    unlockItem: (categoryOrId, idOrPrice) => {
+      const state = get();
+      let itemId = '';
+      let itemPrice = 0;
 
-  spendCoins: (amount) => {
-    if (get().coins < amount) return false;
-    set((s) => ({ coins: s.coins - amount }));
-    return true;
-  },
+      if (typeof idOrPrice === 'string') {
+        itemId = idOrPrice;
+        // lookup item price
+        const allItems = [
+          ...RAW_CUSTOMIZATION_ITEMS.board,
+          ...RAW_CUSTOMIZATION_ITEMS.coin,
+          ...RAW_CUSTOMIZATION_ITEMS.striker,
+        ];
+        const match = allItems.find((i) => i.id === itemId);
+        itemPrice = match ? match.price : 0;
+      } else if (typeof idOrPrice === 'number') {
+        itemId = categoryOrId;
+        itemPrice = idOrPrice;
+      } else {
+        itemId = categoryOrId;
+      }
 
-  equipItem: (category, id) => {
-    if (!get().unlockedItems.includes(id)) return;
-    if (category === 'board') set({ selectedBoardId: id });
-    if (category === 'coin') set({ selectedCoinId: id });
-    if (category === 'striker') set({ selectedStrikerId: id });
-  },
+      if (state.unlockedItems.includes(itemId)) return true;
+      if (state.coins < itemPrice) return false;
 
-  unlockItem: (id, price) => {
-    if (get().unlockedItems.includes(id)) return true;
-    if (get().coins < price) return false;
+      const newUnlocked = [...state.unlockedItems, itemId];
+      set({
+        coins: state.coins - itemPrice,
+        unlockedItems: newUnlocked,
+        boards: resolveItems('board', newUnlocked, state.selectedBoardId),
+        coinsItems: resolveItems('coin', newUnlocked, state.selectedCoinId),
+        strikers: resolveItems('striker', newUnlocked, state.selectedStrikerId),
+      });
+      return true;
+    },
 
-    set((s) => ({
-      coins: s.coins - price,
-      unlockedItems: [...s.unlockedItems, id],
-    }));
-    return true;
-  },
+    claimDailyReward: () => {
+      if (get().dailyRewardClaimed) return 0;
+      const reward = 300 * (get().dailyRewardStreak + 1);
+      set((s) => ({
+        coins: s.coins + reward,
+        dailyRewardClaimed: true,
+        hasUnclaimedDailyReward: false,
+        dailyRewardStreak: (s.dailyRewardStreak % 7) + 1,
+        lastClaimDate: new Date().toISOString(),
+      }));
+      return reward;
+    },
 
-  claimDailyReward: () => {
-    if (get().dailyRewardClaimed) return 0;
-    const reward = 300 * (get().dailyRewardStreak + 1);
-    set((s) => ({
-      coins: s.coins + reward,
-      dailyRewardClaimed: true,
-      dailyRewardStreak: (s.dailyRewardStreak % 7) + 1,
-      lastClaimDate: new Date().toISOString(),
-    }));
-    return reward;
-  },
-
-  markNotificationsAsRead: () => {
-    set((s) => ({
-      notifications: s.notifications.map((n) => ({ ...n, read: true })),
-    }));
-  },
-}));
+    markNotificationsAsRead: () => {
+      set((s) => ({
+        notifications: s.notifications.map((n) => ({ ...n, read: true })),
+      }));
+    },
+  };
+});
