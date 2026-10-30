@@ -12,6 +12,7 @@
     "android": "npm --workspace=@carromverse/mobile run android",
     "ios": "npm --workspace=@carromverse/mobile run ios",
     "web": "npm --workspace=@carromverse/mobile run web",
+    "build": "npm --workspace=@carromverse/shared-types run build && npm --workspace=@carromverse/shared-utils run build && npm --workspace=@carromverse/game-logic run build && npm --workspace=@carromverse/game-engine run build",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
