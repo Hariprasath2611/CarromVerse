@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, Input, LoadingOverlay, ScreenContainer } from '../../src/components';
+import {
+  GameCard,
+  Input,
+  LoadingOverlay,
+  PrimaryButton,
+  ScreenContainer,
+  SecondaryButton,
+  Toggle,
+} from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import { validateEmail, validatePassword } from '@carromverse/shared-utils';
 import { THEME } from '../../src/constants/theme';
@@ -13,6 +21,9 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberSession, setRememberSession] = useState(true);
+
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -36,45 +47,41 @@ export default function LoginScreen() {
     try {
       await login(email, password);
       router.replace('/(tabs)');
-    } catch (err: any) {
-      // Error displayed in UI
+    } catch {
+      // Error handled and shown via authStore
     }
   };
 
   const handleGuestPlay = () => {
-    // Allows instant offline gameplay without Firebase account
     router.replace('/(tabs)');
   };
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      <LoadingOverlay visible={isLoading} message="Signing in..." />
+      <LoadingOverlay visible={isLoading} message="Authenticating Player..." />
 
+      {/* Header Emblem & Title */}
       <View style={styles.headerBox}>
+        <View style={styles.emblemCircle}>
+          <Text style={styles.emblemEmoji}>🎯</Text>
+        </View>
         <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to sync your match history and stats</Text>
+        <Text style={styles.subtitle}>Sign in to sync your match stats and trophies</Text>
       </View>
 
-      {!APP_CONFIG.isFirebaseConfigured && (
-        <Card style={styles.noticeCard}>
-          <Text style={styles.noticeTitle}>⚠️ Offline Demo Mode Active</Text>
-          <Text style={styles.noticeText}>
-            Firebase credentials are not configured yet in .env. You can play all offline modes
-            immediately as a Guest!
-          </Text>
-        </Card>
-      )}
-
+      {/* Error Banner */}
       {!!error && (
         <View style={styles.errorBox}>
+          <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      <Card elevated style={styles.formCard}>
+      {/* Login Card Form */}
+      <GameCard elevated style={styles.formCard}>
         <Input
           label="Email Address"
-          placeholder="name@example.com"
+          placeholder="champion@carromverse.com"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -85,50 +92,76 @@ export default function LoginScreen() {
           error={emailError}
         />
 
-        <Input
-          label="Password"
-          placeholder="••••••••"
-          secureTextEntry
-          value={password}
-          onChangeText={(val) => {
-            setPassword(val);
-            if (passwordError) setPasswordError(null);
-          }}
-          error={passwordError}
-        />
+        <View style={styles.passwordField}>
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={(val) => {
+              setPassword(val);
+              if (passwordError) setPasswordError(null);
+            }}
+            error={passwordError}
+            containerStyle={{ marginBottom: 0, flex: 1 }}
+          />
+          <Pressable
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeBtn}
+            hitSlop={10}
+          >
+            <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
+          </Pressable>
+        </View>
 
-        <TouchableOpacity
-          onPress={() => router.push('/(auth)/forgot-password')}
-          style={styles.forgotLink}
-        >
-          <Text style={styles.forgotText}>Forgot Password?</Text>
-        </TouchableOpacity>
+        {/* Options Row */}
+        <View style={styles.optionsRow}>
+          <Toggle
+            label="Remember session"
+            value={rememberSession}
+            onValueChange={setRememberSession}
+            style={styles.rememberToggle}
+          />
 
-        <Button
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/forgot-password')}
+            style={styles.forgotBtn}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Sign In Primary Action */}
+        <PrimaryButton
           title="Sign In"
-          variant="primary"
+          icon="🔑"
           onPress={handleLogin}
           loading={isLoading}
+          variant="emerald"
           style={styles.signInButton}
         />
 
+        {/* Divider */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
+          <Text style={styles.dividerText}>OR PLAY LOCALLY</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        <Button
+        {/* Guest Mode Button */}
+        <SecondaryButton
           title="Play Offline as Guest"
-          variant="secondary"
+          icon="🎮"
+          variant="forest"
           onPress={handleGuestPlay}
         />
-      </Card>
+      </GameCard>
 
+      {/* Footer Registration Link */}
       <View style={styles.footerRow}>
-        <Text style={styles.footerText}>Don't have an account? </Text>
+        <Text style={styles.footerText}>New to CarromVerse? </Text>
         <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={styles.signUpText}>Sign Up</Text>
+          <Text style={styles.signUpText}>Create Account</Text>
         </TouchableOpacity>
       </View>
     </ScreenContainer>
@@ -138,40 +171,41 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
-    paddingVertical: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.lg,
   },
   headerBox: {
     marginBottom: THEME.spacing.lg,
     alignItems: 'center',
   },
+  emblemCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 2,
+    borderColor: THEME.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.sm,
+    ...THEME.shadows.emeraldGlow,
+  },
+  emblemEmoji: {
+    fontSize: 28,
+  },
   title: {
     color: THEME.colors.textPrimary,
     fontSize: THEME.typography.fontSize.headline,
-    fontWeight: THEME.typography.fontWeight.bold,
+    fontWeight: THEME.typography.fontWeight.heavy,
   },
   subtitle: {
     color: THEME.colors.textSecondary,
     fontSize: THEME.typography.fontSize.bodySm,
-    marginTop: THEME.spacing.xs,
+    marginTop: 4,
     textAlign: 'center',
   },
-  noticeCard: {
-    backgroundColor: 'rgba(243, 156, 18, 0.1)',
-    borderColor: THEME.colors.warning,
-    marginBottom: THEME.spacing.md,
-  },
-  noticeTitle: {
-    color: THEME.colors.warning,
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.bold,
-    marginBottom: 4,
-  },
-  noticeText: {
-    color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.caption,
-    lineHeight: 18,
-  },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: THEME.colors.errorBg,
     borderColor: THEME.colors.error,
     borderWidth: 1,
@@ -179,23 +213,51 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
   },
+  errorIcon: {
+    fontSize: 16,
+    marginRight: THEME.spacing.sm,
+  },
   errorText: {
     color: THEME.colors.error,
     fontSize: THEME.typography.fontSize.bodySm,
+    flex: 1,
   },
   formCard: {
     padding: THEME.spacing.lg,
   },
-  forgotLink: {
-    alignSelf: 'flex-end',
-    marginBottom: THEME.spacing.md,
+  passwordField: {
+    position: 'relative',
+    marginBottom: THEME.spacing.sm,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 14,
+    top: 36,
+  },
+  eyeIcon: {
+    fontSize: 18,
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+  },
+  rememberToggle: {
+    paddingVertical: 0,
+    flex: 1,
+  },
+  forgotBtn: {
+    paddingVertical: 4,
+    marginLeft: THEME.spacing.sm,
   },
   forgotText: {
-    color: THEME.colors.goldPrimary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.accent,
+    fontSize: THEME.typography.fontSize.caption,
+    fontWeight: THEME.typography.fontWeight.semibold,
   },
   signInButton: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -205,12 +267,14 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: THEME.colors.surfaceBorder,
+    backgroundColor: THEME.colors.border,
   },
   dividerText: {
     color: THEME.colors.textMuted,
-    marginHorizontal: THEME.spacing.md,
-    fontSize: THEME.typography.fontSize.caption,
+    marginHorizontal: THEME.spacing.sm,
+    fontSize: 10,
+    fontWeight: THEME.typography.fontWeight.heavy,
+    letterSpacing: 1,
   },
   footerRow: {
     flexDirection: 'row',
@@ -222,9 +286,8 @@ const styles = StyleSheet.create({
     fontSize: THEME.typography.fontSize.bodySm,
   },
   signUpText: {
-    color: THEME.colors.goldBright,
+    color: THEME.colors.accent,
     fontSize: THEME.typography.fontSize.bodySm,
     fontWeight: THEME.typography.fontWeight.bold,
   },
 });
-

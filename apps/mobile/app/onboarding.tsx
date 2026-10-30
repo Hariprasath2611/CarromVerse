@@ -1,25 +1,41 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, ScreenContainer } from '../src/components';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { GameCard, PrimaryButton, SecondaryButton, ScreenContainer } from '../src/components';
 import { useSettingsStore } from '../src/store/settingsStore';
 import { THEME } from '../src/constants/theme';
 
 const SLIDES = [
   {
-    title: 'The Royal Board',
-    description: 'Experience genuine carrom dynamics calibrated with Matter.js physics: realistic bounciness, smooth powder sliding, and precision aiming.',
-    tag: 'PHYSICS ENGINE',
+    step: '01',
+    badge: 'WELCOME TO CARROMVERSE',
+    title: 'The Royal Board\nReimagined',
+    description:
+      'Step into a world of master tabletop carrom. Crafted with realistic wood textures, fluid animations, and a signature Forest Emerald aesthetic.',
+    icon: '🎯',
+    accentColor: THEME.colors.primary,
   },
   {
-    title: 'Play Anywhere Offline',
-    description: 'Compete in 2-Player Duels, 3-Player Free-for-All, 4-Player Individual, or 2v2 Team Doubles without needing an active internet connection.',
-    tag: 'OFFLINE-FIRST',
+    step: '02',
+    badge: 'LOCAL MULTIPLAYER',
+    title: 'Play with Friends\n& Family Anywhere',
+    description:
+      'Gather around a single device for 2-Player Duels, 3-Player Free-for-All, or 4-Player 2v2 Team Doubles with zero internet connection required.',
+    icon: '👥',
+    accentColor: THEME.colors.accent,
   },
   {
-    title: 'Cloud Progression',
-    description: 'Track match history securely in local SQLite storage. Connect to Firebase whenever you are online to preserve lifetime statistics.',
-    tag: 'CLOUD SYNC',
+    step: '03',
+    badge: 'PRESTIGE & STYLES',
+    title: 'Customize Boards\n& Crown the Queen',
+    description:
+      'Unlock luxurious boards, tournament-grade strikers, and gem-inlaid coins. Track match history and rise through the ranks to become the Carrom Champion.',
+    icon: '👑',
+    accentColor: THEME.colors.goldBright,
   },
 ];
 
@@ -43,43 +59,68 @@ export default function OnboardingScreen() {
   };
 
   const slide = SLIDES[currentSlide];
+  const isLast = currentSlide === SLIDES.length - 1;
 
   return (
     <ScreenContainer contentContainerStyle={styles.container}>
+      {/* Top Header Bar */}
       <View style={styles.topRow}>
-        <Text style={styles.brandTitle}>CARROMVERSE</Text>
-        <Button
-          title="Skip"
-          variant="outline"
-          onPress={handleSkip}
-          style={styles.skipButton}
-          textStyle={styles.skipText}
-        />
-      </View>
-
-      <Card elevated style={styles.slideCard}>
-        <View style={styles.tagBadge}>
-          <Text style={styles.tagText}>{slide.tag}</Text>
+        <View style={styles.brandGroup}>
+          <Text style={styles.brandTitle}>CARROMVERSE</Text>
+          <View style={styles.brandDot} />
         </View>
 
+        {!isLast && (
+          <SecondaryButton
+            title="Skip"
+            variant="outline"
+            onPress={handleSkip}
+            style={styles.skipButton}
+            textStyle={styles.skipText}
+          />
+        )}
+      </View>
+
+      {/* Main Slide Presentation Card */}
+      <GameCard elevated style={styles.slideCard}>
+        {/* Step Indicator Pill */}
+        <View style={styles.badgeRow}>
+          <View style={styles.stepPill}>
+            <Text style={styles.stepText}>{slide.step}</Text>
+          </View>
+          <Text style={styles.badgeText}>{slide.badge}</Text>
+        </View>
+
+        {/* Hero Visual Icon Container */}
+        <View style={[styles.visualBox, { borderColor: slide.accentColor }]}>
+          <Text style={styles.heroEmoji}>{slide.icon}</Text>
+        </View>
+
+        {/* Content */}
         <Text style={styles.slideTitle}>{slide.title}</Text>
         <Text style={styles.slideDesc}>{slide.description}</Text>
 
+        {/* Pagination Dots */}
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
             <View
               key={i}
-              style={[styles.dot, i === currentSlide && styles.activeDot]}
+              style={[
+                styles.dot,
+                i === currentSlide && styles.activeDot,
+              ]}
             />
           ))}
         </View>
-      </Card>
+      </GameCard>
 
+      {/* Bottom Navigation Buttons */}
       <View style={styles.bottomControls}>
-        <Button
-          title={currentSlide === SLIDES.length - 1 ? 'Enter CarromVerse' : 'Next'}
+        <PrimaryButton
+          title={isLast ? 'Get Started' : 'Next'}
+          icon={isLast ? '🚀' : '→'}
           onPress={handleNext}
-          variant="primary"
+          variant="emerald"
           style={styles.actionButton}
         />
       </View>
@@ -96,13 +137,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xl,
+    marginBottom: THEME.spacing.lg,
+  },
+  brandGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   brandTitle: {
-    color: THEME.colors.goldBright,
+    color: THEME.colors.textPrimary,
     fontSize: THEME.typography.fontSize.title,
     fontWeight: THEME.typography.fontWeight.heavy,
     letterSpacing: 2,
+  },
+  brandDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: THEME.colors.accent,
+    marginLeft: 6,
   },
   skipButton: {
     height: 36,
@@ -115,36 +167,60 @@ const styles = StyleSheet.create({
   },
   slideCard: {
     padding: THEME.spacing.xl,
-    minHeight: 280,
+    minHeight: 380,
     justifyContent: 'center',
     marginVertical: 'auto',
   },
-  tagBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-    borderColor: THEME.colors.goldPrimary,
-    borderWidth: 1,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
-    marginBottom: THEME.spacing.md,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
   },
-  tagText: {
-    color: THEME.colors.goldBright,
-    fontSize: 10,
+  stepPill: {
+    backgroundColor: THEME.colors.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: THEME.colors.accent,
+    marginRight: THEME.spacing.sm,
+  },
+  stepText: {
+    color: THEME.colors.accent,
+    fontSize: 11,
     fontWeight: THEME.typography.fontWeight.bold,
-    letterSpacing: 1,
+  },
+  badgeText: {
+    color: THEME.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: THEME.typography.fontWeight.bold,
+    letterSpacing: 1.2,
+  },
+  visualBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.lg,
+    ...THEME.shadows.emeraldGlow,
+  },
+  heroEmoji: {
+    fontSize: 38,
   },
   slideTitle: {
     color: THEME.colors.textPrimary,
     fontSize: THEME.typography.fontSize.headline,
-    fontWeight: THEME.typography.fontWeight.bold,
+    fontWeight: THEME.typography.fontWeight.heavy,
+    lineHeight: 34,
     marginBottom: THEME.spacing.md,
   },
   slideDesc: {
     color: THEME.colors.textSecondary,
     fontSize: THEME.typography.fontSize.body,
-    lineHeight: THEME.typography.lineHeight.body,
+    lineHeight: 22,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -155,17 +231,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: THEME.colors.surfaceBorder,
+    backgroundColor: THEME.colors.borderHighlight,
   },
   activeDot: {
-    width: 24,
-    backgroundColor: THEME.colors.goldPrimary,
+    width: 28,
+    backgroundColor: THEME.colors.accent,
   },
   bottomControls: {
-    marginTop: THEME.spacing.xl,
+    marginTop: THEME.spacing.lg,
   },
   actionButton: {
     width: '100%',
   },
 });
-
