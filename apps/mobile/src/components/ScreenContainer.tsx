@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleProp,
   StyleSheet,
   View,
   ViewStyle,
@@ -13,13 +14,15 @@ import { THEME } from '../constants/theme';
 export interface ScreenContainerProps {
   children: React.ReactNode;
   scrollable?: boolean;
-  style?: ViewStyle;
-  contentContainerStyle?: ViewStyle;
+  refreshControl?: React.ReactElement;
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 }
 
 export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   children,
   scrollable = false,
+  refreshControl,
   style,
   contentContainerStyle,
 }) => {
@@ -35,6 +38,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
             contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            refreshControl={refreshControl}
           >
             {children}
           </ScrollView>
@@ -58,12 +62,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: THEME.spacing.md,
     flexGrow: 1,
+    paddingBottom: THEME.spacing.xl,
   },
   content: {
     flex: 1,
-    padding: THEME.spacing.md,
   },
 });
-

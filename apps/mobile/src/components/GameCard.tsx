@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View, ViewProps, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewProps, ViewStyle } from 'react-native';
 import { THEME } from '../constants/theme';
 
 export interface GameCardProps extends ViewProps {
@@ -8,7 +8,7 @@ export interface GameCardProps extends ViewProps {
   highlighted?: boolean;
   glow?: boolean;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -50,25 +50,23 @@ const styles = StyleSheet.create({
   base: {
     backgroundColor: THEME.colors.card,
     borderRadius: THEME.borderRadius.lg,
-    borderWidth: 1.2,
+    borderWidth: 1,
     borderColor: THEME.colors.border,
-    padding: THEME.spacing.md,
-    ...THEME.shadows.card,
+    overflow: 'hidden',
   },
   elevated: {
+    ...THEME.shadows.card,
     backgroundColor: THEME.colors.surfaceElevated,
     borderColor: THEME.colors.borderHighlight,
   },
   highlighted: {
-    borderColor: THEME.colors.primary,
-    backgroundColor: THEME.colors.surfaceHighlight,
+    borderColor: THEME.colors.accent,
+    borderWidth: 1.5,
   },
   glow: {
-    borderColor: THEME.colors.accent,
     ...THEME.shadows.emeraldGlow,
   },
   pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.92,
   },
 });

@@ -7,6 +7,7 @@ export interface PlayerAvatarProps {
   size?: number;
   avatarUrl?: string;
   isActive?: boolean;
+  showHalo?: boolean;
   level?: number;
   teamColor?: 'team_a' | 'team_b';
   style?: ViewStyle;
@@ -17,15 +18,17 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   size = 52,
   avatarUrl,
   isActive = false,
+  showHalo = false,
   level,
   teamColor,
   style,
 }) => {
+  const isGlowing = isActive || showHalo;
   const initial = (name || 'P').trim()[0].toUpperCase();
   const radius = size / 2;
 
   const getBorderColor = () => {
-    if (isActive) return THEME.colors.accent;
+    if (isGlowing) return THEME.colors.accent;
     if (teamColor === 'team_a') return THEME.colors.primary;
     if (teamColor === 'team_b') return THEME.colors.goldPrimary;
     return THEME.colors.borderHighlight;
@@ -42,10 +45,12 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
             borderRadius: radius,
             borderColor: getBorderColor(),
           },
-          isActive && styles.activeHalo,
+          isGlowing && styles.activeHalo,
         ]}
       >
-        <Text style={[styles.initial, { fontSize: size * 0.42 }]}>{initial}</Text>
+        <Text style={[styles.initial, { fontSize: size * 0.42 }]}>
+          {avatarUrl || initial}
+        </Text>
       </View>
 
       {level !== undefined && (
@@ -64,36 +69,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circle: {
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: THEME.colors.surfaceElevated,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeHalo: {
-    borderWidth: 2.5,
-    ...THEME.shadows.emeraldGlow,
+    borderColor: THEME.colors.accent,
+    shadowColor: THEME.colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 6,
   },
   initial: {
-    color: THEME.colors.textPrimary,
     fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
   },
   levelBadge: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
+    bottom: -2,
+    right: -2,
     backgroundColor: THEME.colors.secondary,
     borderColor: THEME.colors.accent,
     borderWidth: 1,
     borderRadius: THEME.borderRadius.full,
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
-    minWidth: 18,
+    minWidth: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   levelText: {
-    color: THEME.colors.accent,
     fontSize: 9,
-    fontWeight: THEME.typography.fontWeight.bold,
+    fontWeight: THEME.typography.fontWeight.heavy,
+    color: THEME.colors.accent,
   },
 });

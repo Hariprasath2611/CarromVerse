@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { THEME } from '../constants/theme';
 import { Badge } from './Badge';
 import { PrimaryButton } from './PrimaryButton';
@@ -8,19 +8,21 @@ import { CustomizationItem } from '../store/economyStore';
 
 export interface CustomizationCardProps {
   item: CustomizationItem;
-  isEquipped: boolean;
-  canAfford: boolean;
-  onEquip: () => void;
-  onUnlock: () => void;
+  isEquipped?: boolean;
+  canAfford?: boolean;
+  onEquip?: () => void;
+  onUnlock?: () => void;
+  onAction?: () => void;
   style?: ViewStyle;
 }
 
 export const CustomizationCard: React.FC<CustomizationCardProps> = ({
   item,
-  isEquipped,
-  canAfford,
+  isEquipped = item.isEquipped ?? false,
+  canAfford = true,
   onEquip,
   onUnlock,
+  onAction,
   style,
 }) => {
   const getRarityVariant = (rarity: CustomizationItem['rarity']) => {
@@ -36,6 +38,9 @@ export const CustomizationCard: React.FC<CustomizationCardProps> = ({
         return 'muted';
     }
   };
+
+  const handleEquip = onAction || onEquip || (() => {});
+  const handleUnlock = onAction || onUnlock || (() => {});
 
   return (
     <View style={[styles.card, isEquipped && styles.equippedCard, style]}>
@@ -71,7 +76,7 @@ export const CustomizationCard: React.FC<CustomizationCardProps> = ({
           ) : (
             <SecondaryButton
               title="Equip"
-              onPress={onEquip}
+              onPress={handleEquip}
               style={styles.actionBtn}
             />
           )
@@ -80,7 +85,7 @@ export const CustomizationCard: React.FC<CustomizationCardProps> = ({
             title={`Unlock ${item.price.toLocaleString()} 🪙`}
             variant="gold"
             disabled={!canAfford}
-            onPress={onUnlock}
+            onPress={handleUnlock}
             style={styles.actionBtn}
             textStyle={styles.unlockText}
           />
@@ -102,8 +107,7 @@ const styles = StyleSheet.create({
   },
   equippedCard: {
     borderColor: THEME.colors.accent,
-    backgroundColor: THEME.colors.surfaceHighlight,
-    ...THEME.shadows.emeraldGlow,
+    backgroundColor: 'rgba(22, 163, 74, 0.12)',
   },
   previewContainer: {
     flexDirection: 'row',
@@ -112,56 +116,55 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   colorPreview: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 2,
     borderColor: THEME.colors.borderHighlight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categorySymbol: {
     fontSize: 22,
   },
   rarityBadge: {
-    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   details: {
     marginBottom: THEME.spacing.md,
   },
   name: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.subtitle,
+    fontSize: THEME.typography.fontSize.bodyLg,
     fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.textPrimary,
     marginBottom: 4,
   },
   desc: {
-    color: THEME.colors.textSecondary,
     fontSize: THEME.typography.fontSize.caption,
+    color: THEME.colors.textSecondary,
     lineHeight: 18,
   },
   footer: {
-    marginTop: 'auto',
+    marginTop: THEME.spacing.xs,
   },
   actionBtn: {
-    height: 44,
+    width: '100%',
   },
   equippedBadge: {
-    height: 44,
+    backgroundColor: THEME.colors.primary,
+    paddingVertical: 10,
     borderRadius: THEME.borderRadius.md,
-    backgroundColor: THEME.colors.secondary,
-    borderWidth: 1,
-    borderColor: THEME.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   equippedText: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.heavy,
+    color: THEME.colors.textPrimary,
+    fontWeight: THEME.typography.fontWeight.bold,
+    fontSize: 12,
     letterSpacing: 1,
   },
   unlockText: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 13,
   },
 });
