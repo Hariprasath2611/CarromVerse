@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -10,25 +10,22 @@ import {
 import { useRouter } from 'expo-router';
 import {
   GameCard,
-  Input,
   PrimaryButton,
   ScreenContainer,
-  SecondaryButton,
 } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
-import { PlayerSeat } from '@carromverse/shared-types';
 import { THEME } from '../src/constants/theme';
 
 const AVAILABLE_AVATARS = ['👑', '🐯', '🦅', '🦁', '⚡', '🔥', '🥷', '🎯'];
 
 const BOARD_THEMES: Array<{ id: 'classic' | 'emerald' | 'mahogany'; name: string; color: string }> = [
-  { id: 'classic', name: 'Classic Maple', color: '#D27D2D' },
-  { id: 'emerald', name: 'Forest Emerald', color: '#064E3B' },
-  { id: 'mahogany', name: 'Royal Mahogany', color: '#5C2C16' },
+  { id: 'emerald', name: 'Emerald Club', color: '#0F5A3E' },
+  { id: 'classic', name: 'Cream Maple', color: '#F5ECD2' },
+  { id: 'mahogany', name: 'Deep Walnut', color: '#5C2C16' },
 ];
 
-const TARGET_POINTS_OPTIONS = [25, 29, 50];
-const TURN_TIMERS = [15, 25, 30];
+const TARGET_POINTS_OPTIONS = [15, 25, 29];
+const TURN_TIMERS = [15, 30, 60];
 
 export default function GameConfigScreen() {
   const router = useRouter();
@@ -53,27 +50,27 @@ export default function GameConfigScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.backArrow}>◀</Text>
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerStep}>STEP 3 OF 3</Text>
-          <Text style={styles.headerTitle}>Match Configuration</Text>
+          <Text style={styles.headerTitle}>MATCH CONFIGURATION</Text>
         </View>
       </View>
 
       <Text style={styles.instruction}>
-        Personalize player identities, select your board surface, and establish match scoring rules.
+        Personalize player identities, select your board finish, and set table points & timers.
       </Text>
 
       {/* PLAYER ROSTER SECTION */}
-      <Text style={styles.sectionTitle}>PLAYER IDENTITIES & AVATARS</Text>
+      <Text style={styles.sectionTitle}>PLAYER IDENTITIES & SEATS</Text>
       {players.map((player) => (
         <GameCard key={player.id} elevated style={styles.playerCard}>
           <View style={styles.playerCardHeader}>
             <View style={styles.playerBadgeRow}>
               <View style={styles.seatBadge}>
                 <Text style={styles.seatBadgeText}>
-                  {player.position.toUpperCase()}
+                  {player.position.toUpperCase()} SEAT
                 </Text>
               </View>
               {player.teamId && (
@@ -108,7 +105,7 @@ export default function GameConfigScreen() {
           </View>
 
           {/* Name Input */}
-          <Text style={styles.inputLabel}>Player Name</Text>
+          <Text style={styles.inputLabel}>PLAYER NAME</Text>
           <TextInput
             style={styles.nameTextInput}
             value={player.name}
@@ -119,7 +116,7 @@ export default function GameConfigScreen() {
           />
 
           {/* Avatar Selector Carousel */}
-          <Text style={styles.avatarLabel}>Choose Avatar</Text>
+          <Text style={styles.avatarLabel}>CHOOSE AVATAR</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -142,7 +139,7 @@ export default function GameConfigScreen() {
       ))}
 
       {/* BOARD THEME SECTION */}
-      <Text style={styles.sectionTitle}>CARROM BOARD FINISH</Text>
+      <Text style={styles.sectionTitle}>TABLE BOARD FINISH</Text>
       <View style={styles.boardThemeGrid}>
         {BOARD_THEMES.map((theme) => (
           <TouchableOpacity
@@ -184,17 +181,17 @@ export default function GameConfigScreen() {
                 targetPoints === pts && styles.ruleChipTextActive,
               ]}
             >
-              {pts} Points
+              {pts} PTS
             </Text>
             <Text style={styles.ruleChipSub}>
-              {pts === 25 ? 'Standard' : pts === 29 ? 'Championship' : 'Grand Final'}
+              {pts === 15 ? 'Quick Match' : pts === 25 ? 'Championship' : 'Grand Club'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {/* TURN TIMERS */}
-      <Text style={styles.sectionTitle}>SHOT TIME LIMIT</Text>
+      <Text style={styles.sectionTitle}>SHOT TURN TIMER</Text>
       <View style={styles.rulesRow}>
         {TURN_TIMERS.map((sec) => (
           <TouchableOpacity
@@ -211,10 +208,10 @@ export default function GameConfigScreen() {
                 turnTimeLimitSec === sec && styles.ruleChipTextActive,
               ]}
             >
-              {sec} Seconds
+              {sec} SEC
             </Text>
             <Text style={styles.ruleChipSub}>
-              {sec === 15 ? 'Speed Blitz' : sec === 25 ? 'Recommended' : 'Relaxed'}
+              {sec === 15 ? 'Speed Blitz' : sec === 30 ? 'Tournament' : 'Relaxed'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -223,8 +220,8 @@ export default function GameConfigScreen() {
       {/* Bottom Action Footer */}
       <View style={styles.footer}>
         <PrimaryButton
-          title="Proceed to Pre-Game Lobby"
-          subtitle="Confirm seating and prepare the board"
+          title="PROCEED TO TABLE LOBBY"
+          subtitle="Confirm seating and break the coins"
           onPress={handleProceed}
           variant="emerald"
           size="large"
@@ -237,29 +234,29 @@ export default function GameConfigScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   backArrow: {
-    fontSize: 20,
-    color: THEME.colors.textPrimary,
+    fontSize: 16,
+    color: THEME.colors.brass,
   },
   headerTextWrap: {
     flex: 1,
@@ -267,76 +264,76 @@ const styles = StyleSheet.create({
   headerStep: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    letterSpacing: 1,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
   },
   headerTitle: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   instruction: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
-    marginBottom: THEME.spacing.md,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
+    marginBottom: 16,
     lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginTop: 14,
+    marginBottom: 8,
   },
   playerCard: {
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
+    padding: 16,
+    marginBottom: 12,
   },
   playerCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 10,
   },
   playerBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   seatBadge: {
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
+    borderRadius: 8,
     marginRight: 6,
   },
   seatBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   teamBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
+    borderRadius: 8,
   },
   teamABadge: {
-    backgroundColor: 'rgba(74, 222, 128, 0.2)',
-    borderColor: THEME.colors.accent,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
   },
   teamBBadge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    borderColor: THEME.colors.goldBright,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
+    borderWidth: 1.5,
   },
   teamBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   coinAssignment: {
     flexDirection: 'row',
@@ -344,40 +341,45 @@ const styles = StyleSheet.create({
   },
   coinLabel: {
     fontSize: 11,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   coinValue: {
     fontSize: 11,
     fontWeight: 'bold',
   },
   coinWhite: {
-    color: '#FFFFFF',
+    color: '#F5ECD2',
   },
   coinBlack: {
-    color: '#A0A0A0',
+    color: '#9FD8B8',
   },
   coinAny: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   inputLabel: {
-    fontSize: 11,
-    color: THEME.colors.textSecondary,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   nameTextInput: {
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.md,
-    color: THEME.colors.textPrimary,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: 8,
-    fontSize: THEME.typography.fontSize.bodySm,
-    marginBottom: THEME.spacing.sm,
+    backgroundColor: '#0A2E22',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    color: THEME.colors.cream,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
   },
   avatarLabel: {
-    fontSize: 11,
-    color: THEME.colors.textSecondary,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   avatarRow: {
@@ -385,91 +387,95 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   avatarChoice: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1.5,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   avatarChoiceActive: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125A3F',
+    ...THEME.shadows.glowEmerald,
   },
   avatarEmoji: {
-    fontSize: 20,
+    fontSize: 22,
   },
   boardThemeGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   themeOption: {
     flex: 0.31,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
-    padding: 8,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 10,
     alignItems: 'center',
   },
   themeOptionActive: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125A3F',
+    ...THEME.shadows.glowEmerald,
   },
   themeSwatch: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    marginBottom: 4,
+    borderColor: '#1B7050',
+    borderWidth: 2,
+    marginBottom: 6,
   },
   themeName: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
     textAlign: 'center',
   },
   themeNameActive: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   rulesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   ruleChip: {
     flex: 0.31,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
-    paddingVertical: 8,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingVertical: 10,
     alignItems: 'center',
   },
   ruleChipActive: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    borderColor: THEME.colors.brass,
+    backgroundColor: '#124330',
+    ...THEME.shadows.glowBrass,
   },
   ruleChipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   ruleChipTextActive: {
-    color: THEME.colors.accent,
+    color: THEME.colors.brass,
   },
   ruleChipSub: {
     fontSize: 9,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
+    fontWeight: '600',
   },
   footer: {
-    marginTop: THEME.spacing.md,
+    marginTop: 16,
   },
 });
-

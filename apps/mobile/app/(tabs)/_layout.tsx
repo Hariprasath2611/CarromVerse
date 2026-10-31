@@ -9,8 +9,8 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: THEME.colors.accent,
-        tabBarInactiveTintColor: THEME.colors.textMuted,
+        tabBarActiveTintColor: THEME.colors.neonEmerald,
+        tabBarInactiveTintColor: THEME.colors.mutedMint,
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
@@ -39,7 +39,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="customize"
         options={{
-          title: 'Customize',
+          title: 'Vault',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
               <Text style={styles.tabIcon}>🎨</Text>
@@ -50,7 +50,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: 'Rank',
+          title: 'Ranks',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
               <Text style={styles.tabIcon}>🏆</Text>
@@ -69,7 +69,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* Hide settings from tab bar since it is accessed directly or as stack */}
       <Tabs.Screen
         name="settings"
         options={{
@@ -82,27 +81,30 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: THEME.colors.surface,
-    borderTopColor: THEME.colors.border,
-    borderTopWidth: 1,
-    height: 64,
-    paddingBottom: 8,
+    backgroundColor: '#07261C',
+    borderTopColor: '#1B7050',
+    borderTopWidth: 2,
+    height: 68,
+    paddingBottom: 10,
     paddingTop: 8,
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   iconWrapActive: {
-    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    backgroundColor: '#0E4A33',
+    borderWidth: 1.5,
+    borderColor: THEME.colors.neonEmerald,
   },
   tabIcon: {
     fontSize: 18,

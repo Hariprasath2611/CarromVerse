@@ -12,13 +12,11 @@ import Animated, {
   useSharedValue,
   withSequence,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import {
   PauseModal,
   PhaserCarromView,
   PhaserCarromViewRef,
-  PlayerCard,
   PrimaryButton,
   ScreenContainer,
   StickersModal,
@@ -29,7 +27,7 @@ import { useSettingsStore } from '../src/store/settingsStore';
 import { THEME } from '../src/constants/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BOARD_SIZE = Math.min(SCREEN_WIDTH - 24, 380);
+const BOARD_SIZE = Math.min(SCREEN_WIDTH - 20, 390);
 
 export default function GameBoardScreen() {
   const router = useRouter();
@@ -42,9 +40,8 @@ export default function GameBoardScreen() {
     queenStatus,
     recordPhysicalShot,
     endSession,
-    startSession,
   } = useGameSessionStore();
-  const { settings, toggleSound, toggleMusic } = useSettingsStore();
+  const { settings, toggleSound } = useSettingsStore();
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
@@ -60,7 +57,6 @@ export default function GameBoardScreen() {
 
   // Animations
   const turnBannerScale = useSharedValue(1);
-  const strikerAimOpacity = useSharedValue(0.85);
 
   const activePlayer = players[activePlayerIndex % players.length] || players[0];
 
@@ -83,7 +79,7 @@ export default function GameBoardScreen() {
 
   const handleAdvanceTurn = () => {
     turnBannerScale.value = withSequence(
-      withSpring(1.08, { damping: 10 }),
+      withSpring(1.06, { damping: 10 }),
       withSpring(1, { damping: 15 })
     );
     setActivePlayerIndex((prev) => (prev + 1) % players.length);
@@ -127,7 +123,7 @@ export default function GameBoardScreen() {
           <Text style={styles.modePillTitle}>
             {selectedMode.replace(/_/g, ' ').toUpperCase()}
           </Text>
-          <Text style={styles.modePillSub}>Target: {targetPoints} Pts</Text>
+          <Text style={styles.modePillSub}>TARGET: {targetPoints} PTS</Text>
         </View>
 
         <View style={styles.rightControlGroup}>
@@ -153,7 +149,7 @@ export default function GameBoardScreen() {
         </View>
         <View style={styles.turnInfoCol}>
           <Text style={styles.turnPlayerName} numberOfLines={1}>
-            {activePlayer.name}'s Turn
+            {activePlayer.name.toUpperCase()} TURN
           </Text>
           <Text style={styles.turnPositionText}>
             {activePlayer.position.toUpperCase()} SEAT •{' '}
@@ -256,7 +252,7 @@ export default function GameBoardScreen() {
         {/* AIM POWER / POCKET OVERLAY BADGE */}
         {aimPowerPercent !== null && (
           <View style={styles.aimPowerBadge}>
-            <Text style={styles.aimPowerText}>⚡ Strike Power: {aimPowerPercent}%</Text>
+            <Text style={styles.aimPowerText}>⚡ STRIKE POWER: {aimPowerPercent}%</Text>
           </View>
         )}
 
@@ -273,16 +269,16 @@ export default function GameBoardScreen() {
           style={styles.adjustBtn}
           onPress={() => setStrikerOffsetRatio((o) => Math.max(o - 0.15, -0.95))}
         >
-          <Text style={styles.adjustBtnText}>◀ Left</Text>
+          <Text style={styles.adjustBtnText}>◀ LEFT</Text>
         </TouchableOpacity>
 
-        <Text style={styles.adjustLabel}>Position Striker (or Drag on Board)</Text>
+        <Text style={styles.adjustLabel}>POSITION STRIKER BASELINE</Text>
 
         <TouchableOpacity
           style={styles.adjustBtn}
           onPress={() => setStrikerOffsetRatio((o) => Math.min(o + 0.15, 0.95))}
         >
-          <Text style={styles.adjustBtnText}>Right ▶</Text>
+          <Text style={styles.adjustBtnText}>RIGHT ▶</Text>
         </TouchableOpacity>
       </View>
 
@@ -290,7 +286,7 @@ export default function GameBoardScreen() {
       <View style={styles.bottomActions}>
         <View style={styles.actionBtnWrap}>
           <PrimaryButton
-            title="Take Shot"
+            title="TAKE SHOT"
             subtitle="Release striker impulse"
             onPress={handleSimulateShot}
             variant="emerald"
@@ -301,8 +297,8 @@ export default function GameBoardScreen() {
 
         <View style={styles.actionBtnWrapSmall}>
           <PrimaryButton
-            title="End Match"
-            subtitle="View Results"
+            title="END MATCH"
+            subtitle="Results"
             onPress={handleFinishMatch}
             variant="gold"
             size="medium"
@@ -337,23 +333,23 @@ export default function GameBoardScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.sm,
-    paddingTop: THEME.spacing.sm,
+    paddingHorizontal: 10,
+    paddingTop: 10,
     flex: 1,
   },
   topControlBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 6,
   },
   iconCircleBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -362,22 +358,23 @@ const styles = StyleSheet.create({
   },
   modePill: {
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: THEME.borderRadius.full,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   modePillTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
     letterSpacing: 0.5,
   },
   modePillSub: {
     fontSize: 9,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.brass,
+    fontWeight: 'bold',
   },
   rightControlGroup: {
     flexDirection: 'row',
@@ -385,81 +382,87 @@ const styles = StyleSheet.create({
   turnBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.card,
-    borderColor: THEME.colors.primary,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 6,
-    marginBottom: THEME.spacing.xs,
+    backgroundColor: '#0E4A33',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+    ...THEME.shadows.glowEmerald,
   },
   turnAvatarCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: THEME.colors.surface,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.xs,
+    marginRight: 10,
   },
   turnAvatarEmoji: {
-    fontSize: 18,
+    fontSize: 20,
   },
   turnInfoCol: {
     flex: 1,
   },
   turnPlayerName: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.4,
   },
   turnPositionText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: THEME.colors.accent,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
+    letterSpacing: 0.5,
+    marginTop: 1,
   },
   timerRing: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderColor: THEME.colors.accent,
-    borderWidth: 2,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#07261C',
   },
   timerRingUrgent: {
-    borderColor: THEME.colors.danger,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: THEME.colors.queenRed,
+    backgroundColor: 'rgba(226, 59, 90, 0.25)',
   },
   timerText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
+    color: THEME.colors.cream,
   },
   timerTextUrgent: {
-    color: THEME.colors.danger,
+    color: THEME.colors.queenRed,
   },
   opponentsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 6,
   },
   playerBadgeBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.sm,
-    paddingHorizontal: 4,
-    paddingVertical: 3,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     marginHorizontal: 2,
   },
   activePlayerBadgeBox: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125A3F',
   },
   miniAvatar: {
     fontSize: 14,
@@ -471,14 +474,15 @@ const styles = StyleSheet.create({
   badgeName: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.cream,
   },
   activeBadgeText: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   badgeScore: {
     fontSize: 9,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.brass,
+    fontWeight: 'bold',
   },
   boardWrapper: {
     alignItems: 'center',
@@ -490,18 +494,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     zIndex: 10,
-    backgroundColor: 'rgba(16, 37, 26, 0.95)',
-    borderColor: THEME.colors.accent,
+    backgroundColor: 'rgba(7, 38, 28, 0.95)',
+    borderColor: THEME.colors.neonEmerald,
     borderWidth: 2,
-    borderRadius: THEME.borderRadius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     alignItems: 'center',
-    shadowColor: THEME.colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 8,
+    ...THEME.shadows.glowEmerald,
   },
   stickerEmojiLarge: {
     fontSize: 32,
@@ -509,41 +509,43 @@ const styles = StyleSheet.create({
   stickerTextMsg: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
     marginTop: 2,
+    letterSpacing: 0.5,
   },
   strikerControlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-    marginTop: 2,
-    marginBottom: THEME.spacing.xs,
+    paddingHorizontal: 8,
+    marginTop: 4,
+    marginBottom: 6,
   },
   adjustBtn: {
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: THEME.borderRadius.md,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
   },
   adjustBtnText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   adjustLabel: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 0.5,
+    color: THEME.colors.mutedMint,
+    letterSpacing: 0.8,
   },
   bottomActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: THEME.spacing.xs,
+    marginTop: 4,
   },
   actionBtnWrap: {
     flex: 0.65,
@@ -555,35 +557,36 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     alignSelf: 'center',
-    backgroundColor: 'rgba(7, 19, 14, 0.88)',
-    borderColor: THEME.colors.accent,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
-    zIndex: 15,
-  },
-  aimPowerText: {
-    color: THEME.colors.accent,
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  pocketAlertBadge: {
-    position: 'absolute',
-    bottom: 12,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(22, 163, 74, 0.95)',
-    borderColor: '#4ADE80',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(7, 38, 28, 0.92)',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
     zIndex: 15,
   },
-  pocketAlertText: {
-    color: '#FFFFFF',
+  aimPowerText: {
+    color: THEME.colors.neonEmerald,
     fontSize: 12,
     fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  pocketAlertBadge: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(7, 38, 28, 0.95)',
+    borderColor: THEME.colors.brass,
+    borderWidth: 2,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 22,
+    zIndex: 15,
+  },
+  pocketAlertText: {
+    color: THEME.colors.brass,
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });

@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import {
   BoardPreview,
   GameCard,
-  PlayerAvatar,
   PrimaryButton,
   ScreenContainer,
   SecondaryButton,
@@ -43,11 +42,11 @@ export default function LobbyScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.backArrow}>◀</Text>
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerStep}>LOCAL PRE-GAME LOBBY</Text>
-          <Text style={styles.headerTitle}>Ready to Break</Text>
+          <Text style={styles.headerTitle}>READY TO BREAK</Text>
         </View>
       </View>
 
@@ -58,7 +57,7 @@ export default function LobbyScreen() {
             <Text style={styles.modeBadgeText}>{modeDisplayName}</Text>
           </View>
           <Text style={styles.rulesSummary}>
-            Target: {targetPoints} Pts • {turnTimeLimitSec}s Shot Clock
+            TARGET: {targetPoints} PTS • {turnTimeLimitSec}S SHOT CLOCK
           </Text>
         </View>
       </GameCard>
@@ -116,7 +115,7 @@ export default function LobbyScreen() {
       {/* Action Footer */}
       <View style={styles.footer}>
         <PrimaryButton
-          title="Start Match"
+          title="START MATCH"
           subtitle="Break the center cluster and start game"
           onPress={handleStartMatch}
           variant="gold"
@@ -126,9 +125,9 @@ export default function LobbyScreen() {
         />
 
         <SecondaryButton
-          title="Edit Configuration"
+          title="EDIT CONFIGURATION"
           onPress={() => router.back()}
-          variant="surface"
+          variant="forest"
           size="medium"
           style={styles.editBtn}
         />
@@ -139,29 +138,29 @@ export default function LobbyScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   backArrow: {
-    fontSize: 20,
-    color: THEME.colors.textPrimary,
+    fontSize: 16,
+    color: THEME.colors.brass,
   },
   headerTextWrap: {
     flex: 1,
@@ -169,18 +168,18 @@ const styles = StyleSheet.create({
   headerStep: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    letterSpacing: 1,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
   },
   headerTitle: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   rulesCard: {
-    padding: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
+    padding: 12,
+    marginBottom: 14,
   },
   ruleBadgeRow: {
     flexDirection: 'row',
@@ -188,113 +187,118 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modeBadge: {
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
-    borderColor: THEME.colors.accent,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
+    borderRadius: 8,
   },
   modeBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
+    letterSpacing: 0.5,
   },
   rulesSummary: {
     fontSize: 11,
-    color: THEME.colors.textSecondary,
-    fontWeight: '500',
+    color: THEME.colors.brass,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   boardPreviewWrap: {
     alignItems: 'center',
-    marginVertical: THEME.spacing.xs,
+    marginVertical: 10,
   },
   rosterTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginTop: 14,
+    marginBottom: 8,
   },
   rosterGrid: {
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 14,
   },
   playerSlotCard: {
-    padding: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-    borderColor: THEME.colors.border,
+    padding: 12,
+    marginBottom: 10,
   },
   firstPlayerCard: {
-    borderColor: THEME.colors.accent,
+    borderColor: THEME.colors.neonEmerald,
+    ...THEME.shadows.glowEmerald,
   },
   slotHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   seatPill: {
-    backgroundColor: THEME.colors.surface,
-    paddingHorizontal: 6,
+    backgroundColor: '#07261C',
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
+    borderColor: '#1B7050',
+    borderWidth: 1,
   },
   seatPillText: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   firstTurnBadge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    borderColor: THEME.colors.goldBright,
-    borderWidth: 1,
-    paddingHorizontal: 6,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
+    borderWidth: 1.5,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   firstTurnText: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: THEME.colors.goldBright,
+    color: THEME.colors.brass,
   },
   slotBody: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatarWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   avatarEmoji: {
-    fontSize: 20,
+    fontSize: 22,
   },
   playerMeta: {
     flex: 1,
   },
   playerName: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.3,
   },
   playerRole: {
     fontSize: 10,
-    color: THEME.colors.textSecondary,
-    marginTop: 1,
+    color: THEME.colors.mutedMint,
+    marginTop: 2,
+    fontWeight: '600',
   },
   footer: {
-    marginTop: THEME.spacing.sm,
+    marginTop: 10,
   },
   startBtn: {
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 10,
   },
   editBtn: {},
 });
-

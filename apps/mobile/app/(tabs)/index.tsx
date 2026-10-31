@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
+  BoardPreview,
   CoinBalance,
   DailyRewardsModal,
   GameCard,
@@ -36,7 +36,7 @@ export default function HomeScreen() {
   const [showDailyRewards, setShowDailyRewards] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const displayName = profile?.username || user?.displayName || 'Grand Striker';
+  const displayName = profile?.username || user?.displayName || 'Club Master';
   const playerLevel = profile?.level || 12;
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -54,7 +54,7 @@ export default function HomeScreen() {
   };
 
   const handleAddCoins = () => {
-    Alert.alert('Free Coins Refill', 'Claim +500 free practice coins?', [
+    Alert.alert('Club Vault Refill', 'Claim +500 free practice coins?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Claim',
@@ -67,20 +67,20 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      {/* TOP SECTION: Profile, Level, Balance, Notifications, Settings */}
+      {/* TOP SECTION: Member Avatar, Level, Balance, Notifications, Settings */}
       <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.profileSection}
           activeOpacity={0.8}
           onPress={() => router.push('/(tabs)/profile')}
         >
-          <PlayerAvatar name={displayName} size={48} level={playerLevel} showHalo />
+          <PlayerAvatar name={displayName} size={50} level={playerLevel} showHalo isActive />
           <View style={styles.nameLevelWrap}>
             <Text style={styles.usernameText} numberOfLines={1}>
               {displayName}
             </Text>
             <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>LEVEL {playerLevel}</Text>
+              <Text style={styles.levelBadgeText}>MEMBER LVL {playerLevel}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -114,7 +114,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* PROMOTIONAL HERO BANNER */}
+      {/* PROMOTIONAL HERO BANNER WITH BOARD ART */}
       <GameCard elevated style={styles.heroBanner}>
         <View style={styles.bannerTagRow}>
           <View style={styles.liveSeasonBadge}>
@@ -124,15 +124,22 @@ export default function HomeScreen() {
           <Text style={styles.trophyIcon}>🏆</Text>
         </View>
 
-        <Text style={styles.bannerHeading}>Master the Board</Text>
-        <Text style={styles.bannerSubheading}>
-          Realistic carrom physics, fluid striker controls & offline multiplayer showdowns.
-        </Text>
+        <View style={styles.heroLayout}>
+          <View style={styles.heroTextCol}>
+            <Text style={styles.bannerHeading}>MASTER THE TABLE</Text>
+            <Text style={styles.bannerSubheading}>
+              Realistic wooden carrom physics, fluid tactile striker controls & pass-and-play doubles.
+            </Text>
+          </View>
+          <View style={styles.heroBoardCol}>
+            <BoardPreview size={108} />
+          </View>
+        </View>
 
         <View style={styles.bannerStatsRow}>
           <View style={styles.bannerStatItem}>
             <Text style={styles.bannerStatValue}>100%</Text>
-            <Text style={styles.bannerStatLabel}>Offline Play</Text>
+            <Text style={styles.bannerStatLabel}>Offline Pass & Play</Text>
           </View>
           <View style={styles.statSeparator} />
           <View style={styles.bannerStatItem}>
@@ -151,7 +158,7 @@ export default function HomeScreen() {
       <View style={styles.actionsContainer}>
         {/* Play Offline Hero Button */}
         <PrimaryButton
-          title="Play Offline Match"
+          title="PLAY OFFLINE MATCH"
           subtitle="2P, 3P, 4P & 2v2 Team Battles"
           onPress={handlePlayOffline}
           variant="emerald"
@@ -163,18 +170,18 @@ export default function HomeScreen() {
         <View style={styles.secondaryActionsRow}>
           <View style={styles.halfButtonWrap}>
             <SecondaryButton
-              title="Practice Solo"
+              title="SOLO PRACTICE"
               onPress={handlePracticeSolo}
-              variant="surface"
+              variant="forest"
               size="medium"
               icon="🎯"
             />
           </View>
           <View style={styles.halfButtonWrap}>
             <SecondaryButton
-              title="Customize Gear"
+              title="GEAR VAULT"
               onPress={handleOpenCustomize}
-              variant="surface"
+              variant="brass"
               size="medium"
               icon="🎨"
             />
@@ -188,18 +195,18 @@ export default function HomeScreen() {
           <View style={styles.dailyRewardTitleRow}>
             <Text style={styles.giftEmoji}>🎁</Text>
             <View>
-              <Text style={styles.dailyRewardTitle}>Daily Login Rewards</Text>
+              <Text style={styles.dailyRewardTitle}>DAILY LOGIN REWARDS</Text>
               <Text style={styles.dailyRewardSubtitle}>
                 {hasUnclaimedDailyReward
-                  ? 'Your day reward is waiting to be claimed!'
-                  : 'Streak active! Return tomorrow for higher rewards.'}
+                  ? 'Your day reward is waiting to be collected!'
+                  : 'Streak active! Return tomorrow for higher bonuses.'}
               </Text>
             </View>
           </View>
         </View>
 
         <PrimaryButton
-          title={hasUnclaimedDailyReward ? 'Claim Daily Reward' : 'View 7-Day Calendar'}
+          title={hasUnclaimedDailyReward ? 'CLAIM DAILY REWARD' : 'VIEW REWARDS CALENDAR'}
           onPress={() => setShowDailyRewards(true)}
           variant={hasUnclaimedDailyReward ? 'gold' : 'forest'}
           size="small"
@@ -208,24 +215,24 @@ export default function HomeScreen() {
       </GameCard>
 
       {/* QUICK STATS SNAPSHOT */}
-      <Text style={styles.sectionTitle}>YOUR CAREER OVERVIEW</Text>
+      <Text style={styles.sectionTitle}>YOUR CLUB OVERVIEW</Text>
       <View style={styles.statsGrid}>
         <GameCard style={styles.statMiniCard}>
           <Text style={styles.statMiniEmoji}>🎖️</Text>
           <Text style={styles.statMiniValue}>{profile?.totalMatches || 34}</Text>
-          <Text style={styles.statMiniLabel}>Total Matches</Text>
+          <Text style={styles.statMiniLabel}>MATCHES</Text>
         </GameCard>
 
         <GameCard style={styles.statMiniCard}>
           <Text style={styles.statMiniEmoji}>👑</Text>
           <Text style={styles.statMiniValue}>{profile?.wins || 26}</Text>
-          <Text style={styles.statMiniLabel}>Victories</Text>
+          <Text style={styles.statMiniLabel}>VICTORIES</Text>
         </GameCard>
 
         <GameCard style={styles.statMiniCard}>
           <Text style={styles.statMiniEmoji}>🔥</Text>
           <Text style={styles.statMiniValue}>76%</Text>
-          <Text style={styles.statMiniLabel}>Win Rate</Text>
+          <Text style={styles.statMiniLabel}>WIN RATE</Text>
         </GameCard>
       </View>
 
@@ -237,7 +244,7 @@ export default function HomeScreen() {
 
       <Modal
         visible={showNotifications}
-        title="Inbox & Updates"
+        title="Club Announcements"
         onClose={() => setShowNotifications(false)}
       >
         <ScrollView style={styles.notificationsList}>
@@ -259,15 +266,15 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: 16,
   },
   profileSection: {
     flexDirection: 'row',
@@ -275,60 +282,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nameLevelWrap: {
-    marginLeft: THEME.spacing.sm,
+    marginLeft: 10,
     flex: 1,
   },
   usernameText: {
-    fontSize: THEME.typography.fontSize.bodyLg,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.4,
   },
   levelBadge: {
-    backgroundColor: THEME.colors.secondary,
+    backgroundColor: '#07261C',
     alignSelf: 'flex-start',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: THEME.borderRadius.sm,
-    borderColor: THEME.colors.primary,
-    borderWidth: 1,
-    marginTop: 2,
+    borderRadius: 8,
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
+    marginTop: 3,
   },
   levelBadgeText: {
     fontSize: 9,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.accent,
-    letterSpacing: 0.5,
+    fontWeight: 'bold',
+    color: THEME.colors.neonEmerald,
+    letterSpacing: 0.6,
   },
   topRightControls: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: THEME.spacing.xs,
+    marginLeft: 8,
     position: 'relative',
   },
   iconButtonEmoji: {
-    fontSize: 16,
+    fontSize: 17,
   },
   unreadBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: THEME.colors.danger,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    top: -3,
+    right: -3,
+    backgroundColor: THEME.colors.queenRed,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#07261C',
   },
   unreadBadgeText: {
     color: '#FFFFFF',
@@ -336,89 +346,99 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   heroBanner: {
-    padding: THEME.spacing.lg,
-    backgroundColor: THEME.colors.card,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    marginBottom: THEME.spacing.md,
-    position: 'relative',
+    padding: 18,
+    marginBottom: 16,
   },
   bannerTagRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 10,
   },
   liveSeasonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 163, 74, 0.25)',
-    paddingHorizontal: 8,
+    backgroundColor: '#07261C',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: THEME.borderRadius.full,
-    borderColor: THEME.colors.primary,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
   },
   pulsingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: THEME.colors.accent,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: THEME.colors.neonEmerald,
     marginRight: 6,
   },
   liveSeasonText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    letterSpacing: 0.5,
+    color: THEME.colors.neonEmerald,
+    letterSpacing: 0.6,
   },
   trophyIcon: {
     fontSize: 22,
   },
+  heroLayout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroTextCol: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  heroBoardCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bannerHeading: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
-    marginTop: THEME.spacing.xs,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   bannerSubheading: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     lineHeight: 18,
-    marginTop: 4,
   },
   bannerStatsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    marginTop: THEME.spacing.md,
-    paddingTop: THEME.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.border,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1.5,
+    borderTopColor: '#1B7050',
   },
   bannerStatItem: {
     alignItems: 'center',
   },
   bannerStatValue: {
-    fontSize: THEME.typography.fontSize.bodyLg,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.accent,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
   },
   bannerStatLabel: {
     fontSize: 10,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
+    fontWeight: '600',
   },
   statSeparator: {
-    width: 1,
+    width: 1.5,
     height: 24,
-    backgroundColor: THEME.colors.border,
+    backgroundColor: '#1B7050',
   },
   actionsContainer: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: 16,
   },
   mainActionButton: {
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   secondaryActionsRow: {
     flexDirection: 'row',
@@ -428,15 +448,14 @@ const styles = StyleSheet.create({
     flex: 0.485,
   },
   dailyRewardCard: {
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
-    borderColor: THEME.colors.border,
+    padding: 16,
+    marginBottom: 16,
   },
   dailyRewardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 10,
   },
   dailyRewardTitleRow: {
     flexDirection: 'row',
@@ -445,28 +464,29 @@ const styles = StyleSheet.create({
   },
   giftEmoji: {
     fontSize: 28,
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   dailyRewardTitle: {
-    fontSize: THEME.typography.fontSize.bodyMd,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.4,
   },
   dailyRewardSubtitle: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   claimButton: {
-    marginTop: THEME.spacing.xs,
+    marginTop: 4,
   },
   sectionTitle: {
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: THEME.spacing.sm,
-    marginTop: THEME.spacing.xs,
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    marginTop: 4,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -475,49 +495,51 @@ const styles = StyleSheet.create({
   statMiniCard: {
     flex: 0.31,
     alignItems: 'center',
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
   },
   statMiniEmoji: {
     fontSize: 22,
     marginBottom: 4,
   },
   statMiniValue: {
-    fontSize: THEME.typography.fontSize.h3,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
   },
   statMiniLabel: {
     fontSize: 10,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
     textAlign: 'center',
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   notificationsList: {
     maxHeight: 350,
   },
   notificationItem: {
     flexDirection: 'row',
-    paddingVertical: THEME.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    paddingVertical: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#1B7050',
   },
   notifIcon: {
     fontSize: 20,
-    marginRight: THEME.spacing.sm,
+    marginRight: 10,
     marginTop: 2,
   },
   notifBody: {
     flex: 1,
   },
   notifTitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
   },
   notifMsg: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   notifDate: {

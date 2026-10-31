@@ -5,10 +5,9 @@ import {
   GameCard,
   PrimaryButton,
   ScreenContainer,
-  SecondaryButton,
 } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
-import { GameMode, PlayerCount } from '@carromverse/shared-types';
+import { PlayerCount } from '@carromverse/shared-types';
 import { THEME } from '../src/constants/theme';
 
 export default function PlayerSelectionScreen() {
@@ -41,16 +40,16 @@ export default function PlayerSelectionScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.backArrow}>◀</Text>
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerStep}>STEP 2 OF 3</Text>
-          <Text style={styles.headerTitle}>Player Count & Seating</Text>
+          <Text style={styles.headerTitle}>PLAYER COUNT & SEATING</Text>
         </View>
       </View>
 
       <Text style={styles.instruction}>
-        Select how many players will compete on this device. The visual seating layout reflects your table positions.
+        Select how many players will compete on this device. The visual seating layout reflects your physical positions.
       </Text>
 
       {/* Player Count Selector Chips */}
@@ -70,7 +69,7 @@ export default function PlayerSelectionScreen() {
                 playerCount === count && styles.chipTextActive,
               ]}
             >
-              {count} Players
+              {count} PLAYERS
             </Text>
           </TouchableOpacity>
         ))}
@@ -122,7 +121,7 @@ export default function PlayerSelectionScreen() {
         {/* North Seat (Top) */}
         <View style={styles.northSeat}>
           {northPlayer ? (
-            <View style={[styles.seatBox, northPlayer.teamId === 'team_a' && styles.teamABorder]}>
+            <View style={[styles.seatBox, northPlayer.teamId === 'team_a' ? styles.teamABorder : styles.seatDefaultBorder]}>
               <Text style={styles.seatAvatar}>{northPlayer.avatarUrl || '👑'}</Text>
               <Text style={styles.seatName} numberOfLines={1}>
                 {northPlayer.name}
@@ -141,7 +140,7 @@ export default function PlayerSelectionScreen() {
           {/* West Seat (Left) */}
           <View style={styles.lateralSeat}>
             {westPlayer ? (
-              <View style={[styles.seatBox, westPlayer.teamId === 'team_b' && styles.teamBBorder]}>
+              <View style={[styles.seatBox, westPlayer.teamId === 'team_b' ? styles.teamBBorder : styles.seatDefaultBorder]}>
                 <Text style={styles.seatAvatar}>{westPlayer.avatarUrl || '🦁'}</Text>
                 <Text style={styles.seatName} numberOfLines={1}>
                   {westPlayer.name}
@@ -157,28 +156,33 @@ export default function PlayerSelectionScreen() {
 
           {/* Center Graphic Board */}
           <View style={styles.miniBoardGraphic}>
-            {/* Pockets */}
-            <View style={[styles.cornerPocket, styles.pocketTL]} />
-            <View style={[styles.cornerPocket, styles.pocketTR]} />
-            <View style={[styles.cornerPocket, styles.pocketBL]} />
-            <View style={[styles.cornerPocket, styles.pocketBR]} />
+            {/* Wooden frame & Brass inner border */}
+            <View style={styles.brassInner}>
+              <View style={styles.creamFace}>
+                {/* Pockets */}
+                <View style={[styles.cornerPocket, styles.pocketTL]} />
+                <View style={[styles.cornerPocket, styles.pocketTR]} />
+                <View style={[styles.cornerPocket, styles.pocketBL]} />
+                <View style={[styles.cornerPocket, styles.pocketBR]} />
 
-            {/* Baselines */}
-            <View style={styles.baselineTop} />
-            <View style={styles.baselineBottom} />
-            <View style={styles.baselineLeft} />
-            <View style={styles.baselineRight} />
+                {/* Baselines */}
+                <View style={styles.baselineTop} />
+                <View style={styles.baselineBottom} />
+                <View style={styles.baselineLeft} />
+                <View style={styles.baselineRight} />
 
-            {/* Center Circle */}
-            <View style={styles.boardCenterCircle}>
-              <View style={styles.boardCenterRedDot} />
+                {/* Center Circle with Red Queen */}
+                <View style={styles.boardCenterCircle}>
+                  <View style={styles.boardCenterRedDot} />
+                </View>
+              </View>
             </View>
           </View>
 
           {/* East Seat (Right) */}
           <View style={styles.lateralSeat}>
             {eastPlayer ? (
-              <View style={[styles.seatBox, eastPlayer.teamId === 'team_b' && styles.teamBBorder]}>
+              <View style={[styles.seatBox, eastPlayer.teamId === 'team_b' ? styles.teamBBorder : styles.seatDefaultBorder]}>
                 <Text style={styles.seatAvatar}>{eastPlayer.avatarUrl || '🐯'}</Text>
                 <Text style={styles.seatName} numberOfLines={1}>
                   {eastPlayer.name}
@@ -196,7 +200,7 @@ export default function PlayerSelectionScreen() {
         {/* South Seat (Bottom) */}
         <View style={styles.southSeat}>
           {southPlayer ? (
-            <View style={[styles.seatBox, southPlayer.teamId === 'team_a' && styles.teamABorder]}>
+            <View style={[styles.seatBox, southPlayer.teamId === 'team_a' ? styles.teamABorder : styles.seatDefaultBorder]}>
               <Text style={styles.seatAvatar}>{southPlayer.avatarUrl || '👑'}</Text>
               <Text style={styles.seatName} numberOfLines={1}>
                 {southPlayer.name}
@@ -222,8 +226,8 @@ export default function PlayerSelectionScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <PrimaryButton
-          title="Next: Configure Players"
-          subtitle="Customize names, avatars & match rules"
+          title="NEXT: CONFIGURE PLAYERS"
+          subtitle="Customize names, colors & match rules"
           onPress={() => router.push('/game-config')}
           variant="emerald"
           size="large"
@@ -236,29 +240,29 @@ export default function PlayerSelectionScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   backArrow: {
-    fontSize: 20,
-    color: THEME.colors.textPrimary,
+    fontSize: 16,
+    color: THEME.colors.brass,
   },
   headerTextWrap: {
     flex: 1,
@@ -266,91 +270,94 @@ const styles = StyleSheet.create({
   headerStep: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    letterSpacing: 1,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
   },
   headerTitle: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   instruction: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
-    marginBottom: THEME.spacing.md,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
+    marginBottom: 16,
     lineHeight: 18,
   },
   chipsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   countChip: {
     flex: 0.31,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 2,
+    borderRadius: 16,
   },
   countChipActive: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125A3F',
+    ...THEME.shadows.glowEmerald,
   },
   chipText: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   chipTextActive: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   teamSelectorRow: {
     flexDirection: 'row',
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.borderRadius.md,
-    padding: 3,
-    marginBottom: THEME.spacing.md,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 16,
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
   },
   teamOption: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: THEME.borderRadius.sm,
+    borderRadius: 12,
   },
   teamOptionActive: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: THEME.colors.neonEmerald,
   },
   teamOptionText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.cream,
   },
   teamOptionTextActive: {
-    color: '#FFFFFF',
+    color: '#07261C',
   },
   boardDiagramCard: {
-    padding: THEME.spacing.md,
+    padding: 16,
     alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: 16,
   },
   diagramTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: THEME.spacing.sm,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginBottom: 10,
   },
   northSeat: {
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 8,
   },
   southSeat: {
     alignItems: 'center',
-    marginTop: THEME.spacing.xs,
+    marginTop: 8,
   },
   middleRow: {
     flexDirection: 'row',
@@ -363,69 +370,90 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   seatBox: {
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    alignItems: 'center',
-    minWidth: 84,
-  },
-  teamABorder: {
-    borderColor: THEME.colors.accent,
-  },
-  teamBBorder: {
-    borderColor: THEME.colors.goldBright,
-  },
-  emptySeatBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: 8,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
+    borderRadius: 14,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     alignItems: 'center',
-    minWidth: 84,
+    minWidth: 88,
+  },
+  seatDefaultBorder: {
+    borderColor: '#1B7050',
+  },
+  teamABorder: {
+    borderColor: THEME.colors.neonEmerald,
+  },
+  teamBBorder: {
+    borderColor: THEME.colors.brass,
+  },
+  emptySeatBox: {
+    backgroundColor: 'rgba(7, 38, 28, 0.4)',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    minWidth: 88,
   },
   emptySeatText: {
-    fontSize: 10,
+    fontSize: 11,
     color: THEME.colors.textMuted,
   },
   seatAvatar: {
-    fontSize: 18,
+    fontSize: 20,
   },
   seatName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
     marginTop: 2,
   },
   seatPos: {
     fontSize: 9,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   miniBoardGraphic: {
     width: 140,
     height: 140,
-    backgroundColor: '#8B4513',
-    borderColor: '#5C2C16',
-    borderWidth: 8,
-    borderRadius: THEME.borderRadius.md,
+    backgroundColor: '#7A431C',
+    borderColor: '#4D270E',
+    borderWidth: 6,
+    borderRadius: 14,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 4,
   },
+  brassInner: {
+    width: 122,
+    height: 122,
+    borderWidth: 1.5,
+    borderColor: '#E9B949',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creamFace: {
+    width: 114,
+    height: 114,
+    backgroundColor: '#F5ECD2',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
   cornerPocket: {
     position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#0F1A15',
-    borderColor: '#3D1D0E',
-    borderWidth: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#0B0F0D',
+    borderColor: '#1F2937',
+    borderWidth: 1,
   },
   pocketTL: { top: 2, left: 2 },
   pocketTR: { top: 2, right: 2 },
@@ -433,42 +461,42 @@ const styles = StyleSheet.create({
   pocketBR: { bottom: 2, right: 2 },
   baselineTop: {
     position: 'absolute',
-    top: 18,
-    left: 20,
-    right: 20,
-    height: 2,
-    backgroundColor: '#3D1D0E',
+    top: 16,
+    left: 18,
+    right: 18,
+    height: 1.5,
+    backgroundColor: 'rgba(11, 15, 13, 0.4)',
   },
   baselineBottom: {
     position: 'absolute',
-    bottom: 18,
-    left: 20,
-    right: 20,
-    height: 2,
-    backgroundColor: '#3D1D0E',
+    bottom: 16,
+    left: 18,
+    right: 18,
+    height: 1.5,
+    backgroundColor: 'rgba(11, 15, 13, 0.4)',
   },
   baselineLeft: {
     position: 'absolute',
-    left: 18,
-    top: 20,
-    bottom: 20,
-    width: 2,
-    backgroundColor: '#3D1D0E',
+    left: 16,
+    top: 18,
+    bottom: 18,
+    width: 1.5,
+    backgroundColor: 'rgba(11, 15, 13, 0.4)',
   },
   baselineRight: {
     position: 'absolute',
-    right: 18,
-    top: 20,
-    bottom: 20,
-    width: 2,
-    backgroundColor: '#3D1D0E',
+    right: 16,
+    top: 18,
+    bottom: 18,
+    width: 1.5,
+    backgroundColor: 'rgba(11, 15, 13, 0.4)',
   },
   boardCenterCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderColor: '#3D1D0E',
-    borderWidth: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderColor: '#2BD67B',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -476,26 +504,24 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#E23B5A',
   },
   infoCard: {
-    padding: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
-    marginBottom: THEME.spacing.md,
+    padding: 14,
+    marginBottom: 16,
   },
   infoTitle: {
-    fontSize: THEME.typography.fontSize.caption,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    marginBottom: 2,
+    color: THEME.colors.brass,
+    marginBottom: 3,
   },
   infoDesc: {
-    fontSize: 11,
-    color: THEME.colors.textSecondary,
-    lineHeight: 16,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
+    lineHeight: 18,
   },
   footer: {
-    marginTop: THEME.spacing.xs,
+    marginTop: 4,
   },
 });
-
