@@ -18,5 +18,8 @@ config.resolver.nodeModulesPaths = [
 // 3. Ensure metro resolves .ts and .tsx from symlinked local packages
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
 
+// 4. Enable wasm support for expo-sqlite on web
+config.resolver.assetExts = [...config.resolver.assetExts, 'wasm'];
+
 module.exports = config;
 
