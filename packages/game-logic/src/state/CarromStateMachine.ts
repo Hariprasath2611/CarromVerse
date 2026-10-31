@@ -7,17 +7,20 @@ import {
   PlayerId,
   QueenStatus,
   ShotResult,
+  ShotSettlementInput,
   Striker,
 } from '@carromverse/shared-types';
 import { generateMatchId, generateUUID, TypedEventEmitter } from '@carromverse/shared-utils';
-import { BOARD_CENTER, DEFAULT_BOARD_DIMENSIONS } from '../config/board.config.js';
-import { CarromRulesManager, ShotEvaluationInput } from '../rules/CarromRulesManager.js';
+import { BOARD_CENTER } from '../config/board.config.js';
+import { CarromRulesEngine, SettledShotEvaluation } from '../engine/CarromRulesEngine.js';
+import { CarromRulesManager } from '../rules/CarromRulesManager.js';
 import { ScoreManager } from '../rules/ScoreManager.js';
 import { TurnManager } from '../rules/TurnManager.js';
 
 export interface GameLogicEvents {
   TURN_CHANGED: { activePlayerId: PlayerId; turnNumber: number };
   SHOT_EVALUATED: { shotResult: ShotResult; activePlayerId: PlayerId };
+  SHOT_SETTLED: { evaluation: SettledShotEvaluation };
   QUEEN_STATUS_CHANGED: { status: QueenStatus; coveredBy?: PlayerId };
   MATCH_COMPLETED: { result: GameResult };
 }
@@ -25,25 +28,26 @@ export interface GameLogicEvents {
 export class CarromStateMachine extends TypedEventEmitter<GameLogicEvents> {
   private config: GameConfiguration;
   private players: Player[];
+  private engine: CarromRulesEngine;
   private turnManager: TurnManager;
   private rulesManager: CarromRulesManager;
   private scoreManager: ScoreManager;
-  private coins: Coin[] = [];
   private striker: Striker;
-  private queenStatus: QueenStatus = 'unpocketed';
-  private queenPocketedByPlayerId?: PlayerId;
-  private currentRound: number = 1;
-  private matchStartedAt: string;
   private isMatchOver: boolean = false;
+  private matchStartedAt: string;
+  private currentRound: number = 1;
 
   constructor(config: GameConfiguration, players: Player[]) {
     super();
     this.config = config;
     this.players = players;
-    this.turnManager = new TurnManager(config.mode, players, config.turnTimeLimitSeconds);
+    this.matchStartedAt = new Date().toISOString();
+
+    // Primary rules engine
+    this.engine = new CarromRulesEngine(config, players);
+    this.turnManager = this.engine.getTurnManager();
     this.rulesManager = new CarromRulesManager(config);
     this.scoreManager = new ScoreManager(config, players);
-    this.matchStartedAt = new Date().toISOString();
 
     this.striker = {
       id: 'striker_main',
@@ -57,66 +61,41 @@ export class CarromStateMachine extends TypedEventEmitter<GameLogicEvents> {
       mass: 3.5,
     };
 
-    this.initializeCoins();
-  }
-
-  private initializeCoins(): void {
-    const coins: Coin[] = [];
-    const { coinRadius } = this.config.boardDimensions;
-
-    // Queen at center
-    coins.push({
-      id: 'coin_queen',
-      type: 'queen',
-      position: { x: BOARD_CENTER.x, y: BOARD_CENTER.y },
-      velocity: { x: 0, y: 0 },
-      angle: 0,
-      angularVelocity: 0,
-      state: 'on_board',
+    // Forward events from rules engine
+    this.engine.on('TURN_CHANGED', ({ activePlayerId, turnNumber }) => {
+      this.emit('TURN_CHANGED', { activePlayerId, turnNumber });
     });
 
-    // Inner circle ring (6 coins: alternating White and Black)
-    const innerRadius = coinRadius * 2 + 2;
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI) / 3;
-      coins.push({
-        id: `coin_inner_${i}`,
-        type: i % 2 === 0 ? 'white' : 'black',
-        position: {
-          x: BOARD_CENTER.x + innerRadius * Math.cos(angle),
-          y: BOARD_CENTER.y + innerRadius * Math.sin(angle),
-        },
-        velocity: { x: 0, y: 0 },
-        angle: 0,
-        angularVelocity: 0,
-        state: 'on_board',
-      });
-    }
+    this.engine.on('QUEEN_STATUS_CHANGED', ({ status, coveredBy }) => {
+      this.emit('QUEEN_STATUS_CHANGED', { status, coveredBy });
+    });
 
-    // Outer circle ring (12 coins: 6 White, 6 Black)
-    const outerRadius = innerRadius * 1.95;
-    for (let i = 0; i < 12; i++) {
-      const angle = (i * Math.PI) / 6 + Math.PI / 12;
-      coins.push({
-        id: `coin_outer_${i}`,
-        type: i % 2 === 0 ? 'white' : 'black',
-        position: {
-          x: BOARD_CENTER.x + outerRadius * Math.cos(angle),
-          y: BOARD_CENTER.y + outerRadius * Math.sin(angle),
-        },
-        velocity: { x: 0, y: 0 },
-        angle: 0,
-        angularVelocity: 0,
-        state: 'on_board',
-      });
-    }
+    this.engine.on('SHOT_SETTLED', ({ evaluation }) => {
+      this.emit('SHOT_SETTLED', { evaluation });
+    });
 
-    this.coins = coins;
+    this.engine.on('MATCH_COMPLETED', ({ result }) => {
+      this.isMatchOver = true;
+      this.emit('MATCH_COMPLETED', { result });
+    });
+  }
+
+  public getRulesEngine(): CarromRulesEngine {
+    return this.engine;
+  }
+
+  public getCoins(): Coin[] {
+    return this.engine.getCoins();
+  }
+
+  public getQueenStatus(): QueenStatus {
+    return this.engine.getQueenManager().getStatus();
   }
 
   public getSessionState(): GameSession {
     const activePlayer = this.turnManager.getActivePlayer();
-    const currentTurn = this.turnManager.createInitialTurn();
+    const currentTurn = this.turnManager.getCurrentTurn();
+    const scores = this.engine.getScoringEngine().getAllPlayerScores();
 
     return {
       id: generateMatchId(),
@@ -124,103 +103,49 @@ export class CarromStateMachine extends TypedEventEmitter<GameLogicEvents> {
       players: this.players,
       status: this.isMatchOver ? 'match_end' : 'in_progress',
       currentTurn,
-      scores: this.scoreManager.getAllScores(),
-      coins: this.coins,
+      scores,
+      coins: this.engine.getCoins(),
       striker: this.striker,
-      queenStatus: this.queenStatus,
-      queenPocketedByPlayerId: this.queenPocketedByPlayerId,
+      queenStatus: this.engine.getQueenManager().getStatus(),
+      queenPocketedByPlayerId: this.engine.getQueenManager().getPocketedByPlayerId(),
       roundNumber: this.currentRound,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
   }
 
+  /**
+   * Primary single-transaction settlement processor for Phase 1.5.
+   */
+  public processShotSettlement(input: ShotSettlementInput): SettledShotEvaluation {
+    return this.engine.processShotSettlement(input);
+  }
+
+  /**
+   * Backward-compatible processShot.
+   */
   public processShot(pocketedCoins: Coin[], strikerPocketed: boolean): ShotResult {
     const activePlayer = this.turnManager.getActivePlayer();
-
-    const result = this.rulesManager.evaluateShot({
-      player: activePlayer,
-      pocketedCoins,
+    const evaluation = this.engine.processShotSettlement({
+      pocketedCoins: pocketedCoins.map((c) => ({ id: c.id, type: c.type })),
       strikerPocketed,
-      queenStatus: this.queenStatus,
-      queenPocketedByPlayerId: this.queenPocketedByPlayerId,
     });
 
-    // Update pocketed coins state
-    for (const pCoin of pocketedCoins) {
-      const match = this.coins.find((c) => c.id === pCoin.id);
-      if (match) {
-        if (match.type === 'queen' && result.queenReturnedToCenter) {
-          match.position = { x: BOARD_CENTER.x, y: BOARD_CENTER.y };
-          match.state = 'on_board';
-          match.velocity = { x: 0, y: 0 };
-        } else {
-          match.state = 'pocketed';
-          match.pocketedBy = activePlayer.id;
-        }
-      }
-    }
+    const shotResult: ShotResult = {
+      pocketedCoins: evaluation.pocketedCoins.map((c) => c.type as any),
+      pocketedCoinIds: evaluation.pocketedCoins.map((c) => c.id),
+      foulCommitted: evaluation.foulOccurred,
+      foulType: evaluation.primaryFoulType,
+      fouls: evaluation.fouls,
+      queenPocketedThisShot: evaluation.pocketedCoins.some((c) => c.type === 'queen'),
+      queenCoveredThisShot: evaluation.queenCoveredThisShot,
+      queenReturnedToCenter: evaluation.queenReturnedToCenter,
+      extraTurnEarned: evaluation.extraTurnEarned,
+      penaltyCoinsDue: evaluation.fouls.reduce((acc, f) => acc + f.penaltyCoins, 0),
+      coinsToReturnToBoard: evaluation.coinsToReturnToBoard,
+    };
 
-    // Update Queen status
-    if (result.queenCoveredThisShot) {
-      this.queenStatus = 'covered';
-      this.queenPocketedByPlayerId = activePlayer.id;
-      this.emit('QUEEN_STATUS_CHANGED', { status: 'covered', coveredBy: activePlayer.id });
-    } else if (result.queenPocketedThisShot && !result.foulCommitted) {
-      this.queenStatus = 'pending_cover';
-      this.queenPocketedByPlayerId = activePlayer.id;
-      this.emit('QUEEN_STATUS_CHANGED', { status: 'pending_cover', coveredBy: activePlayer.id });
-    } else if (result.queenReturnedToCenter) {
-      this.queenStatus = 'returned_to_board';
-      this.queenPocketedByPlayerId = undefined;
-      this.emit('QUEEN_STATUS_CHANGED', { status: 'returned_to_board' });
-    }
-
-    // Update scores
-    for (const pCoin of pocketedCoins) {
-      if (pCoin.type !== 'queen' || result.queenCoveredThisShot) {
-        this.scoreManager.recordPocketedCoin(activePlayer.id, pCoin);
-      }
-    }
-
-    if (result.foulCommitted) {
-      this.scoreManager.recordFoul(activePlayer.id, result.penaltyCoinsDue);
-    }
-
-    this.emit('SHOT_EVALUATED', { shotResult: result, activePlayerId: activePlayer.id });
-
-    // Check match completion
-    const winnerCheck = this.scoreManager.checkWinner(this.players, this.coins, this.currentRound);
-    if (winnerCheck.hasWinner) {
-      this.isMatchOver = true;
-      const gameResult: GameResult = {
-        id: generateUUID(),
-        sessionId: generateMatchId(),
-        mode: this.config.mode,
-        variant: this.config.variant,
-        winnerId: winnerCheck.winner?.id,
-        winnerName: winnerCheck.winner?.name,
-        winningTeamId: winnerCheck.winner?.teamId,
-        isDraw: !!winnerCheck.isDraw,
-        finalScores: this.scoreManager.getAllScores(),
-        durationSeconds: 0,
-        totalTurns: this.turnManager.getTurnNumber(),
-        startedAt: this.matchStartedAt,
-        completedAt: new Date().toISOString(),
-        isSynced: false,
-        syncAttemptCount: 0,
-      };
-
-      this.emit('MATCH_COMPLETED', { result: gameResult });
-    } else {
-      // Advance turn
-      const nextTurn = this.turnManager.advanceTurn(result.extraTurnEarned);
-      this.emit('TURN_CHANGED', {
-        activePlayerId: nextTurn.activePlayerId,
-        turnNumber: nextTurn.turnNumber,
-      });
-    }
-
-    return result;
+    this.emit('SHOT_EVALUATED', { shotResult, activePlayerId: activePlayer.id });
+    return shotResult;
   }
 }

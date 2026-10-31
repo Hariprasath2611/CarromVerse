@@ -21,6 +21,13 @@ export type QueenStatus =
   | 'covered'           // Queen successfully covered and retained
   | 'returned_to_board'; // Failed cover, placed back in center
 
+export const QueenState = {
+  QUEEN_ON_BOARD: 'unpocketed' as QueenStatus,
+  QUEEN_PENDING_COVER: 'pending_cover' as QueenStatus,
+  QUEEN_COVERED: 'covered' as QueenStatus,
+  QUEEN_RETURNED: 'returned_to_board' as QueenStatus,
+} as const;
+
 export interface GameSession {
   id: string;
   config: GameConfiguration;

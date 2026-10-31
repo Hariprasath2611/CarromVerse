@@ -4,11 +4,21 @@ import { PlayerId, PlayerSeat } from './player.js';
 export type FoulType =
   | 'striker_pocketed'
   | 'striker_out_of_bounds'
+  | 'opponent_coin_pocketed'
   | 'wrong_coin_pocketed'
   | 'striker_not_on_baseline'
   | 'turn_timeout'
   | 'queen_failed_cover'
+  | 'no_contact'
+  | 'illegal_break'
   | 'touch_foul';
+
+export interface FoulDetail {
+  type: FoulType;
+  description: string;
+  penaltyCoins: number;
+  penaltyPoints: number;
+}
 
 export type TurnPhase =
   | 'positioning'
@@ -17,16 +27,31 @@ export type TurnPhase =
   | 'evaluating'
   | 'completed';
 
+export interface PocketedCoinRecord {
+  id: string;
+  type: CoinType | 'striker';
+  pocketIndex?: number;
+}
+
+export interface ShotSettlementInput {
+  pocketedCoins: PocketedCoinRecord[];
+  strikerPocketed: boolean;
+  durationMs?: number;
+  contactOccurred?: boolean;
+}
+
 export interface ShotResult {
   pocketedCoins: CoinType[];
   pocketedCoinIds: string[];
   foulCommitted: boolean;
   foulType?: FoulType;
+  fouls?: FoulDetail[];
   queenPocketedThisShot: boolean;
   queenCoveredThisShot: boolean;
   queenReturnedToCenter: boolean;
   extraTurnEarned: boolean;
   penaltyCoinsDue: number;
+  coinsToReturnToBoard?: { id?: string; type: CoinType }[];
 }
 
 export interface PlayerTurn {

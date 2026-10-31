@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -26,17 +26,7 @@ export default function GameBoardScreen() {
   const { boardTheme } = useGameSetupStore();
   const { endSession } = useGameSessionStore();
 
-  const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
-
-  useEffect(() => {
-    const sub = Dimensions.addEventListener('change', ({ window }) => {
-      setDimensions(window);
-    });
-    return () => sub?.remove();
-  }, []);
-
-  const screenWidth = dimensions.width;
-  const screenHeight = dimensions.height;
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   // Dynamically calculate board size so HUD, board, power bar, and controls fit comfortably on any screen
   const availableBoardHeight = screenHeight - 310;
   const BOARD_SIZE = Math.floor(Math.min(screenWidth - 24, availableBoardHeight, 355));

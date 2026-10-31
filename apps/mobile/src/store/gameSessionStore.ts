@@ -7,8 +7,13 @@ import {
   PlayerTurn,
   QueenStatus,
   ShotResult,
+  ShotSettlementInput,
 } from '@carromverse/shared-types';
-import { CarromStateMachine, createDefaultGameConfig } from '@carromverse/game-logic';
+import {
+  CarromRulesEngine,
+  CarromStateMachine,
+  SettledShotEvaluation,
+} from '@carromverse/game-logic';
 import { SyncService } from '../services/sync/syncService';
 
 interface GameSessionState {
@@ -19,9 +24,11 @@ interface GameSessionState {
   scores: Record<string, GameScore>;
   queenStatus: QueenStatus;
   lastShotResult: ShotResult | null;
+  lastSettledEvaluation: SettledShotEvaluation | null;
   gameResult: GameResult | null;
 
   startSession: (config: GameConfiguration, players: Player[]) => void;
+  processSettledShot: (input: ShotSettlementInput) => SettledShotEvaluation | null;
   recordPhysicalShot: (pocketedCoins: any[], strikerPocketed: boolean) => ShotResult | null;
   pauseSession: () => void;
   resumeSession: () => void;
@@ -36,6 +43,7 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
   scores: {},
   queenStatus: 'unpocketed',
   lastShotResult: null,
+  lastSettledEvaluation: null,
   gameResult: null,
 
   startSession: (config, players) => {
@@ -71,25 +79,65 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
       scores: session.scores,
       queenStatus: 'unpocketed',
       lastShotResult: null,
+      lastSettledEvaluation: null,
       gameResult: null,
     });
+  },
+
+  processSettledShot: (input) => {
+    const sm = get().stateMachine;
+    if (!sm) return null;
+
+    const evalResult = sm.processShotSettlement(input);
+    const session = sm.getSessionState();
+
+    set({
+      scores: session.scores,
+      lastSettledEvaluation: evalResult,
+      queenStatus: evalResult.queenStatusAfter,
+      currentTurn: evalResult.nextTurn ?? session.currentTurn,
+      gameResult: evalResult.matchResult ?? null,
+      isPlaying: !evalResult.isMatchOver,
+    });
+
+    return evalResult;
   },
 
   recordPhysicalShot: (pocketedCoins, strikerPocketed) => {
     const sm = get().stateMachine;
     if (!sm) return null;
 
-    const result = sm.processShot(pocketedCoins, strikerPocketed);
+    const evalResult = sm.processShotSettlement({
+      pocketedCoins: pocketedCoins.map((c) => ({ id: c.id ?? '', type: c.type ?? 'white' })),
+      strikerPocketed,
+    });
     const session = sm.getSessionState();
+
+    const shotResult: ShotResult = {
+      pocketedCoins: evalResult.pocketedCoins.map((c) => c.type as any),
+      pocketedCoinIds: evalResult.pocketedCoins.map((c) => c.id),
+      foulCommitted: evalResult.foulOccurred,
+      foulType: evalResult.primaryFoulType,
+      fouls: evalResult.fouls,
+      queenPocketedThisShot: evalResult.pocketedCoins.some((c) => c.type === 'queen'),
+      queenCoveredThisShot: evalResult.queenCoveredThisShot,
+      queenReturnedToCenter: evalResult.queenReturnedToCenter,
+      extraTurnEarned: evalResult.extraTurnEarned,
+      penaltyCoinsDue: evalResult.fouls.reduce((acc, f) => acc + f.penaltyCoins, 0),
+      coinsToReturnToBoard: evalResult.coinsToReturnToBoard,
+    };
 
     set({
       scores: session.scores,
-      lastShotResult: result,
-      queenStatus: session.queenStatus,
-      currentTurn: session.currentTurn,
+      lastShotResult: shotResult,
+      lastSettledEvaluation: evalResult,
+      queenStatus: evalResult.queenStatusAfter,
+      currentTurn: evalResult.nextTurn ?? session.currentTurn,
+      gameResult: evalResult.matchResult ?? null,
+      isPlaying: !evalResult.isMatchOver,
     });
 
-    return result;
+    return shotResult;
   },
 
   pauseSession: () => set({ isPaused: true }),
@@ -101,6 +149,6 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
       isPaused: false,
       currentTurn: null,
       lastShotResult: null,
+      lastSettledEvaluation: null,
     }),
 }));
-
