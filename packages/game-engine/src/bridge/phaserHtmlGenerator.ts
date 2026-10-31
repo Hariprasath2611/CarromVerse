@@ -1401,10 +1401,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
               }
               break;
             case 'SHOOT':
-              if (msg.payload && typeof msg.payload.power === 'number') {
-                var angle = typeof msg.payload.angle === 'number' ? msg.payload.angle : -Math.PI / 2;
-                activeScene.executeShot(angle, msg.payload.power);
-              }
+              var pVal = (msg.payload && (typeof msg.payload.power === 'number' ? msg.payload.power : typeof msg.payload.powerRatio === 'number' ? msg.payload.powerRatio : 0.75)) || 0.75;
+              var aVal = (msg.payload && typeof msg.payload.angle === 'number') ? msg.payload.angle : (activeScene.aimAngle || -Math.PI / 2);
+              activeScene.executeShot(aVal, pVal);
               break;
             case 'TOGGLE_DEBUG':
               activeScene.toggleDebugOverlay(msg.payload ? msg.payload.enabled : undefined);
