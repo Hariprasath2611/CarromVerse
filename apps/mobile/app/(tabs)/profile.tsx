@@ -1,15 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Card, PlayerAvatar, ScreenContainer } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import { useUserStore } from '../../src/store/userStore';
+import { LocalDatabaseService } from '../../src/services/database/localDatabaseService';
 import { THEME } from '../../src/constants/theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const profile = useUserStore((state) => state.profile);
+  const [offlineStats, setOfflineStats] = useState({
+    totalMatches: 0,
+    totalWins: 0,
+    winRate: 0,
+    totalDraws: 0,
+  });
+
+  useEffect(() => {
+    LocalDatabaseService.getLocalStats()
+      .then((stats) => setOfflineStats(stats))
+      .catch(() => {});
+  }, []);
 
   const displayName = profile?.username || user?.displayName || 'HARIPRASATH';
   const playerLevel = profile?.level || 7;
@@ -46,23 +59,23 @@ export default function ProfileScreen() {
       {/* 2x2 Stats Grid */}
       <View style={styles.statsGrid}>
         <Card style={styles.statCard}>
-          <Text style={styles.statVal}>48</Text>
+          <Text style={styles.statVal}>{offlineStats.totalMatches}</Text>
           <Text style={styles.statLabel}>Matches</Text>
         </Card>
 
         <Card style={styles.statCard}>
-          <Text style={styles.statVal}>29</Text>
+          <Text style={styles.statVal}>{offlineStats.totalWins}</Text>
           <Text style={styles.statLabel}>Wins</Text>
         </Card>
 
         <Card style={styles.statCard}>
-          <Text style={styles.statVal}>60%</Text>
-          <Text style={styles.statLabel}>"Win</Text>
+          <Text style={styles.statVal}>{offlineStats.winRate}%</Text>
+          <Text style={styles.statLabel}>Win Rate</Text>
         </Card>
 
         <Card style={styles.statCard}>
-          <Text style={styles.statVal}>14</Text>
-          <Text style={styles.statLabel}>"Queens</Text>
+          <Text style={styles.statVal}>{offlineStats.totalDraws}</Text>
+          <Text style={styles.statLabel}>Draws</Text>
         </Card>
       </View>
 
@@ -71,7 +84,7 @@ export default function ProfileScreen() {
         <Button
           title="MATCH HISTORY"
           variant="secondary"
-          onPress={() => {}}
+          onPress={() => router.push('/match-history')}
           style={styles.actionBtn}
         />
         <Button
