@@ -25,6 +25,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
+      touch-action: none;
     }
     html, body {
       margin: 0;
@@ -127,6 +128,13 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var currentOffsetRatio = 0;
       var activeScene = null;
 
+      // Collision Category Bitmasks
+      var CAT_DEFAULT = 0x0001;
+      var CAT_CUSHION = 0x0002;
+      var CAT_COIN    = 0x0004;
+      var CAT_STRIKER = 0x0008;
+      var CAT_POCKET  = 0x0010;
+
       function getTheme(id) {
         var key = id ? id.toLowerCase() : 'forest';
         return BOARD_THEMES[key] || BOARD_THEMES['forest'];
@@ -148,9 +156,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
         // 2. Striker Shadow
         createCanvasTexture(scene, 'tex_striker_shadow', 128, 128, function(ctx) {
-          var grad = ctx.createRadialGradient(64, 64, 20, 64, 64, 62);
-          grad.addColorStop(0, 'rgba(0,0,0,0.7)');
-          grad.addColorStop(0.7, 'rgba(0,0,0,0.3)');
+          var grad = ctx.createRadialGradient(64, 64, 18, 64, 64, 62);
+          grad.addColorStop(0, 'rgba(0,0,0,0.65)');
+          grad.addColorStop(0.6, 'rgba(0,0,0,0.3)');
           grad.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -163,9 +171,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var r = 44;
           var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
           g.addColorStop(0, '#FFFFFF');
-          g.addColorStop(0.4, '#FDFBF7');
-          g.addColorStop(0.85, '#EBE3D5');
-          g.addColorStop(1, '#C9BFA8');
+          g.addColorStop(0.4, '#F7F3E9');
+          g.addColorStop(0.85, '#D5CBB5');
+          g.addColorStop(1, '#B8AB91');
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.arc(48, 48, r, 0, Math.PI * 2);
@@ -385,7 +393,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         }
       }
 
-      // PHASER CARROM SCENE
+      // PHASER CARROM SCENE (WITH MATTER.JS PHYSICS)
       var CarromScene = new Phaser.Class({
         Extends: Phaser.Scene,
         initialize: function CarromScene() {
@@ -398,20 +406,34 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.canvasSize = size;
           var theme = getTheme(currentThemeId);
 
+          this.matter.world.setGravity(0, 0);
+          this.matter.world.setBounds(0, 0, 0, 0, 0, false, false, false, false);
+
           generateTextures(this, theme);
 
           this.boardGraphics = this.add.graphics();
           this.pocketsGroup = this.add.group();
-          this.coinsGroup = this.add.group();
+          this.coins = [];
+          this.cushionBodies = [];
+          this.pocketSensors = [];
+          this.isAiming = false;
+          this.aimStartPoint = { x: 0, y: 0 };
+          this.aimPowerRatio = 0;
+          this.aimAngle = -Math.PI / 2;
+          this.isShotActive = false;
+          this.restStartTime = 0;
+          this.pocketedInCurrentShot = [];
 
           this.renderBoardGraphics(theme);
+          this.createPocketSensors();
           this.spawnCoinCluster();
           this.createStriker(theme);
           this.setupInputHandlers();
+          this.setupCollisionHandlers();
 
           sendToReactNative({
             type: 'BOARD_RENDERED',
-            payload: { theme: currentThemeId, coinCount: this.coinsGroup.getChildren().length },
+            payload: { theme: currentThemeId, coinCount: this.coins.length },
             timestamp: Date.now()
           });
 
@@ -452,54 +474,76 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg).color, 1);
           this.boardGraphics.fillRect(fw, fw, surfSize, surfSize);
 
-          // 3. Cushions
-          var cWidth = fw * 0.35;
+          // Cushions
           this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion).color, 1);
-          this.boardGraphics.fillRect(fw, fw - cWidth, s - fw * 2, cWidth);
-          this.boardGraphics.fillRect(fw, s - fw, s - fw * 2, cWidth);
-          this.boardGraphics.fillRect(fw - cWidth, fw, cWidth, s - fw * 2);
-          this.boardGraphics.fillRect(s - fw, fw, cWidth, s - fw * 2);
+          this.boardGraphics.fillRect(fw, fw, surfSize, s * 0.022);
+          this.boardGraphics.fillRect(fw, s - fw - s * 0.022, surfSize, s * 0.022);
+          this.boardGraphics.fillRect(fw, fw, s * 0.022, surfSize);
+          this.boardGraphics.fillRect(s - fw - s * 0.022, fw, s * 0.022, surfSize);
 
-          // 4. Baselines
+          // Create Matter Cushion Physics Bodies
+          this.cushionBodies.forEach(function(b) { activeScene.matter.world.remove(b); });
+          this.cushionBodies = [];
+
+          var cThick = s * 0.03;
+          var pClearance = s * 0.085;
+          var cLen = surfSize - pClearance * 2;
+
+          var cConfigs = [
+            { x: center, y: fw + cThick / 2, w: cLen, h: cThick, label: 'cushion_top' },
+            { x: center, y: s - fw - cThick / 2, w: cLen, h: cThick, label: 'cushion_bottom' },
+            { x: fw + cThick / 2, y: center, w: cThick, h: cLen, label: 'cushion_left' },
+            { x: s - fw - cThick / 2, y: center, w: cThick, h: cLen, label: 'cushion_right' }
+          ];
+
+          cConfigs.forEach(function(cfg) {
+            var body = activeScene.matter.add.rectangle(cfg.x, cfg.y, cfg.w, cfg.h, {
+              isStatic: true,
+              restitution: 0.90,
+              friction: 0.04,
+              label: cfg.label,
+              collisionFilter: { category: CAT_CUSHION, mask: CAT_STRIKER | CAT_COIN }
+            });
+            activeScene.cushionBodies.push(body);
+          });
+
+          // 3. Markings
           var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor).color;
           var circleCol = Phaser.Display.Color.HexStringToColor(theme.baselineCircleColor).color;
           var dotCol = Phaser.Display.Color.HexStringToColor(theme.baselineDotColor).color;
-          var gap = s * 0.018;
-          var halfBl = bl / 2;
 
-          var drawSide = function(g, x1, y1, x2, y2, isHoriz) {
-            g.lineStyle(1.5, markCol, 0.85);
-            if (isHoriz) {
-              g.lineBetween(x1, y1 - gap/2, x2, y2 - gap/2);
-              g.lineBetween(x1, y1 + gap/2, x2, y2 + gap/2);
-              [x1, x2].forEach(function(cx) {
-                g.fillStyle(circleCol, 1);
-                g.fillCircle(cx, y1, bcr);
-                g.lineStyle(1.5, markCol, 0.9);
-                g.strokeCircle(cx, y1, bcr);
-                g.fillStyle(dotCol, 1);
-                g.fillCircle(cx, y1, bcr * 0.4);
-              });
+          this.boardGraphics.lineStyle(1.8, markCol, 0.85);
+
+          var drawSide = function(g, x1, y1, x2, y2, isH) {
+            var gap = s * 0.014;
+            if (isH) {
+              g.lineBetween(x1, y1 - gap / 2, x2, y2 - gap / 2);
+              g.lineBetween(x1, y1 + gap / 2, x2, y2 + gap / 2);
+              g.fillStyle(circleCol, 1);
+              g.fillCircle(x1, y1, bcr);
+              g.fillCircle(x2, y2, bcr);
+              g.fillStyle(dotCol, 1);
+              g.fillCircle(x1, y1, bcr * 0.42);
+              g.fillCircle(x2, y2, bcr * 0.42);
             } else {
-              g.lineBetween(x1 - gap/2, y1, x2 - gap/2, y2);
-              g.lineBetween(x1 + gap/2, y1, x2 + gap/2, y2);
-              [y1, y2].forEach(function(cy) {
-                g.fillStyle(circleCol, 1);
-                g.fillCircle(x1, cy, bcr);
-                g.lineStyle(1.5, markCol, 0.9);
-                g.strokeCircle(x1, cy, bcr);
-                g.fillStyle(dotCol, 1);
-                g.fillCircle(x1, cy, bcr * 0.4);
-              });
+              g.lineBetween(x1 - gap / 2, y1, x2 - gap / 2, y2);
+              g.lineBetween(x1 + gap / 2, y1, x2 + gap / 2, y2);
+              g.fillStyle(circleCol, 1);
+              g.fillCircle(x1, y1, bcr);
+              g.fillCircle(x2, y2, bcr);
+              g.fillStyle(dotCol, 1);
+              g.fillCircle(x1, y1, bcr * 0.42);
+              g.fillCircle(x2, y2, bcr * 0.42);
             }
           };
 
+          var halfBl = bl / 2;
           drawSide(this.boardGraphics, center - halfBl, s - fw - bo, center + halfBl, s - fw - bo, true);
           drawSide(this.boardGraphics, center - halfBl, fw + bo, center + halfBl, fw + bo, true);
           drawSide(this.boardGraphics, fw + bo, center - halfBl, fw + bo, center + halfBl, false);
           drawSide(this.boardGraphics, s - fw - bo, center - halfBl, s - fw - bo, center + halfBl, false);
 
-          // 5. Center Circle
+          // Center Circle
           this.boardGraphics.lineStyle(2, markCol, 0.9);
           this.boardGraphics.strokeCircle(center, center, s * 0.065);
           this.boardGraphics.lineStyle(1.5, markCol, 0.7);
@@ -507,7 +551,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.boardGraphics.fillStyle(dotCol, 1);
           this.boardGraphics.fillCircle(center, center, s * 0.007);
 
-          // 6. Corner Foul Arrows
+          // Corner Foul Arrows
           var arrLen = s * 0.085;
           var corners = [
             { x: fw + bo * 0.6, y: fw + bo * 0.6, a: Math.PI / 4 },
@@ -525,14 +569,14 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             activeScene.boardGraphics.fillCircle(ex, ey, 4.5);
           });
 
-          // 7. Pockets
+          // Pockets (Visual Sprites)
           var pr = s * 0.038;
           var inset = fw + pr * 0.55;
           var pCoords = [
             { x: inset, y: inset },
             { x: s - inset, y: inset },
-            { x: inset, y: s - inset },
-            { x: s - inset, y: s - inset }
+            { x: s - inset, y: s - inset },
+            { x: inset, y: s - inset }
           ];
 
           pCoords.forEach(function(coord) {
@@ -543,36 +587,82 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           });
         },
 
+        createPocketSensors: function() {
+          this.pocketSensors.forEach(function(s) { activeScene.matter.world.remove(s); });
+          this.pocketSensors = [];
+
+          var s = this.canvasSize;
+          var fw = s * 0.08;
+          var pr = s * 0.038;
+          var inset = fw + pr * 0.55;
+
+          var pCoords = [
+            { x: inset, y: inset, idx: 0 },
+            { x: s - inset, y: inset, idx: 1 },
+            { x: s - inset, y: s - inset, idx: 2 },
+            { x: inset, y: s - inset, idx: 3 }
+          ];
+
+          pCoords.forEach(function(coord) {
+            var sensor = activeScene.matter.add.circle(coord.x, coord.y, pr * 0.85, {
+              isStatic: true,
+              isSensor: true,
+              label: 'pocket_' + coord.idx,
+              collisionFilter: { category: CAT_POCKET, mask: CAT_STRIKER | CAT_COIN }
+            });
+            activeScene.pocketSensors.push(sensor);
+          });
+        },
+
         spawnCoinCluster: function() {
-          this.coinsGroup.clear(true, true);
+          // Clean existing coins
+          this.coins.forEach(function(c) {
+            if (c.body) activeScene.matter.world.remove(c.body);
+            if (c.sprite) c.sprite.destroy();
+            if (c.shadow) c.shadow.destroy();
+          });
+          this.coins = [];
 
           var s = this.canvasSize;
           var cx = s / 2;
           var cy = s / 2;
           var rCoin = s * 0.020;
 
-          var addCoin = function(scene, type, x, y) {
+          var addPhysicsCoin = function(scene, id, type, x, y) {
             var shadow = scene.add.sprite(x + 3, y + 4, 'tex_coin_shadow');
             shadow.setDisplaySize(rCoin * 2.3, rCoin * 2.3);
             shadow.setDepth(9);
-            scene.coinsGroup.add(shadow);
 
             var key = type === 'queen' ? 'tex_coin_queen' : (type === 'white' ? 'tex_coin_white' : 'tex_coin_black');
-            var coin = scene.add.sprite(x, y, key);
-            coin.setDisplaySize(rCoin * 2, rCoin * 2);
-            coin.setDepth(10);
-            scene.coinsGroup.add(coin);
+            var coinSprite = scene.add.sprite(x, y, key);
+            coinSprite.setDisplaySize(rCoin * 2, rCoin * 2);
+            coinSprite.setDepth(10);
+
+            var body = scene.matter.add.circle(x, y, rCoin, {
+              restitution: 0.93,
+              friction: 0.035,
+              frictionAir: 0.018,
+              density: 0.0025,
+              label: 'coin_' + id,
+              collisionFilter: {
+                category: CAT_COIN,
+                mask: CAT_CUSHION | CAT_COIN | CAT_STRIKER | CAT_POCKET
+              }
+            });
+
+            body.coinRef = { id: id, type: type, sprite: coinSprite, shadow: shadow, body: body, isPocketed: false };
+            scene.coins.push(body.coinRef);
           };
 
           // Queen
-          addCoin(this, 'queen', cx, cy);
+          addPhysicsCoin(this, 'queen', 'queen', cx, cy);
 
           // Ring 1 (6 coins)
           var d1 = 2 * rCoin * 1.02;
           var r1Types = ['white', 'black', 'white', 'black', 'white', 'black'];
           for (var i = 0; i < 6; i++) {
             var ang = (i * Math.PI) / 3;
-            addCoin(this, r1Types[i], cx + Math.cos(ang) * d1, cy + Math.sin(ang) * d1);
+            addPhysicsCoin(this, 'r1_' + i, r1Types[i], cx + Math.cos(ang) * d1, cy + Math.sin(ang) * d1);
           }
 
           // Ring 2 (12 coins)
@@ -582,14 +672,17 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           for (var j = 0; j < 12; j++) {
             var a2 = (j * Math.PI) / 6;
             var dist = j % 2 === 0 ? d2Axis : d2Inter;
-            addCoin(this, r2Types[j], cx + Math.cos(a2) * dist, cy + Math.sin(a2) * dist);
+            addPhysicsCoin(this, 'r2_' + j, r2Types[j], cx + Math.cos(a2) * dist, cy + Math.sin(a2) * dist);
           }
         },
 
         createStriker: function(theme) {
-          if (this.strikerContainer) {
-            this.strikerContainer.destroy();
+          if (this.strikerBody) {
+            this.matter.world.remove(this.strikerBody);
           }
+          if (this.strikerSprite) this.strikerSprite.destroy();
+          if (this.strikerShadow) this.strikerShadow.destroy();
+          if (this.aimRay) this.aimRay.destroy();
 
           var s = this.canvasSize;
           var fw = s * 0.08;
@@ -597,32 +690,44 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var sr = s * 0.028;
 
           this.strikerRadius = sr;
-          this.strikerContainer = this.add.container(s / 2, s - fw - bo);
-          this.strikerContainer.setDepth(20);
+          var px = s / 2;
+          var py = s - fw - bo;
 
           // Shadow
-          this.strikerShadow = this.add.sprite(4, 5, 'tex_striker_shadow');
+          this.strikerShadow = this.add.sprite(px + 4, py + 5, 'tex_striker_shadow');
           this.strikerShadow.setDisplaySize(sr * 2.4, sr * 2.4);
-          this.strikerContainer.add(this.strikerShadow);
+          this.strikerShadow.setDepth(19);
 
-          // Striker
-          this.strikerSprite = this.add.sprite(0, 0, 'tex_striker_' + currentStrikerSkin);
+          // Sprite
+          this.strikerSprite = this.add.sprite(px, py, 'tex_striker_' + currentStrikerSkin);
           this.strikerSprite.setDisplaySize(sr * 2, sr * 2);
-          this.strikerContainer.add(this.strikerSprite);
+          this.strikerSprite.setDepth(20);
 
-          // Aim Line
+          // Aim Ray
           this.aimRay = this.add.graphics();
-          this.aimRay.lineStyle(2, 0x4ADE80, 0.75);
-          this.aimRay.lineBetween(0, 0, 0, -sr * 3.5);
-          this.aimRay.fillStyle(0x4ADE80, 0.9);
-          this.aimRay.fillCircle(0, -sr * 3.5, 3.5);
-          this.strikerContainer.add(this.aimRay);
+          this.aimRay.setDepth(21);
+
+          // Matter Body
+          this.strikerBody = this.matter.add.circle(px, py, sr, {
+            restitution: 0.95,
+            friction: 0.028,
+            frictionAir: 0.014,
+            density: 0.0075,
+            label: 'striker',
+            collisionFilter: {
+              category: CAT_STRIKER,
+              mask: CAT_CUSHION | CAT_COIN | CAT_POCKET
+            }
+          });
+          this.strikerBody.isStriker = true;
+          this.strikerIsPocketed = false;
 
           this.updateStrikerPosition();
         },
 
         updateStrikerPosition: function() {
-          if (!this.strikerContainer) return;
+          if (!this.strikerBody || this.isShotActive) return;
+
           var s = this.canvasSize;
           var fw = s * 0.08;
           var bo = s * 0.135;
@@ -631,79 +736,335 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var center = s / 2;
 
           var clampedOffset = Math.max(-0.95, Math.min(0.95, currentOffsetRatio));
+          var px = center;
+          var py = center;
 
           if (currentSeat === 0) {
-            // South
-            this.strikerContainer.setPosition(center + clampedOffset * halfBl, s - fw - bo);
-            this.strikerSprite.setRotation(0);
-            this.drawAimRay(0, -this.strikerRadius * 3.5);
+            px = center + clampedOffset * halfBl;
+            py = s - fw - bo;
           } else if (currentSeat === 1) {
-            // East
-            this.strikerContainer.setPosition(s - fw - bo, center + clampedOffset * halfBl);
-            this.strikerSprite.setRotation(-Math.PI / 2);
-            this.drawAimRay(-this.strikerRadius * 3.5, 0);
+            px = s - fw - bo;
+            py = center + clampedOffset * halfBl;
           } else if (currentSeat === 2) {
-            // North
-            this.strikerContainer.setPosition(center + clampedOffset * halfBl, fw + bo);
-            this.strikerSprite.setRotation(Math.PI);
-            this.drawAimRay(0, this.strikerRadius * 3.5);
+            px = center + clampedOffset * halfBl;
+            py = fw + bo;
           } else if (currentSeat === 3) {
-            // West
-            this.strikerContainer.setPosition(fw + bo, center + clampedOffset * halfBl);
-            this.strikerSprite.setRotation(Math.PI / 2);
-            this.drawAimRay(this.strikerRadius * 3.5, 0);
+            px = fw + bo;
+            py = center + clampedOffset * halfBl;
           }
-        },
 
-        drawAimRay: function(endX, endY) {
-          this.aimRay.clear();
-          this.aimRay.lineStyle(2, 0x4ADE80, 0.75);
-          this.aimRay.lineBetween(0, 0, endX, endY);
-          this.aimRay.fillStyle(0x4ADE80, 0.9);
-          this.aimRay.fillCircle(endX, endY, 3.5);
+          this.matter.body.setPosition(this.strikerBody, { x: px, y: py });
+          this.matter.body.setVelocity(this.strikerBody, { x: 0, y: 0 });
+          this.matter.body.setAngularVelocity(this.strikerBody, 0);
+
+          this.strikerSprite.setPosition(px, py);
+          this.strikerShadow.setPosition(px + 4, py + 5);
         },
 
         setupInputHandlers: function() {
-          var self = this;
-          var isDragging = false;
+          var scene = this;
 
           this.input.on('pointerdown', function(pointer) {
-            isDragging = true;
-            self.handlePointerPosition(pointer.x, pointer.y);
+            if (scene.isShotActive) return;
+
+            var px = scene.strikerBody.position.x;
+            var py = scene.strikerBody.position.y;
+            var dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, px, py);
+
+            if (dist <= scene.strikerRadius * 2.4) {
+              scene.isAiming = true;
+              scene.aimStartPoint = { x: pointer.x, y: pointer.y };
+              scene.updateAim(pointer.x, pointer.y);
+            }
           });
 
           this.input.on('pointermove', function(pointer) {
-            if (isDragging) {
-              self.handlePointerPosition(pointer.x, pointer.y);
+            if (!pointer.isDown) return;
+
+            if (scene.isAiming) {
+              scene.updateAim(pointer.x, pointer.y);
+            } else if (!scene.isShotActive) {
+              // Direct drag on baseline
+              var s = scene.canvasSize;
+              var fw = s * 0.08;
+              var bo = s * 0.135;
+              var bl = s * 0.54;
+              var halfBl = bl / 2;
+              var center = s / 2;
+
+              var off = 0;
+              if (currentSeat === 0 || currentSeat === 2) {
+                off = (pointer.x - center) / halfBl;
+              } else {
+                off = (pointer.y - center) / halfBl;
+              }
+
+              currentOffsetRatio = Math.max(-0.95, Math.min(0.95, off));
+              scene.updateStrikerPosition();
+
+              sendToReactNative({
+                type: 'STRIKER_DRAGGED',
+                payload: { offset: currentOffsetRatio },
+                timestamp: Date.now()
+              });
             }
           });
 
           this.input.on('pointerup', function() {
-            isDragging = false;
+            if (scene.isAiming) {
+              scene.isAiming = false;
+              scene.aimRay.clear();
+
+              if (scene.aimPowerRatio > 0.05) {
+                scene.executeShot(scene.aimAngle, scene.aimPowerRatio);
+              }
+            }
           });
         },
 
-        handlePointerPosition: function(px, py) {
-          var s = this.canvasSize;
-          var bl = s * 0.54;
-          var halfBl = bl / 2;
-          var center = s / 2;
+        updateAim: function(curX, curY) {
+          var dx = this.aimStartPoint.x - curX;
+          var dy = this.aimStartPoint.y - curY;
+          var dist = Math.hypot(dx, dy);
 
-          var ratio = 0;
-          if (currentSeat === 0 || currentSeat === 2) {
-            ratio = (px - center) / halfBl;
-          } else {
-            ratio = (py - center) / halfBl;
+          if (dist < 8) {
+            this.aimRay.clear();
+            this.aimPowerRatio = 0;
+            return;
           }
 
-          currentOffsetRatio = Math.max(-0.95, Math.min(0.95, ratio));
-          this.updateStrikerPosition();
+          var angle = Math.atan2(dy, dx);
+          var maxDrag = 140;
+          var clampedDist = Math.min(dist, maxDrag);
+          this.aimPowerRatio = Math.max(0, Math.min(1, (clampedDist - 8) / (maxDrag - 8)));
+          this.aimAngle = angle;
+
+          var px = this.strikerBody.position.x;
+          var py = this.strikerBody.position.y;
+          var rayLen = this.strikerRadius * 2.5 + this.aimPowerRatio * this.strikerRadius * 5.0;
+          var ex = px + Math.cos(angle) * rayLen;
+          var ey = py + Math.sin(angle) * rayLen;
+
+          this.aimRay.clear();
+          var col = this.aimPowerRatio > 0.75 ? 0xF59E0B : 0x4ADE80;
+          this.aimRay.lineStyle(2.5, col, 0.5 + this.aimPowerRatio * 0.5);
+          this.aimRay.lineBetween(px, py, ex, ey);
+          this.aimRay.fillStyle(col, 0.9);
+          this.aimRay.fillCircle(ex, ey, 4 + this.aimPowerRatio * 3.5);
 
           sendToReactNative({
-            type: 'STRIKER_DRAGGED',
-            payload: { offset: currentOffsetRatio, seat: currentSeat },
+            type: 'AIM_CHANGED',
+            payload: { angle: angle, powerRatio: this.aimPowerRatio },
             timestamp: Date.now()
           });
+        },
+
+        executeShot: function(angle, powerRatio) {
+          if (this.isShotActive || !this.strikerBody) return;
+
+          this.isShotActive = true;
+          this.restStartTime = 0;
+          this.pocketedInCurrentShot = [];
+
+          var power = 1.5 + powerRatio * 26.5;
+          var fx = Math.cos(angle) * power * 0.18;
+          var fy = Math.sin(angle) * power * 0.18;
+
+          this.matter.body.applyForce(this.strikerBody, this.strikerBody.position, { x: fx, y: fy });
+
+          sendToReactNative({
+            type: 'SHOT_STARTED',
+            payload: { power: power, powerRatio: powerRatio, angle: angle },
+            timestamp: Date.now()
+          });
+        },
+
+        setupCollisionHandlers: function() {
+          var scene = this;
+
+          this.matter.world.on('collisionstart', function(event) {
+            event.pairs.forEach(function(pair) {
+              var bodyA = pair.bodyA;
+              var bodyB = pair.bodyB;
+
+              var isSensA = bodyA.isSensor && bodyA.label && bodyA.label.indexOf('pocket_') === 0;
+              var isSensB = bodyB.isSensor && bodyB.label && bodyB.label.indexOf('pocket_') === 0;
+
+              if (isSensA) {
+                scene.handlePocketEntry(bodyB, parseInt(bodyA.label.split('_')[1], 10));
+              } else if (isSensB) {
+                scene.handlePocketEntry(bodyA, parseInt(bodyB.label.split('_')[1], 10));
+              }
+            });
+          });
+        },
+
+        handlePocketEntry: function(body, pocketIdx) {
+          if (!body || body.isPocketed) return;
+          body.isPocketed = true;
+
+          var scene = this;
+
+          if (body.isStriker) {
+            this.strikerIsPocketed = true;
+            this.pocketedInCurrentShot.push({ id: 'striker', type: 'striker', pocketIndex: pocketIdx });
+
+            this.tweens.add({
+              targets: [scene.strikerSprite, scene.strikerShadow],
+              scaleX: 0.1,
+              scaleY: 0.1,
+              alpha: 0,
+              duration: 250,
+              ease: 'Back.easeIn',
+              onComplete: function() {
+                scene.matter.body.setVelocity(body, { x: 0, y: 0 });
+                scene.strikerSprite.setVisible(false);
+                scene.strikerShadow.setVisible(false);
+              }
+            });
+
+            sendToReactNative({
+              type: 'STRIKER_POCKETED',
+              payload: { pocketIndex: pocketIdx },
+              timestamp: Date.now()
+            });
+          } else if (body.coinRef) {
+            var c = body.coinRef;
+            if (c.isPocketed) return;
+            c.isPocketed = true;
+
+            this.pocketedInCurrentShot.push({ id: c.id, type: c.type, pocketIndex: pocketIdx });
+
+            this.tweens.add({
+              targets: [c.sprite, c.shadow],
+              scaleX: 0.1,
+              scaleY: 0.1,
+              alpha: 0,
+              duration: 250,
+              ease: 'Back.easeIn',
+              onComplete: function() {
+                c.sprite.setVisible(false);
+                c.shadow.setVisible(false);
+                scene.matter.world.remove(body);
+              }
+            });
+
+            sendToReactNative({
+              type: 'OBJECT_POCKETED',
+              payload: { id: c.id, type: c.type, pocketIndex: pocketIdx },
+              timestamp: Date.now()
+            });
+          }
+        },
+
+        update: function() {
+          var scene = this;
+          var linearThreshold = 0.07;
+          var angularThreshold = 0.04;
+
+          // 1. Update Striker Visual & Physics Damping
+          var strikerMoving = false;
+          if (this.strikerBody && !this.strikerIsPocketed) {
+            var sx = this.strikerBody.position.x;
+            var sy = this.strikerBody.position.y;
+            var svx = this.strikerBody.velocity.x;
+            var svy = this.strikerBody.velocity.y;
+            var sSpeed = Math.hypot(svx, svy);
+            var sav = this.strikerBody.angularVelocity;
+
+            if (sSpeed < linearThreshold && Math.abs(sav) < angularThreshold) {
+              if (sSpeed > 0 || sav !== 0) {
+                this.matter.body.setVelocity(this.strikerBody, { x: 0, y: 0 });
+                this.matter.body.setAngularVelocity(this.strikerBody, 0);
+              }
+            } else {
+              strikerMoving = true;
+              this.matter.body.setVelocity(this.strikerBody, { x: svx * 0.992, y: svy * 0.992 });
+              this.matter.body.setAngularVelocity(this.strikerBody, sav * 0.95);
+            }
+
+            this.strikerSprite.setPosition(sx, sy);
+            this.strikerSprite.setRotation(this.strikerBody.angle);
+            this.strikerShadow.setPosition(sx + 4, sy + 5);
+          }
+
+          // 2. Update Coins Visual & Physics Damping
+          var anyCoinMoving = false;
+          this.coins.forEach(function(c) {
+            if (c.isPocketed || !c.body) return;
+
+            var cx = c.body.position.x;
+            var cy = c.body.position.y;
+            var cvx = c.body.velocity.x;
+            var cvy = c.body.velocity.y;
+            var cSpeed = Math.hypot(cvx, cvy);
+            var cav = c.body.angularVelocity;
+
+            if (cSpeed < linearThreshold && Math.abs(cav) < angularThreshold) {
+              if (cSpeed > 0 || cav !== 0) {
+                scene.matter.body.setVelocity(c.body, { x: 0, y: 0 });
+                scene.matter.body.setAngularVelocity(c.body, 0);
+              }
+            } else {
+              anyCoinMoving = true;
+              scene.matter.body.setVelocity(c.body, { x: cvx * 0.992, y: cvy * 0.992 });
+              scene.matter.body.setAngularVelocity(c.body, cav * 0.95);
+            }
+
+            c.sprite.setPosition(cx, cy);
+            c.sprite.setRotation(c.body.angle);
+            c.shadow.setPosition(cx + 3, cy + 4);
+          });
+
+          // 3. Motion & Settled Detection
+          if (this.isShotActive) {
+            var allStopped = !strikerMoving && !anyCoinMoving;
+            var now = Date.now();
+
+            if (allStopped) {
+              if (this.restStartTime === 0) {
+                this.restStartTime = now;
+              } else if (now - this.restStartTime >= 250) {
+                // Board has settled!
+                this.isShotActive = false;
+                this.restStartTime = 0;
+
+                var pocketed = this.pocketedInCurrentShot.slice();
+                this.pocketedInCurrentShot = [];
+
+                sendToReactNative({
+                  type: 'SHOT_SETTLED',
+                  payload: {
+                    pocketedCount: pocketed.length,
+                    pocketedItems: pocketed,
+                    strikerPocketed: this.strikerIsPocketed
+                  },
+                  timestamp: now
+                });
+
+                // Reset striker back to player's baseline
+                this.resetStriker();
+              }
+            } else {
+              this.restStartTime = 0;
+            }
+          }
+        },
+
+        resetStriker: function() {
+          this.strikerIsPocketed = false;
+          if (this.strikerSprite) {
+            this.strikerSprite.setVisible(true);
+            this.strikerSprite.setScale(1);
+            this.strikerSprite.setAlpha(1);
+          }
+          if (this.strikerShadow) {
+            this.strikerShadow.setVisible(true);
+            this.strikerShadow.setScale(1);
+            this.strikerShadow.setAlpha(1);
+          }
+          currentOffsetRatio = 0;
+          this.updateStrikerPosition();
         },
 
         changeTheme: function(themeId) {
@@ -711,8 +1072,6 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var theme = getTheme(themeId);
           generateTextures(this, theme);
           this.renderBoardGraphics(theme);
-          this.spawnCoinCluster();
-          this.createStriker(theme);
         },
 
         changeStrikerSkin: function(skin) {
@@ -724,19 +1083,22 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
         setSeat: function(seat) {
           currentSeat = seat;
-          currentOffsetRatio = 0;
-          this.updateStrikerPosition();
+          this.resetStriker();
         },
 
         setOffset: function(offset) {
-          currentOffsetRatio = offset;
-          this.updateStrikerPosition();
+          if (!this.isShotActive) {
+            currentOffsetRatio = offset;
+            this.updateStrikerPosition();
+          }
         },
 
         resetBoard: function() {
           this.spawnCoinCluster();
-          currentOffsetRatio = 0;
-          this.updateStrikerPosition();
+          this.resetStriker();
+          this.isShotActive = false;
+          this.restStartTime = 0;
+          this.pocketedInCurrentShot = [];
         }
       });
 
@@ -775,6 +1137,12 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
                 activeScene.setOffset(msg.payload.offset);
               }
               break;
+            case 'SHOOT':
+              if (msg.payload && typeof msg.payload.power === 'number') {
+                var angle = typeof msg.payload.angle === 'number' ? msg.payload.angle : -Math.PI / 2;
+                activeScene.executeShot(angle, msg.payload.power);
+              }
+              break;
             case 'RESET_BOARD':
               activeScene.resetBoard();
               break;
@@ -791,13 +1159,20 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         handleHostMessage(ev.data);
       });
 
-      // INITIALIZE PHASER
+      // INITIALIZE PHASER WITH MATTER PHYSICS
       var config = {
         type: Phaser.AUTO,
         parent: 'carrom-game-container',
         width: ${canvasSize},
         height: ${canvasSize},
         backgroundColor: '#07130E',
+        physics: {
+          default: 'matter',
+          matter: {
+            gravity: { x: 0, y: 0 },
+            debug: false
+          }
+        },
         scale: {
           mode: Phaser.Scale.FIT,
           autoCenter: Phaser.Scale.CENTER_BOTH,
