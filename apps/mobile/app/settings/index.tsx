@@ -11,7 +11,6 @@ import { useRouter } from 'expo-router';
 import {
   GameCard,
   Modal,
-  PrimaryButton,
   ScreenContainer,
   SecondaryButton,
   Toggle,
@@ -110,10 +109,10 @@ export default function SettingsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.backArrow}>◀</Text>
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Game Settings</Text>
+          <Text style={styles.headerTitle}>CLUB SETTINGS</Text>
           <Text style={styles.headerSub}>Audio, graphics, language & accounts</Text>
         </View>
       </View>
@@ -134,7 +133,7 @@ export default function SettingsScreen() {
         <View style={styles.settingRow}>
           <View style={styles.settingMeta}>
             <Text style={styles.settingLabel}>Background Music</Text>
-            <Text style={styles.settingDesc}>Calm forest ambient acoustic music</Text>
+            <Text style={styles.settingDesc}>Calm forest ambient acoustic tracks</Text>
           </View>
           <Toggle value={settings.musicEnabled} onValueChange={toggleMusic} />
         </View>
@@ -144,7 +143,7 @@ export default function SettingsScreen() {
         <View style={styles.settingRow}>
           <View style={styles.settingMeta}>
             <Text style={styles.settingLabel}>Haptic Feedback</Text>
-            <Text style={styles.settingDesc}>Vibration pulse on pockets and cushion bounces</Text>
+            <Text style={styles.settingDesc}>Tactile vibration pulse on cushion bounces and pockets</Text>
           </View>
           <Toggle value={settings.hapticEnabled} onValueChange={toggleHaptics} />
         </View>
@@ -154,7 +153,7 @@ export default function SettingsScreen() {
         <View style={styles.settingRow}>
           <View style={styles.settingMeta}>
             <Text style={styles.settingLabel}>Aim Assist Guide Line</Text>
-            <Text style={styles.settingDesc}>Display projected striker trajectory on board</Text>
+            <Text style={styles.settingDesc}>Display projected striker trajectory line on table</Text>
           </View>
           <Toggle value={settings.aimAssistEnabled} onValueChange={toggleAimAssist} />
         </View>
@@ -182,7 +181,7 @@ export default function SettingsScreen() {
         <View style={styles.settingRow}>
           <View style={styles.settingMeta}>
             <Text style={styles.settingLabel}>Push Notifications</Text>
-            <Text style={styles.settingDesc}>Daily rewards, season cups & friend challenges</Text>
+            <Text style={styles.settingDesc}>Daily rewards, season cups & club challenges</Text>
           </View>
           <Toggle
             value={pushNotifications}
@@ -248,14 +247,14 @@ export default function SettingsScreen() {
 
         <View style={styles.settingRow}>
           <Text style={styles.settingLabel}>App Version</Text>
-          <Text style={styles.versionText}>v1.0.0 (Forest Emerald)</Text>
+          <Text style={styles.versionText}>v1.0.0 (Emerald Club Night)</Text>
         </View>
       </GameCard>
 
       {/* ACCOUNT & SIGN OUT */}
       <Text style={styles.sectionTitle}>ACCOUNT ACTIONS</Text>
       <SecondaryButton
-        title={user ? `Sign Out (${user.email || 'Champion'})` : 'Sign Out'}
+        title={user ? `SIGN OUT (${user.email || 'MEMBER'})` : 'SIGN OUT'}
         onPress={handleSignOut}
         variant="outline"
         size="large"
@@ -357,85 +356,85 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   backArrow: {
-    fontSize: 20,
-    color: THEME.colors.textPrimary,
+    fontSize: 16,
+    color: THEME.colors.brass,
   },
   headerTextWrap: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   headerSub: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.xs,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginTop: 16,
+    marginBottom: 8,
   },
   card: {
-    padding: THEME.spacing.md,
-    borderColor: THEME.colors.border,
+    padding: 14,
   },
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   clickableRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   settingMeta: {
     flex: 1,
-    paddingRight: THEME.spacing.sm,
+    paddingRight: 12,
   },
   settingLabel: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   settingDesc: {
     fontSize: 11,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   rowDivider: {
-    height: 1,
-    backgroundColor: THEME.colors.border,
-    marginVertical: THEME.spacing.sm,
+    height: 1.5,
+    backgroundColor: '#1B7050',
+    marginVertical: 8,
   },
   rowRightPill: {
     flexDirection: 'row',
@@ -443,13 +442,13 @@ const styles = StyleSheet.create({
   },
   rowRightPillText: {
     fontSize: 12,
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
     fontWeight: 'bold',
     marginRight: 6,
   },
   chevron: {
     fontSize: 18,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   syncRow: {
     flexDirection: 'row',
@@ -457,24 +456,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   syncBtn: {
-    backgroundColor: THEME.colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: THEME.borderRadius.sm,
+    backgroundColor: THEME.colors.neonEmerald,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderBottomWidth: 3,
+    borderBottomColor: '#169352',
   },
   syncBtnText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#07261C',
+    letterSpacing: 0.5,
   },
   versionText: {
     fontSize: 11,
-    color: THEME.colors.accent,
+    color: THEME.colors.brass,
     fontWeight: 'bold',
   },
   signOutBtn: {
-    marginTop: THEME.spacing.xs,
-    borderColor: THEME.colors.danger,
+    marginTop: 8,
   },
   modalScroll: {
     maxHeight: 380,
@@ -484,34 +485,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#1B7050',
   },
   languageOptionActive: {
-    backgroundColor: 'rgba(74, 222, 128, 0.08)',
+    backgroundColor: '#125A3F',
   },
   languageName: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textPrimary,
+    fontSize: 14,
+    color: THEME.colors.cream,
+    fontWeight: '600',
   },
   languageNameActive: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
     fontWeight: 'bold',
   },
   checkIcon: {
     fontSize: 16,
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
     fontWeight: 'bold',
   },
   helpTitle: {
-    fontSize: THEME.typography.fontSize.bodyMd,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
+    color: THEME.colors.brass,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   legalBody: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
-    lineHeight: 18,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
+    lineHeight: 20,
   },
 });
