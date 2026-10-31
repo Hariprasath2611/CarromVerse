@@ -15,6 +15,7 @@ export interface ScreenContainerProps {
   children: React.ReactNode;
   scrollable?: boolean;
   refreshControl?: React.ReactElement;
+  edges?: ('top' | 'right' | 'bottom' | 'left')[];
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
 }
@@ -23,11 +24,12 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   children,
   scrollable = false,
   refreshControl,
+  edges = ['top', 'left', 'right', 'bottom'],
   style,
   contentContainerStyle,
 }) => {
   return (
-    <SafeAreaView style={[styles.safeArea, style]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, style]} edges={edges}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

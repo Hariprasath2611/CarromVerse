@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { THEME } from '../../src/constants/theme';
 
 export default function TabsLayout() {
@@ -65,9 +65,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#07261C',
     borderTopColor: '#1B7050',
     borderTopWidth: 2,
-    height: 56,
-    paddingBottom: 4,
-    paddingTop: 4,
+    height: Platform.OS === 'ios' ? 74 : 64,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    paddingTop: 8,
   },
   tabItem: {
     justifyContent: 'center',
