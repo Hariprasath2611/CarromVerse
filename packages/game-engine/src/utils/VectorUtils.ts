@@ -4,7 +4,7 @@
 
 import { Vector2D } from '../types/GameTypes.js';
 
-export { Vector2D };
+export type { Vector2D };
 
 export class VectorUtils {
   public static distance(x1: number, y1: number, x2: number, y2: number): number {
