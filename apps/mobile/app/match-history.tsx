@@ -158,13 +158,17 @@ export default function MatchHistoryScreen() {
 
                   {/* Scores Pills */}
                   <View style={styles.scoresRow}>
-                    {scoreEntries.map(([playerId, pts]) => (
-                      <View key={playerId} style={styles.scorePill}>
-                        <Text style={styles.scorePillText}>
-                          {playerId.replace('player_', 'P')}: {pts} pts
-                        </Text>
-                      </View>
-                    ))}
+                    {scoreEntries.map(([playerId, pts]) => {
+                      const scoreVal =
+                        typeof pts === 'number' ? pts : (pts as any)?.points ?? 0;
+                      return (
+                        <View key={playerId} style={styles.scorePill}>
+                          <Text style={styles.scorePillText}>
+                            {playerId.replace('player_', 'P')}: {scoreVal} pts
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </Card>
               );

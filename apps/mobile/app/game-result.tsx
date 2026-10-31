@@ -79,8 +79,12 @@ export default function GameResultScreen() {
         <Text style={styles.cardHeaderTitle}>FINAL SCORES</Text>
         <View style={styles.scoresList}>
           {players.map((p) => {
+            const rawScore =
+              gameResult?.finalScores?.[p.id] ?? scores[p.id];
             const finalScore =
-              gameResult?.finalScores?.[p.id] ?? scores[p.id]?.points ?? 0;
+              typeof rawScore === 'number'
+                ? rawScore
+                : rawScore?.points ?? 0;
             const isWinner =
               (!gameResult?.isDraw &&
                 (p.id === gameResult?.winnerId ||
