@@ -1,5 +1,5 @@
 import {
-  CoinType,
+  AssignedCoinType,
   GameMode,
   Player,
   PlayerPosition,
@@ -13,7 +13,7 @@ export interface SeatLayout {
   positionLabel: string;
   defaultName: string;
   defaultAvatar: string;
-  defaultCoinType: CoinType | 'any';
+  defaultCoinType: AssignedCoinType;
   teamId?: TeamId;
   teamLabel?: string;
 }

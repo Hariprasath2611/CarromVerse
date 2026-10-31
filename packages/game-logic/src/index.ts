@@ -1,5 +1,6 @@
 export * from './config/board.config.js';
 export * from './config/rules.config.js';
+export * from './config/seat.config.js';
 export * from './rulesets/index.js';
 export * from './engine/CarromRulesEngine.js';
 export * from './engine/FoulManager.js';
