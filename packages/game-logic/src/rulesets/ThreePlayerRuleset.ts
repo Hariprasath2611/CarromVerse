@@ -111,3 +111,4 @@ export class ThreePlayerRuleset implements IRuleset {
     return { hasWinner: false, isDraw: false };
   }
 }
+

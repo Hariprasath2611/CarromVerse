@@ -109,3 +109,4 @@ export class FourPlayerIndividualRuleset implements IRuleset {
     return { hasWinner: false, isDraw: false };
   }
 }
+

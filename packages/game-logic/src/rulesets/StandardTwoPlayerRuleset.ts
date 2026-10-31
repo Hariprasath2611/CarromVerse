@@ -132,3 +132,4 @@ export class StandardTwoPlayerRuleset implements IRuleset {
     return { hasWinner: false, isDraw: false };
   }
 }
+

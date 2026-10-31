@@ -64,3 +64,4 @@ export interface IRuleset {
   canCoverQueen(player: Player, queenPocketedByPlayerId?: PlayerId, queenPocketedByTeamId?: TeamId): boolean;
   evaluateWin(context: WinEvaluationContext): WinEvaluationResult;
 }
+

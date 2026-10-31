@@ -26,3 +26,4 @@ export function createRulesetForMode(mode: GameMode, config?: Partial<GameConfig
       return new StandardTwoPlayerRuleset(config);
   }
 }
+
