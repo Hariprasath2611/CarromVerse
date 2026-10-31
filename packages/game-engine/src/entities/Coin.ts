@@ -3,6 +3,8 @@ import { ASSET_KEYS } from '../assets/AssetRegistry.js';
 import { CoinType, NormalizedCoordinate, Vector2D } from '../types/GameTypes.js';
 import { COIN_SHADOW_CONFIG } from '../rendering/Shadows.js';
 import { CarromBoard } from '../board/CarromBoard.js';
+import { COLLISION_CATEGORIES, COLLISION_MASKS } from '../physics/CollisionCategories.js';
+import { PHYSICS_CONFIG } from '../physics/PhysicsConfig.js';
 
 export class Coin {
   public readonly id: string;
@@ -17,8 +19,8 @@ export class Coin {
   protected ny: number;
   protected baseRadius: number;
 
-  // Placeholder hook for Phase 1.4 Matter.js body
-  public physicsBody: any = null;
+  public physicsBody: MatterJS.BodyType | null = null;
+  public isPocketed: boolean = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -66,6 +68,99 @@ export class Coin {
   }
 
   /**
+   * Instantiates Matter.js physics rigid circle body and attaches to entity.
+   */
+  public createPhysicsBody(): MatterJS.BodyType {
+    const pixelPos = this.board.toPixel(this.nx, this.ny);
+    const radius = this.baseRadius;
+
+    let category = COLLISION_CATEGORIES.WHITE_COIN;
+    let mask = COLLISION_MASKS.WHITE_COIN;
+
+    if (this.coinType === 'black') {
+      category = COLLISION_CATEGORIES.BLACK_COIN;
+      mask = COLLISION_MASKS.BLACK_COIN;
+    } else if (this.coinType === 'queen') {
+      category = COLLISION_CATEGORIES.QUEEN;
+      mask = COLLISION_MASKS.QUEEN;
+    }
+
+    const body = this.scene.matter.add.circle(pixelPos.x, pixelPos.y, radius, {
+      restitution: PHYSICS_CONFIG.coins.restitution,
+      friction: PHYSICS_CONFIG.coins.friction,
+      frictionAir: PHYSICS_CONFIG.coins.frictionAir,
+      frictionStatic: PHYSICS_CONFIG.coins.frictionStatic,
+      density: PHYSICS_CONFIG.coins.density,
+      label: `coin_${this.id}`,
+      collisionFilter: {
+        category,
+        mask,
+      },
+    });
+
+    (body as any).entity = this;
+    (body as any).entityType = this.coinType;
+    (body as any).entityId = this.id;
+    this.physicsBody = body;
+    return body;
+  }
+
+  /**
+   * Synchronizes visual container and sprite position/rotation with Matter body.
+   */
+  public syncVisualWithPhysics(): void {
+    if (!this.physicsBody || this.isPocketed) return;
+
+    const px = this.physicsBody.position.x;
+    const py = this.physicsBody.position.y;
+    this.container.setPosition(px, py);
+    this.coinSprite.setRotation(this.physicsBody.angle);
+
+    const norm = this.board.toNormalized(px, py);
+    this.nx = norm.nx;
+    this.ny = norm.ny;
+  }
+
+  /**
+   * Plays smooth sink animation when coin enters a corner pocket.
+   */
+  public playPocketAnimation(onComplete?: () => void): void {
+    this.isPocketed = true;
+    if (this.physicsBody) {
+      this.physicsBody.isSensor = true;
+      this.scene.matter.body.setVelocity(this.physicsBody, { x: 0, y: 0 });
+      this.scene.matter.body.setAngularVelocity(this.physicsBody, 0);
+    }
+
+    this.scene.tweens.add({
+      targets: [this.container],
+      scaleX: 0.1,
+      scaleY: 0.1,
+      alpha: 0,
+      duration: PHYSICS_CONFIG.pocket.sinkAnimationDurationMs,
+      ease: 'Back.easeIn',
+      onComplete: () => {
+        this.setVisible(false);
+        onComplete?.();
+      },
+    });
+  }
+
+  /**
+   * Checks if coin physics body is at rest.
+   */
+  public isAtRest(): boolean {
+    if (!this.physicsBody) return true;
+    if (this.isPocketed) return true;
+    const speed = Math.hypot(this.physicsBody.velocity.x, this.physicsBody.velocity.y);
+    const angularSpeed = Math.abs(this.physicsBody.angularVelocity);
+    return (
+      speed < PHYSICS_CONFIG.motion.linearRestThreshold &&
+      angularSpeed < PHYSICS_CONFIG.motion.angularRestThreshold
+    );
+  }
+
+  /**
    * Sets normalized position and updates pixel placement and shadow.
    */
   public setNormalizedPosition(nx: number, ny: number): void {
@@ -73,61 +168,45 @@ export class Coin {
     this.ny = ny;
     const pixelPos = this.board.toPixel(nx, ny);
     this.container.setPosition(pixelPos.x, pixelPos.y);
+
+    if (this.physicsBody) {
+      this.scene.matter.body.setPosition(this.physicsBody, { x: pixelPos.x, y: pixelPos.y });
+    }
   }
 
-  /**
-   * Sets scale factor.
-   */
   public setScale(scale: number): void {
     this.container.setScale(scale);
   }
 
-  /**
-   * Sets rotation in radians.
-   */
   public setRotation(rotation: number): void {
     this.coinSprite.setRotation(rotation);
   }
 
-  /**
-   * Sets coin visibility.
-   */
   public setVisible(visible: boolean): void {
     this.container.setVisible(visible);
   }
 
-  /**
-   * Sets rendering depth (Z-order).
-   */
   public setDepth(depth: number): void {
     this.container.setDepth(depth);
   }
 
-  /**
-   * Returns normalized coordinate.
-   */
   public getNormalizedPosition(): NormalizedCoordinate {
     return { nx: this.nx, ny: this.ny };
   }
 
-  /**
-   * Returns screen pixel position.
-   */
   public getPixelPosition(): Vector2D {
     return { x: this.container.x, y: this.container.y };
   }
 
-  /**
-   * Hook for future Phase 1.4 Matter.js rigid body binding.
-   */
-  public attachPhysicsBody(body: any): void {
+  public attachPhysicsBody(body: MatterJS.BodyType): void {
     this.physicsBody = body;
   }
 
-  /**
-   * Destroys visual sprites and containers.
-   */
   public destroy(): void {
+    if (this.physicsBody && this.scene.matter && this.scene.matter.world) {
+      this.scene.matter.world.remove(this.physicsBody);
+      this.physicsBody = null;
+    }
     this.shadowSprite.destroy();
     this.coinSprite.destroy();
     this.container.destroy();
