@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, PlayerAvatar, ScreenContainer } from '../src/components';
+import { BoardPreview, Button, Card, ScreenContainer } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
-import { createDefaultGameConfig } from '@carromverse/game-logic';
+import { createDefaultGameConfig, getSeatDirectionLabel } from '@carromverse/game-logic';
+import { GameConfiguration, PlayerSeat } from '@carromverse/shared-types';
 import { THEME } from '../src/constants/theme';
 
 export default function LobbyScreen() {
@@ -15,38 +16,51 @@ export default function LobbyScreen() {
     boardTheme,
     targetPoints,
     turnTimeLimitSec,
-    setGameMode,
-    setPlayerCount,
+    handoverConfirmationEnabled,
+    soundEnabled,
+    musicEnabled,
+    teamAName,
+    teamBName,
   } = useGameSetupStore();
-  const startSession = useGameSessionStore((state) => state.startSession);
 
-  const [activeTab, setActiveTab] = useState<'2' | '3' | '4'>('4');
-  const codeChars = ['K', '7', 'Q', '4', 'X', 'M'];
+  const startSession = useGameSessionStore((state) => state.startSession);
 
   const handleStartMatch = () => {
     const baseConfig = createDefaultGameConfig(selectedMode);
-    const config = {
+    const config: GameConfiguration = {
       ...baseConfig,
+      boardTheme,
       targetScore: targetPoints,
       turnTimeLimitSeconds: turnTimeLimitSec,
+      handoverConfirmationEnabled,
+      soundEnabled,
+      musicEnabled,
+      teamNames: selectedMode === 'four_player_team'
+        ? { team_a: teamAName, team_b: teamBName }
+        : undefined,
     };
+
     startSession(config, players);
     router.replace('/game-board');
   };
 
-  const handleSelectTab = (tab: '2' | '3' | '4') => {
-    setActiveTab(tab);
-    if (tab === '2') {
-      setPlayerCount(2);
-      setGameMode('two_player_individual');
-    } else if (tab === '3') {
-      setPlayerCount(3);
-      setGameMode('three_player_individual');
-    } else {
-      setPlayerCount(4);
-      setGameMode('four_player_team');
-    }
+  const getPlayerAtSeat = (seat: PlayerSeat) => {
+    return players.find((p) => p.seat === seat);
   };
+
+  const northPlayer = getPlayerAtSeat(2);
+  const southPlayer = getPlayerAtSeat(0);
+  const eastPlayer = getPlayerAtSeat(1);
+  const westPlayer = getPlayerAtSeat(3);
+
+  const modeTitle =
+    selectedMode === 'two_player_individual'
+      ? '2 Players · 1v1 Classic'
+      : selectedMode === 'three_player_individual'
+      ? '3 Players · Points Carrom'
+      : selectedMode === 'four_player_team'
+      ? `4 Players · 2v2 (${teamAName} vs ${teamBName})`
+      : '4 Players · Free for All';
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
@@ -56,121 +70,119 @@ export default function LobbyScreen() {
 
       {/* Screen Title */}
       <View style={styles.header}>
-        <Text style={styles.title}>TABLE K7Q4XM</Text>
+        <Text style={styles.title}>OFFLINE GAME LOBBY</Text>
+        <Text style={styles.subtitle}>All players ready on this device</Text>
       </View>
 
-      {/* Code Tiles Row */}
-      <View style={styles.tilesRow}>
-        {codeChars.map((char, idx) => (
-          <View key={idx} style={styles.codeTile}>
-            <Text style={styles.codeChar}>{char}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Quick Action Buttons */}
-      <View style={styles.quickActionsRow}>
-        <Button
-          title="COPY CODE"
-          variant="secondary"
-          onPress={() => {}}
-          style={styles.actionBtn}
-        />
-        <Button
-          title="INVITE FRIEND"
-          variant="secondary"
-          onPress={() => {}}
-          style={styles.actionBtn}
-        />
-      </View>
-
-      {/* Circular Table Seating Card */}
+      {/* TABLE VISUALIZATION CARD */}
       <Card style={styles.tableCard}>
-        <View style={styles.tableCircle}>
-          {/* Center Info */}
-          <View style={styles.centerTableInfo}>
-            <Text style={styles.centerCountText}>4 PLAYERS</Text>
-            <Text style={styles.centerTeamsText}>TEAMS</Text>
-          </View>
-
-          {/* North Seat (+) */}
-          <View style={[styles.seatSlot, styles.seatNorth]}>
-            <View style={styles.dashedAddSlot}>
-              <Text style={styles.addSlotPlus}>+</Text>
+        {/* North Player (Seat 2) */}
+        {northPlayer && (
+          <View style={styles.seatRowNorth}>
+            <View style={styles.seatSlot}>
+              <View style={[styles.avatarCircle, northPlayer.teamId === 'team_b' ? styles.avatarGold : styles.avatarEmerald]}>
+                <Text style={styles.avatarEmoji}>{northPlayer.avatarUrl || '👑'}</Text>
+              </View>
+              <Text style={styles.seatPlayerName} numberOfLines={1}>{northPlayer.name}</Text>
+              <Text style={styles.seatMetaText}>
+                {northPlayer.teamId ? (northPlayer.teamId === 'team_a' ? teamAName : teamBName) : 'North'}
+              </Text>
             </View>
           </View>
+        )}
 
-          {/* South Seat (Host) */}
-          <View style={[styles.seatSlot, styles.seatSouth]}>
-            <PlayerAvatar
-              name="HARIPRASATH"
-              size={54}
-              colorVariant="gold"
-              ringColor="#2BD67B"
-            />
-            <Text style={styles.seatLabel}>YOU · HOST</Text>
+        {/* Middle Row: West Player + Board Preview + East Player */}
+        <View style={styles.middleRow}>
+          {/* West Player (Seat 3) */}
+          <View style={styles.sideSlotWrapper}>
+            {westPlayer ? (
+              <View style={styles.seatSlot}>
+                <View style={[styles.avatarCircle, styles.avatarGold]}>
+                  <Text style={styles.avatarEmoji}>{westPlayer.avatarUrl || '👑'}</Text>
+                </View>
+                <Text style={styles.seatPlayerName} numberOfLines={1}>{westPlayer.name}</Text>
+                <Text style={styles.seatMetaText}>{teamBName}</Text>
+              </View>
+            ) : (
+              <View style={styles.emptySlot} />
+            )}
           </View>
 
-          {/* West Seat (Arun) */}
-          <View style={[styles.seatSlot, styles.seatWest]}>
-            <PlayerAvatar
-              name="Arun"
-              size={54}
-              colorVariant="emerald"
-              ringColor="#E9B949"
-            />
-            <Text style={styles.seatLabel}>ARUN</Text>
+          {/* Board Center */}
+          <View style={styles.boardCenter}>
+            <BoardPreview size={140} theme={boardTheme} />
           </View>
 
-          {/* East Seat (+) */}
-          <View style={[styles.seatSlot, styles.seatEast]}>
-            <View style={[styles.dashedAddSlot, styles.dashedGold]}>
-              <Text style={[styles.addSlotPlus, styles.goldPlus]}>+</Text>
+          {/* East Player (Seat 1) */}
+          <View style={styles.sideSlotWrapper}>
+            {eastPlayer ? (
+              <View style={styles.seatSlot}>
+                <View style={[styles.avatarCircle, eastPlayer.teamId === 'team_b' ? styles.avatarGold : styles.avatarEmerald]}>
+                  <Text style={styles.avatarEmoji}>{eastPlayer.avatarUrl || '👑'}</Text>
+                </View>
+                <Text style={styles.seatPlayerName} numberOfLines={1}>{eastPlayer.name}</Text>
+                <Text style={styles.seatMetaText}>
+                  {eastPlayer.teamId ? teamBName : 'East'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.emptySlot} />
+            )}
+          </View>
+        </View>
+
+        {/* South Player (Seat 0) */}
+        {southPlayer && (
+          <View style={styles.seatRowSouth}>
+            <View style={styles.seatSlot}>
+              <View style={[styles.avatarCircle, styles.avatarEmerald]}>
+                <Text style={styles.avatarEmoji}>{southPlayer.avatarUrl || '👑'}</Text>
+              </View>
+              <Text style={styles.seatPlayerName} numberOfLines={1}>{southPlayer.name}</Text>
+              <Text style={styles.seatMetaText}>
+                {southPlayer.teamId ? teamAName : 'South'}
+              </Text>
             </View>
+          </View>
+        )}
+      </Card>
+
+      {/* MATCH SUMMARY CARD */}
+      <Card style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>MATCH RULES SUMMARY</Text>
+        <View style={styles.summaryGrid}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryItemLabel}>MODE</Text>
+            <Text style={styles.summaryItemVal}>{modeTitle}</Text>
+          </View>
+
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryItemLabel}>TARGET SCORE</Text>
+            <Text style={styles.summaryItemVal}>{targetPoints} Points</Text>
+          </View>
+
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryItemLabel}>TIMER</Text>
+            <Text style={styles.summaryItemVal}>
+              {turnTimeLimitSec > 0 ? `${turnTimeLimitSec}s per turn` : 'Unlimited'}
+            </Text>
+          </View>
+
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryItemLabel}>HANDOVER</Text>
+            <Text style={styles.summaryItemVal}>
+              {handoverConfirmationEnabled ? 'Enabled (Pass & Play)' : 'Immediate'}
+            </Text>
           </View>
         </View>
       </Card>
 
-      {/* Player Mode Tabs */}
-      <View style={styles.modeTabsRow}>
-        <TouchableOpacity
-          style={[styles.modeTab, activeTab === '2' && styles.modeTabActive]}
-          onPress={() => handleSelectTab('2')}
-        >
-          <Text style={[styles.modeTabText, activeTab === '2' && styles.modeTabTextActive]}>
-            2
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.modeTab, activeTab === '3' && styles.modeTabActive]}
-          onPress={() => handleSelectTab('3')}
-        >
-          <Text style={[styles.modeTabText, activeTab === '3' && styles.modeTabTextActive]}>
-            3
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.modeTab, activeTab === '4' && styles.modeTabGoldActive]}
-          onPress={() => handleSelectTab('4')}
-        >
-          <Text
-            style={[
-              styles.modeTabText,
-              activeTab === '4' && styles.modeTabGoldTextActive,
-            ]}
-          >
-            4 · TEAMS
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Start Game Button */}
+      {/* BOTTOM START BUTTON */}
       <View style={styles.footer}>
         <Button
-          title="START GAME"
+          title="START MATCH"
           variant="primary"
+          size="lg"
           onPress={handleStartMatch}
           style={styles.startBtn}
         />
@@ -183,9 +195,9 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#07261C',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    gap: 16,
   },
   bokehTop: {
     position: 'absolute',
@@ -207,164 +219,125 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   title: {
     color: '#F5ECD2',
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    textAlign: 'center',
-  },
-  tilesRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginVertical: 12,
-  },
-  codeTile: {
-    width: 44,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#F5ECD2',
-    borderWidth: 2,
-    borderColor: '#C7B99A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  codeChar: {
-    color: '#261B04',
     fontSize: 22,
     fontWeight: '900',
+    letterSpacing: 1.2,
+    textAlign: 'center',
   },
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  actionBtn: {
-    flex: 1,
-  },
-  tableCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 22,
-    borderColor: '#7A431C',
-    borderWidth: 4,
-    backgroundColor: '#0E4A33',
-  },
-  tableCircle: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerTableInfo: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(43, 214, 123, 0.15)',
-    borderWidth: 1.5,
-    borderColor: '#2BD67B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerCountText: {
-    color: '#F5ECD2',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  centerTeamsText: {
-    color: '#2BD67B',
-    fontSize: 12,
-    fontWeight: '900',
+  subtitle: {
+    color: '#9FD8B8',
+    fontSize: 13,
+    fontWeight: '500',
     marginTop: 2,
   },
+  tableCard: {
+    backgroundColor: '#0E4A33',
+    borderColor: 'rgba(43, 214, 123, 0.35)',
+    borderWidth: 1.5,
+    borderRadius: 20,
+    padding: 12,
+    alignItems: 'center',
+  },
+  seatRowNorth: {
+    marginBottom: 8,
+  },
+  seatRowSouth: {
+    marginTop: 8,
+  },
+  middleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  sideSlotWrapper: {
+    width: 72,
+    alignItems: 'center',
+  },
+  emptySlot: {
+    width: 72,
+  },
+  boardCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   seatSlot: {
-    position: 'absolute',
     alignItems: 'center',
-    justifyContent: 'center',
+    width: 76,
   },
-  seatNorth: {
-    top: 6,
-  },
-  seatSouth: {
-    bottom: -6,
-  },
-  seatWest: {
-    left: 6,
-  },
-  seatEast: {
-    right: 6,
-  },
-  dashedAddSlot: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  avatarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(7, 38, 28, 0.9)',
     borderWidth: 2,
-    borderStyle: 'dashed',
     borderColor: '#2BD67B',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  dashedGold: {
+  avatarEmerald: {
+    borderColor: '#2BD67B',
+  },
+  avatarGold: {
     borderColor: '#E9B949',
   },
-  addSlotPlus: {
-    color: '#2BD67B',
-    fontSize: 24,
-    fontWeight: '900',
+  avatarEmoji: {
+    fontSize: 22,
   },
-  goldPlus: {
-    color: '#E9B949',
+  seatPlayerName: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
   },
-  seatLabel: {
+  seatMetaText: {
+    color: '#9FD8B8',
+    fontSize: 9,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  summaryCard: {
+    backgroundColor: 'rgba(13, 56, 38, 0.8)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(43, 214, 123, 0.25)',
+    padding: 14,
+  },
+  summaryTitle: {
     color: '#F5ECD2',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
-    letterSpacing: 0.5,
-    marginTop: 4,
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
-  modeTabsRow: {
+  summaryGrid: {
+    gap: 8,
+  },
+  summaryItem: {
     flexDirection: 'row',
-    gap: 12,
-    marginVertical: 16,
-  },
-  modeTab: {
-    flex: 1,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#0E4A33',
-    borderColor: '#1B7050',
-    borderWidth: 2,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(43, 214, 123, 0.1)',
   },
-  modeTabActive: {
-    borderColor: '#2BD67B',
+  summaryItemLabel: {
+    color: '#9FD8B8',
+    fontSize: 11,
+    fontWeight: '700',
   },
-  modeTabGoldActive: {
-    backgroundColor: '#E9B949',
-    borderColor: '#F7D070',
-    borderBottomWidth: 4,
-    borderBottomColor: '#A57E24',
-  },
-  modeTabText: {
-    color: '#F5ECD2',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  modeTabTextActive: {
-    color: '#2BD67B',
-  },
-  modeTabGoldTextActive: {
-    color: '#261B04',
+  summaryItemVal: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   footer: {
-    marginTop: 'auto',
+    marginTop: 8,
   },
   startBtn: {
     width: '100%',
