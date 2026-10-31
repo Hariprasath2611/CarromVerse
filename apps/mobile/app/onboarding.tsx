@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#07261C',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 36,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
   },
   bokehTop: {
     position: 'absolute',
