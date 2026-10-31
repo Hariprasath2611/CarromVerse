@@ -15,7 +15,11 @@ export default function ProfileScreen() {
   const playerLevel = profile?.level || 7;
 
   return (
-    <ScreenContainer scrollable contentContainerStyle={styles.container}>
+    <ScreenContainer
+      scrollable
+      edges={['top', 'left', 'right']}
+      contentContainerStyle={styles.container}
+    >
       {/* Decorative background shapes */}
       <View style={styles.bokehTop} pointerEvents="none" />
       <View style={styles.bokehBottom} pointerEvents="none" />

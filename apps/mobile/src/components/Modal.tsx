@@ -15,6 +15,7 @@ export interface ModalProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  showCloseButton?: boolean;
   contentStyle?: ViewStyle;
 }
 
@@ -24,6 +25,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   subtitle,
   children,
+  showCloseButton = true,
   contentStyle,
 }) => {
   return (
@@ -36,14 +38,16 @@ export const Modal: React.FC<ModalProps> = ({
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={[styles.card, contentStyle]}>
-          <View style={styles.header}>
+          <View style={[styles.header, !subtitle && styles.headerBorderless]}>
             <View style={styles.titleBox}>
               <Text style={styles.title}>{title}</Text>
               {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
             </View>
-            <Pressable onPress={onClose} hitSlop={10} style={styles.closeButton}>
-              <Text style={styles.closeText}>✕</Text>
-            </Pressable>
+            {showCloseButton && (
+              <Pressable onPress={onClose} hitSlop={10} style={styles.closeButton}>
+                <Text style={styles.closeText}>✕</Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.body}>{children}</View>
@@ -86,6 +90,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1.5,
     borderBottomColor: '#1B7050',
     marginBottom: THEME.spacing.md,
+  },
+  headerBorderless: {
+    borderBottomWidth: 0,
+    marginBottom: THEME.spacing.sm,
+    paddingBottom: 0,
   },
   titleBox: {
     flex: 1,
