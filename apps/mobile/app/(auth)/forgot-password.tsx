@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   GameCard,
@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
         <View style={styles.emblemCircle}>
           <Text style={styles.emblemEmoji}>🔐</Text>
         </View>
-        <Text style={styles.title}>Reset Password</Text>
+        <Text style={styles.title}>RESET PASSWORD</Text>
         <Text style={styles.subtitle}>
           Enter your registered email and we'll send you a password reset link
         </Text>
@@ -87,7 +87,7 @@ export default function ForgotPasswordScreen() {
         />
 
         <PrimaryButton
-          title="Send Reset Link"
+          title="SEND RESET LINK"
           onPress={handleReset}
           loading={isLoading}
           variant="emerald"
@@ -96,7 +96,7 @@ export default function ForgotPasswordScreen() {
         />
 
         <SecondaryButton
-          title="Back to Sign In"
+          title="BACK TO SIGN IN"
           onPress={() => router.back()}
           variant="outline"
           size="medium"
@@ -115,85 +115,83 @@ const styles = StyleSheet.create({
   },
   headerBox: {
     alignItems: 'center',
-    marginBottom: THEME.spacing.xl,
+    marginBottom: 20,
   },
   emblemCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.primary,
-    borderWidth: 2,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
-    shadowColor: THEME.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    marginBottom: 12,
+    ...THEME.shadows.glowEmerald,
   },
   emblemEmoji: {
-    fontSize: 28,
+    fontSize: 30,
   },
   title: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 1.5,
   },
   subtitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
     textAlign: 'center',
-    marginTop: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.lg,
+    marginTop: 4,
+    paddingHorizontal: 16,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderColor: THEME.colors.danger,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.md,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    backgroundColor: 'rgba(226, 59, 90, 0.15)',
+    borderColor: THEME.colors.queenRed,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
   },
   errorIcon: {
     fontSize: 16,
-    marginRight: THEME.spacing.sm,
+    marginRight: 8,
   },
   errorText: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.queenRed,
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
   },
   successBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
-    borderColor: THEME.colors.accent,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.md,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    backgroundColor: 'rgba(43, 214, 123, 0.15)',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
   },
   successIcon: {
     fontSize: 16,
-    marginRight: THEME.spacing.sm,
+    marginRight: 8,
   },
   successText: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.medium,
+    color: THEME.colors.neonEmerald,
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
   },
   formCard: {
-    padding: THEME.spacing.lg,
+    padding: 22,
   },
   submitButton: {
-    marginTop: THEME.spacing.lg,
+    marginTop: 20,
   },
   backButton: {
-    marginTop: THEME.spacing.md,
+    marginTop: 12,
   },
 });

@@ -13,7 +13,6 @@ import {
 import { useAuthStore } from '../../src/store/authStore';
 import { validateEmail, validatePassword } from '@carromverse/shared-utils';
 import { THEME } from '../../src/constants/theme';
-import { APP_CONFIG } from '../../src/constants/config';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -65,7 +64,7 @@ export default function LoginScreen() {
         <View style={styles.emblemCircle}>
           <Text style={styles.emblemEmoji}>🎯</Text>
         </View>
-        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.title}>WELCOME BACK</Text>
         <Text style={styles.subtitle}>Sign in to sync your match stats and trophies</Text>
       </View>
 
@@ -133,11 +132,12 @@ export default function LoginScreen() {
 
         {/* Sign In Primary Action */}
         <PrimaryButton
-          title="Sign In"
+          title="SIGN IN"
           icon="🔑"
           onPress={handleLogin}
           loading={isLoading}
           variant="emerald"
+          size="large"
           style={styles.signInButton}
         />
 
@@ -150,9 +150,10 @@ export default function LoginScreen() {
 
         {/* Guest Mode Button */}
         <SecondaryButton
-          title="Play Offline as Guest"
+          title="PLAY OFFLINE AS GUEST"
           icon="🎮"
           variant="forest"
+          size="large"
           onPress={handleGuestPlay}
         />
       </GameCard>
@@ -161,7 +162,7 @@ export default function LoginScreen() {
       <View style={styles.footerRow}>
         <Text style={styles.footerText}>New to CarromVerse? </Text>
         <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={styles.signUpText}>Create Account</Text>
+          <Text style={styles.signUpText}>CREATE ACCOUNT</Text>
         </TouchableOpacity>
       </View>
     </ScreenContainer>
@@ -174,60 +175,62 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.lg,
   },
   headerBox: {
-    marginBottom: THEME.spacing.lg,
+    marginBottom: 20,
     alignItems: 'center',
   },
   emblemCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.surface,
-    borderWidth: 2,
-    borderColor: THEME.colors.primary,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#07261C',
+    borderWidth: 2.5,
+    borderColor: THEME.colors.neonEmerald,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
-    ...THEME.shadows.emeraldGlow,
+    marginBottom: 12,
+    ...THEME.shadows.glowEmerald,
   },
   emblemEmoji: {
-    fontSize: 28,
+    fontSize: 30,
   },
   title: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.headline,
-    fontWeight: THEME.typography.fontWeight.heavy,
+    color: THEME.colors.cream,
+    fontSize: 24,
+    fontWeight: 'bold',
+    letterSpacing: 1.5,
   },
   subtitle: {
-    color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.mutedMint,
+    fontSize: 13,
     marginTop: 4,
     textAlign: 'center',
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.errorBg,
-    borderColor: THEME.colors.error,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.md,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    backgroundColor: 'rgba(226, 59, 90, 0.15)',
+    borderColor: THEME.colors.queenRed,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
   },
   errorIcon: {
     fontSize: 16,
-    marginRight: THEME.spacing.sm,
+    marginRight: 8,
   },
   errorText: {
-    color: THEME.colors.error,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.queenRed,
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
   },
   formCard: {
-    padding: THEME.spacing.lg,
+    padding: 22,
   },
   passwordField: {
     position: 'relative',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   eyeBtn: {
     position: 'absolute',
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
+    marginBottom: 20,
   },
   rememberToggle: {
     paddingVertical: 0,
@@ -249,45 +252,46 @@ const styles = StyleSheet.create({
   },
   forgotBtn: {
     paddingVertical: 4,
-    marginLeft: THEME.spacing.sm,
+    marginLeft: 8,
   },
   forgotText: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.brass,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   signInButton: {
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: THEME.spacing.md,
+    marginVertical: 14,
   },
   dividerLine: {
     flex: 1,
-    height: 1,
-    backgroundColor: THEME.colors.border,
+    height: 1.5,
+    backgroundColor: '#1B7050',
   },
   dividerText: {
-    color: THEME.colors.textMuted,
-    marginHorizontal: THEME.spacing.sm,
+    color: THEME.colors.mutedMint,
+    marginHorizontal: 10,
     fontSize: 10,
-    fontWeight: THEME.typography.fontWeight.heavy,
+    fontWeight: 'bold',
     letterSpacing: 1,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: THEME.spacing.xl,
+    marginTop: 24,
   },
   footerText: {
-    color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.mutedMint,
+    fontSize: 13,
   },
   signUpText: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.neonEmerald,
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });

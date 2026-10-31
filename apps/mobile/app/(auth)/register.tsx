@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   GameCard,
@@ -7,7 +7,6 @@ import {
   LoadingOverlay,
   PrimaryButton,
   ScreenContainer,
-  SecondaryButton,
   Toggle,
 } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
@@ -84,9 +83,9 @@ export default function RegisterScreen() {
         <View style={styles.emblemCircle}>
           <Text style={styles.emblemEmoji}>👑</Text>
         </View>
-        <Text style={styles.title}>Join CarromVerse</Text>
+        <Text style={styles.title}>JOIN CARROMVERSE</Text>
         <Text style={styles.subtitle}>
-          Create your champion profile to compete, track stats & earn rewards
+          Create your club profile to compete, track stats & earn rewards
         </Text>
       </View>
 
@@ -179,7 +178,7 @@ export default function RegisterScreen() {
 
         {/* Action Button */}
         <PrimaryButton
-          title="Create Account"
+          title="CREATE ACCOUNT"
           onPress={handleRegister}
           loading={isLoading}
           variant="emerald"
@@ -191,7 +190,7 @@ export default function RegisterScreen() {
         <View style={styles.footerRow}>
           <Text style={styles.footerPrompt}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
-            <Text style={styles.footerAction}>Sign In</Text>
+            <Text style={styles.footerAction}>SIGN IN</Text>
           </TouchableOpacity>
         </View>
       </GameCard>
@@ -207,61 +206,58 @@ const styles = StyleSheet.create({
   },
   headerBox: {
     alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
+    marginBottom: 20,
   },
   emblemCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.primary,
-    borderWidth: 2,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
-    shadowColor: THEME.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    marginBottom: 12,
+    ...THEME.shadows.glowBrass,
   },
   emblemEmoji: {
-    fontSize: 28,
+    fontSize: 30,
   },
   title: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
-    letterSpacing: 0.5,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 1.5,
   },
   subtitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
     textAlign: 'center',
-    marginTop: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.md,
+    marginTop: 4,
+    paddingHorizontal: 16,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderColor: THEME.colors.danger,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.md,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    backgroundColor: 'rgba(226, 59, 90, 0.15)',
+    borderColor: THEME.colors.queenRed,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
   },
   errorIcon: {
     fontSize: 16,
-    marginRight: THEME.spacing.sm,
+    marginRight: 8,
   },
   errorText: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.queenRed,
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
   },
   formCard: {
-    padding: THEME.spacing.lg,
+    padding: 22,
   },
   passwordField: {
     position: 'relative',
@@ -278,46 +274,48 @@ const styles = StyleSheet.create({
   termsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
+    marginTop: 8,
+    marginBottom: 4,
   },
   termsTextWrap: {
     flex: 1,
-    marginLeft: THEME.spacing.md,
+    marginLeft: 12,
   },
   termsText: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     lineHeight: 18,
   },
   termsLink: {
-    color: THEME.colors.accent,
-    fontWeight: THEME.typography.fontWeight.semibold,
+    color: THEME.colors.brass,
+    fontWeight: 'bold',
   },
   fieldError: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.danger,
-    marginBottom: THEME.spacing.sm,
+    fontSize: 12,
+    color: THEME.colors.queenRed,
+    marginBottom: 8,
+    fontWeight: '600',
   },
   registerButton: {
-    marginTop: THEME.spacing.lg,
+    marginTop: 20,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: THEME.spacing.lg,
-    paddingTop: THEME.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.border,
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1.5,
+    borderTopColor: '#1B7050',
   },
   footerPrompt: {
-    color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.mutedMint,
+    fontSize: 13,
   },
   footerAction: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.neonEmerald,
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
