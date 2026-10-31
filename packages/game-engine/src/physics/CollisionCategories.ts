@@ -1,22 +1,60 @@
 /**
- * 32-bit collision categories for Matter.js collision filter masks.
+ * 32-bit collision categories and masks for Matter.js physics filtering.
  */
+
 export const COLLISION_CATEGORIES = {
   DEFAULT: 0x0001,
-  CUSHION: 0x0002,
-  COIN: 0x0004,
-  STRIKER: 0x0008,
-  POCKET_SENSOR: 0x0010,
+  BOARD_BOUNDARY: 0x0002,
+  WHITE_COIN: 0x0004,
+  BLACK_COIN: 0x0008,
+  QUEEN: 0x0010,
+  STRIKER: 0x0020,
+  POCKET_SENSOR: 0x0040,
 } as const;
+
+export type CollisionCategoryType = keyof typeof COLLISION_CATEGORIES;
+
+// Convenience bitmask grouping all coin categories
+export const ALL_COINS_CATEGORY =
+  COLLISION_CATEGORIES.WHITE_COIN |
+  COLLISION_CATEGORIES.BLACK_COIN |
+  COLLISION_CATEGORIES.QUEEN;
 
 export const COLLISION_MASKS = {
-  // Striker collides with cushions and coins, and triggers pocket sensors
-  STRIKER: COLLISION_CATEGORIES.CUSHION | COLLISION_CATEGORIES.COIN | COLLISION_CATEGORIES.POCKET_SENSOR,
-  // Coins collide with other coins, cushions, and striker, and trigger pocket sensors
-  COIN: COLLISION_CATEGORIES.CUSHION | COLLISION_CATEGORIES.COIN | COLLISION_CATEGORIES.STRIKER | COLLISION_CATEGORIES.POCKET_SENSOR,
-  // Cushions collide with striker and coins
-  CUSHION: COLLISION_CATEGORIES.STRIKER | COLLISION_CATEGORIES.COIN,
-  // Pocket sensors detect coins and striker
-  POCKET_SENSOR: COLLISION_CATEGORIES.STRIKER | COLLISION_CATEGORIES.COIN,
-} as const;
+  // Striker collides with cushions, all coins, and triggers pocket sensors
+  STRIKER:
+    COLLISION_CATEGORIES.BOARD_BOUNDARY |
+    ALL_COINS_CATEGORY |
+    COLLISION_CATEGORIES.POCKET_SENSOR,
 
+  // White coins collide with cushions, other coins, striker, and pocket sensors
+  WHITE_COIN:
+    COLLISION_CATEGORIES.BOARD_BOUNDARY |
+    ALL_COINS_CATEGORY |
+    COLLISION_CATEGORIES.STRIKER |
+    COLLISION_CATEGORIES.POCKET_SENSOR,
+
+  // Black coins collide with cushions, other coins, striker, and pocket sensors
+  BLACK_COIN:
+    COLLISION_CATEGORIES.BOARD_BOUNDARY |
+    ALL_COINS_CATEGORY |
+    COLLISION_CATEGORIES.STRIKER |
+    COLLISION_CATEGORIES.POCKET_SENSOR,
+
+  // Queen collides with cushions, other coins, striker, and pocket sensors
+  QUEEN:
+    COLLISION_CATEGORIES.BOARD_BOUNDARY |
+    ALL_COINS_CATEGORY |
+    COLLISION_CATEGORIES.STRIKER |
+    COLLISION_CATEGORIES.POCKET_SENSOR,
+
+  // Cushions collide with striker and all coins
+  BOARD_BOUNDARY:
+    COLLISION_CATEGORIES.STRIKER |
+    ALL_COINS_CATEGORY,
+
+  // Pocket sensors detect striker and all coins
+  POCKET_SENSOR:
+    COLLISION_CATEGORIES.STRIKER |
+    ALL_COINS_CATEGORY,
+} as const;
