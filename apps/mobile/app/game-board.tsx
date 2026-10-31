@@ -46,7 +46,7 @@ export default function GameBoardScreen() {
   const [activeReaction, setActiveReaction] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(18);
   const [isShotActive, setIsShotActive] = useState(false);
-  const [powerRatio, setPowerRatio] = useState(0.75);
+  const [powerRatio, setPowerRatio] = useState(0.55);
   const [aimAngle, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
   const [pocketToast, setPocketToast] = useState<string | null>(null);

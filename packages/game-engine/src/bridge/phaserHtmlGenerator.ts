@@ -1209,8 +1209,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         },
 
         update: function(time, delta) {
-          // Fixed Timestep Accumulator
-          this.physicsAccumulator += delta;
+          // Clamp delta to prevent sudden physics frame bursts on mobile
+          var safeDelta = Math.min(delta, 50);
+          this.physicsAccumulator += safeDelta;
 
           while (this.physicsAccumulator >= FIXED_DT_MS) {
             this.stepSimulation();
@@ -1231,6 +1232,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
         stepSimulation: function() {
           var scene = this;
+          var dtSec = BASE_DT_SEC;
 
           // 1. Gather all active moving bodies
           var activeBodies = [];
@@ -1239,85 +1241,71 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             if (c.body && !c.isPocketed) activeBodies.push(c.body);
           });
 
-          // 2. Find fastest velocity in step
-          var maxV = 0;
+          // 2. Surface Coulomb friction & viscous damping
           activeBodies.forEach(function(b) {
-            var v = Math.hypot(b.velocity.x, b.velocity.y);
-            if (v > maxV) maxV = v;
-          });
+            var vx = b.velocity.x;
+            var vy = b.velocity.y;
+            var stepSp = Math.hypot(vx, vy);
+            var spCmS = stepVelocityToSpeedCmS(stepSp, dtSec);
+            var av = b.angularVelocity;
 
-          // 3. Adaptive Substeps: fastest body moves <= 0.5 * coinRadius per substep
-          var maxDisp = 0.5 * COIN_RADIUS_PX; // 7.75 px
-          var nSubsteps = Math.min(MAX_SUBSTEPS, Math.max(1, Math.ceil(maxV / maxDisp)));
-          var subDtSec = BASE_DT_SEC / nSubsteps;
-
-          for (var s = 0; s < nSubsteps; s++) {
-            // A. Surface Coulomb friction & viscous damping
-            activeBodies.forEach(function(b) {
-              var vx = b.velocity.x;
-              var vy = b.velocity.y;
-              var stepSp = Math.hypot(vx, vy);
-              var spCmS = stepVelocityToSpeedCmS(stepSp, BASE_DT_SEC);
-              var av = b.angularVelocity;
-
-              if (spCmS < REST_SPEED_THRESHOLD_CM_S && Math.abs(av) < ANGULAR_REST_THRESHOLD) {
-                if (stepSp > 0 || av !== 0) {
-                  scene.matter.body.setVelocity(b, { x: 0, y: 0 });
-                  scene.matter.body.setAngularVelocity(b, 0);
-                }
-              } else if (spCmS >= REST_SPEED_THRESHOLD_CM_S) {
-                var newSp = Math.max(0, spCmS - FRICTION_DECEL_CM_S2 * subDtSec);
-                newSp = newSp * Math.max(0, 1 - VISCOUS_DAMPING * subDtSec);
-
-                if (newSp < REST_SPEED_THRESHOLD_CM_S) {
-                  scene.matter.body.setVelocity(b, { x: 0, y: 0 });
-                } else {
-                  var factor = (speedCmSToStepVelocity(newSp, BASE_DT_SEC)) / stepSp;
-                  scene.matter.body.setVelocity(b, { x: vx * factor, y: vy * factor });
-                }
+            if (spCmS < REST_SPEED_THRESHOLD_CM_S && Math.abs(av) < ANGULAR_REST_THRESHOLD) {
+              if (stepSp > 0 || av !== 0) {
+                scene.matter.body.setVelocity(b, { x: 0, y: 0 });
+                scene.matter.body.setAngularVelocity(b, 0);
               }
+            } else if (spCmS >= REST_SPEED_THRESHOLD_CM_S) {
+              var newSp = Math.max(0, spCmS - FRICTION_DECEL_CM_S2 * dtSec);
+              newSp = newSp * Math.max(0, 1 - VISCOUS_DAMPING * dtSec);
 
-              if (Math.abs(av) >= ANGULAR_REST_THRESHOLD) {
-                var newAv = av * Math.max(0, 1 - ANGULAR_DAMPING_PER_SEC * subDtSec);
-                scene.matter.body.setAngularVelocity(b, Math.abs(newAv) < ANGULAR_REST_THRESHOLD ? 0 : newAv);
-              }
-            });
-
-            // B. Pocket Suction & Capture Check
-            var pSensors = this.pocketSensors;
-            for (var pIdx = 0; pIdx < pSensors.length; pIdx++) {
-              var pSens = pSensors[pIdx];
-              var pX = pSens.position.x;
-              var pY = pSens.position.y;
-
-              for (var bIdx = 0; bIdx < activeBodies.length; bIdx++) {
-                var b = activeBodies[bIdx];
-                if ((b).isPocketed) continue;
-
-                var distToHole = Math.hypot(pX - b.position.x, pY - b.position.y);
-
-                // Gentle suction pull
-                if (distToHole <= POCKET_SUCTION_RADIUS && distToHole > 1.0) {
-                  var pull = (1 - distToHole / POCKET_SUCTION_RADIUS) * 0.0006;
-                  scene.matter.body.applyForce(b, b.position, {
-                    x: (pX - b.position.x) * pull,
-                    y: (pY - b.position.y) * pull
-                  });
-                }
-
-                // Hole capture
-                if (distToHole <= POCKET_CAPTURE_RADIUS) {
-                  (b).isPocketed = true;
-                  scene.queuedPocketRemovals.push({ body: b, pocketIndex: pIdx });
-                }
+              if (newSp < REST_SPEED_THRESHOLD_CM_S) {
+                scene.matter.body.setVelocity(b, { x: 0, y: 0 });
+              } else {
+                var factor = (speedCmSToStepVelocity(newSp, dtSec)) / stepSp;
+                scene.matter.body.setVelocity(b, { x: vx * factor, y: vy * factor });
               }
             }
 
-            // Step Matter world
-            this.matter.world.step(subDtSec * 1000);
+            if (Math.abs(av) >= ANGULAR_REST_THRESHOLD) {
+              var newAv = av * Math.max(0, 1 - ANGULAR_DAMPING_PER_SEC * dtSec);
+              scene.matter.body.setAngularVelocity(b, Math.abs(newAv) < ANGULAR_REST_THRESHOLD ? 0 : newAv);
+            }
+          });
+
+          // 3. Pocket Suction & Capture Check
+          var pSensors = this.pocketSensors;
+          for (var pIdx = 0; pIdx < pSensors.length; pIdx++) {
+            var pSens = pSensors[pIdx];
+            var pX = pSens.position.x;
+            var pY = pSens.position.y;
+
+            for (var bIdx = 0; bIdx < activeBodies.length; bIdx++) {
+              var b = activeBodies[bIdx];
+              if (b.isPocketed) continue;
+
+              var distToHole = Math.hypot(pX - b.position.x, pY - b.position.y);
+
+              // Gentle suction pull towards pocket center
+              if (distToHole <= POCKET_SUCTION_RADIUS && distToHole > 1.0) {
+                var pull = (1 - distToHole / POCKET_SUCTION_RADIUS) * 0.0006;
+                scene.matter.body.applyForce(b, b.position, {
+                  x: (pX - b.position.x) * pull,
+                  y: (pY - b.position.y) * pull
+                });
+              }
+
+              // Hole capture
+              if (distToHole <= POCKET_CAPTURE_RADIUS) {
+                b.isPocketed = true;
+                scene.queuedPocketRemovals.push({ body: b, pocketIndex: pIdx });
+              }
+            }
           }
 
-          // Process queued removals at end of substeps (deduplicated)
+          // Step Matter world exactly once per fixed dt
+          this.matter.world.step(FIXED_DT_MS);
+
+          // Process queued removals at end of step (deduplicated)
           this.processQueuedPocketRemovals();
         },
 
