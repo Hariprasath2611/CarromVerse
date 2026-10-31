@@ -5,19 +5,20 @@ import { THEME } from '../constants/theme';
 
 export interface StickerItem {
   id: string;
-  emoji: string;
   text: string;
+  bg: string;
+  textColor?: string;
 }
 
 export const CARROM_STICKERS: StickerItem[] = [
-  { id: 'stk_1', emoji: '🎯', text: 'NICE SHOT!' },
-  { id: 'stk_2', emoji: '👑', text: 'QUEEN SECURED!' },
-  { id: 'stk_3', emoji: '🔥', text: 'ON FIRE!' },
-  { id: 'stk_4', emoji: '⚡', text: 'LASER AIM!' },
-  { id: 'stk_5', emoji: '💥', text: 'POWER BREAK!' },
-  { id: 'stk_6', emoji: '🤝', text: 'GOOD GAME!' },
-  { id: 'stk_7', emoji: '🛡️', text: 'CLEVER COVER!' },
-  { id: 'stk_8', emoji: '🏆', text: 'MATCH POINT!' },
+  { id: 'gg', text: 'GG', bg: '#2BD67B' },
+  { id: 'wow', text: 'WOW', bg: '#E9B949' },
+  { id: 'oops', text: 'OOPS', bg: '#F472B6' },
+  { id: 'nice', text: 'NICE', bg: '#9FD8B8' },
+  { id: 'ha', text: 'HA', bg: '#F5ECD2' },
+  { id: 'wait', text: 'WAIT', bg: '#E9B949' },
+  { id: 'lol', text: 'LOL', bg: '#2BD67B' },
+  { id: 'sorry', text: 'SORRY', bg: '#F472B6' },
 ];
 
 export interface StickersModalProps {
@@ -39,8 +40,7 @@ export const StickersModal: React.FC<StickersModalProps> = ({
     <Modal
       visible={visible}
       onClose={onClose}
-      title="Table Reactions"
-      subtitle="Send tactical reactions across the table"
+      title="REACT"
     >
       <View style={styles.grid}>
         {CARROM_STICKERS.map((item) => (
@@ -50,10 +50,13 @@ export const StickersModal: React.FC<StickersModalProps> = ({
               handleSelect(item);
               onClose();
             }}
-            style={({ pressed }) => [styles.stickerBtn, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.reactCircle,
+              { backgroundColor: item.bg },
+              pressed && styles.pressed,
+            ]}
           >
-            <Text style={styles.emoji}>{item.emoji}</Text>
-            <Text style={styles.text}>{item.text}</Text>
+            <Text style={styles.reactText}>{item.text}</Text>
           </Pressable>
         ))}
       </View>
@@ -66,31 +69,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: 12,
+    gap: 16,
   },
-  stickerBtn: {
-    width: '48%',
-    backgroundColor: '#07261C',
-    borderColor: '#1B7050',
-    borderWidth: 1.5,
-    borderRadius: 16,
+  reactCircle: {
+    width: '21%',
+    aspectRatio: 1,
+    borderRadius: 999,
     alignItems: 'center',
-    paddingVertical: 14,
-    marginBottom: 10,
+    justifyContent: 'center',
+  },
+  reactText: {
+    color: '#07261C',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   pressed: {
-    borderColor: THEME.colors.neonEmerald,
-    backgroundColor: '#104430',
-    transform: [{ scale: 0.97 }],
-  },
-  emoji: {
-    fontSize: 26,
-    marginBottom: 4,
-  },
-  text: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.5,
+    opacity: 0.75,
+    transform: [{ scale: 0.95 }],
   },
 });

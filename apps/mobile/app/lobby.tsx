@@ -1,13 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  BoardPreview,
-  GameCard,
-  PrimaryButton,
-  ScreenContainer,
-  SecondaryButton,
-} from '../src/components';
+import { Button, Card, PlayerAvatar, ScreenContainer } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
 import { createDefaultGameConfig } from '@carromverse/game-logic';
@@ -21,8 +15,13 @@ export default function LobbyScreen() {
     boardTheme,
     targetPoints,
     turnTimeLimitSec,
+    setGameMode,
+    setPlayerCount,
   } = useGameSetupStore();
   const startSession = useGameSessionStore((state) => state.startSession);
+
+  const [activeTab, setActiveTab] = useState<'2' | '3' | '4'>('4');
+  const codeChars = ['K', '7', 'Q', '4', 'X', 'M'];
 
   const handleStartMatch = () => {
     const baseConfig = createDefaultGameConfig(selectedMode);
@@ -35,101 +34,145 @@ export default function LobbyScreen() {
     router.replace('/game-board');
   };
 
-  const modeDisplayName = selectedMode.replace(/_/g, ' ').toUpperCase();
+  const handleSelectTab = (tab: '2' | '3' | '4') => {
+    setActiveTab(tab);
+    if (tab === '2') {
+      setPlayerCount(2);
+      setGameMode('two_player_individual');
+    } else if (tab === '3') {
+      setPlayerCount(3);
+      setGameMode('three_player_individual');
+    } else {
+      setPlayerCount(4);
+      setGameMode('four_player_team');
+    }
+  };
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      {/* Header */}
+      {/* Decorative background shapes */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
+
+      {/* Screen Title */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>◀</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTextWrap}>
-          <Text style={styles.headerStep}>LOCAL PRE-GAME LOBBY</Text>
-          <Text style={styles.headerTitle}>READY TO BREAK</Text>
-        </View>
+        <Text style={styles.title}>TABLE K7Q4XM</Text>
       </View>
 
-      {/* Match Rules Pill */}
-      <GameCard style={styles.rulesCard}>
-        <View style={styles.ruleBadgeRow}>
-          <View style={styles.modeBadge}>
-            <Text style={styles.modeBadgeText}>{modeDisplayName}</Text>
+      {/* Code Tiles Row */}
+      <View style={styles.tilesRow}>
+        {codeChars.map((char, idx) => (
+          <View key={idx} style={styles.codeTile}>
+            <Text style={styles.codeChar}>{char}</Text>
           </View>
-          <Text style={styles.rulesSummary}>
-            TARGET: {targetPoints} PTS • {turnTimeLimitSec}S SHOT CLOCK
-          </Text>
-        </View>
-      </GameCard>
-
-      {/* Board Visual Preview */}
-      <View style={styles.boardPreviewWrap}>
-        <BoardPreview size={190} theme={boardTheme} />
-      </View>
-
-      {/* Roster Slots Grid */}
-      <Text style={styles.rosterTitle}>CONFIRMED PLAYER SLOTS</Text>
-      <View style={styles.rosterGrid}>
-        {players.map((player, index) => (
-          <GameCard
-            key={player.id}
-            elevated
-            style={[
-              styles.playerSlotCard,
-              index === 0 && styles.firstPlayerCard,
-            ]}
-          >
-            <View style={styles.slotHeader}>
-              <View style={styles.seatPill}>
-                <Text style={styles.seatPillText}>
-                  {player.position.toUpperCase()} SEAT
-                </Text>
-              </View>
-              {index === 0 && (
-                <View style={styles.firstTurnBadge}>
-                  <Text style={styles.firstTurnText}>BREAK SHOT</Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.slotBody}>
-              <View style={styles.avatarWrap}>
-                <Text style={styles.avatarEmoji}>{player.avatarUrl || '👑'}</Text>
-              </View>
-              <View style={styles.playerMeta}>
-                <Text style={styles.playerName} numberOfLines={1}>
-                  {player.name}
-                </Text>
-                <Text style={styles.playerRole}>
-                  {player.teamId
-                    ? `${player.teamId === 'team_a' ? 'Team A' : 'Team B'} • `
-                    : ''}
-                  {player.assignedCoinType.toUpperCase()} COINS
-                </Text>
-              </View>
-            </View>
-          </GameCard>
         ))}
       </View>
 
-      {/* Action Footer */}
-      <View style={styles.footer}>
-        <PrimaryButton
-          title="START MATCH"
-          subtitle="Break the center cluster and start game"
-          onPress={handleStartMatch}
-          variant="gold"
-          size="large"
-          icon="⚡"
-          style={styles.startBtn}
+      {/* Quick Action Buttons */}
+      <View style={styles.quickActionsRow}>
+        <Button
+          title="COPY CODE"
+          variant="secondary"
+          onPress={() => {}}
+          style={styles.actionBtn}
         />
+        <Button
+          title="INVITE FRIEND"
+          variant="secondary"
+          onPress={() => {}}
+          style={styles.actionBtn}
+        />
+      </View>
 
-        <SecondaryButton
-          title="EDIT CONFIGURATION"
-          onPress={() => router.back()}
-          variant="forest"
-          size="medium"
-          style={styles.editBtn}
+      {/* Circular Table Seating Card */}
+      <Card style={styles.tableCard}>
+        <View style={styles.tableCircle}>
+          {/* Center Info */}
+          <View style={styles.centerTableInfo}>
+            <Text style={styles.centerCountText}>4 PLAYERS</Text>
+            <Text style={styles.centerTeamsText}>TEAMS</Text>
+          </View>
+
+          {/* North Seat (+) */}
+          <View style={[styles.seatSlot, styles.seatNorth]}>
+            <View style={styles.dashedAddSlot}>
+              <Text style={styles.addSlotPlus}>+</Text>
+            </View>
+          </View>
+
+          {/* South Seat (Host) */}
+          <View style={[styles.seatSlot, styles.seatSouth]}>
+            <PlayerAvatar
+              name="HARIPRASATH"
+              size={54}
+              colorVariant="gold"
+              ringColor="#2BD67B"
+            />
+            <Text style={styles.seatLabel}>YOU · HOST</Text>
+          </View>
+
+          {/* West Seat (Arun) */}
+          <View style={[styles.seatSlot, styles.seatWest]}>
+            <PlayerAvatar
+              name="Arun"
+              size={54}
+              colorVariant="emerald"
+              ringColor="#E9B949"
+            />
+            <Text style={styles.seatLabel}>ARUN</Text>
+          </View>
+
+          {/* East Seat (+) */}
+          <View style={[styles.seatSlot, styles.seatEast]}>
+            <View style={[styles.dashedAddSlot, styles.dashedGold]}>
+              <Text style={[styles.addSlotPlus, styles.goldPlus]}>+</Text>
+            </View>
+          </View>
+        </View>
+      </Card>
+
+      {/* Player Mode Tabs */}
+      <View style={styles.modeTabsRow}>
+        <TouchableOpacity
+          style={[styles.modeTab, activeTab === '2' && styles.modeTabActive]}
+          onPress={() => handleSelectTab('2')}
+        >
+          <Text style={[styles.modeTabText, activeTab === '2' && styles.modeTabTextActive]}>
+            2
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.modeTab, activeTab === '3' && styles.modeTabActive]}
+          onPress={() => handleSelectTab('3')}
+        >
+          <Text style={[styles.modeTabText, activeTab === '3' && styles.modeTabTextActive]}>
+            3
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.modeTab, activeTab === '4' && styles.modeTabGoldActive]}
+          onPress={() => handleSelectTab('4')}
+        >
+          <Text
+            style={[
+              styles.modeTabText,
+              activeTab === '4' && styles.modeTabGoldTextActive,
+            ]}
+          >
+            4 · TEAMS
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Start Game Button */}
+      <View style={styles.footer}>
+        <Button
+          title="START GAME"
+          variant="primary"
+          onPress={handleStartMatch}
+          style={styles.startBtn}
         />
       </View>
     </ScreenContainer>
@@ -138,167 +181,192 @@ export default function LobbyScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
+    flexGrow: 1,
+    backgroundColor: '#07261C',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+  },
+  bokehTop: {
+    position: 'absolute',
+    top: 30,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 80,
+    left: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  backBtn: {
+  title: {
+    color: '#F5ECD2',
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  tilesRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 12,
+  },
+  codeTile: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#07261C',
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F5ECD2',
+    borderWidth: 2,
+    borderColor: '#C7B99A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  codeChar: {
+    color: '#261B04',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
+  },
+  tableCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    borderRadius: 24,
+    borderColor: '#7A431C',
+    borderWidth: 4,
+    backgroundColor: '#0E4A33',
+  },
+  tableCircle: {
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerTableInfo: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(43, 214, 123, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#2BD67B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerCountText: {
+    color: '#F5ECD2',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  centerTeamsText: {
+    color: '#2BD67B',
+    fontSize: 12,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  seatSlot: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seatNorth: {
+    top: 6,
+  },
+  seatSouth: {
+    bottom: -6,
+  },
+  seatWest: {
+    left: 6,
+  },
+  seatEast: {
+    right: 6,
+  },
+  dashedAddSlot: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#2BD67B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dashedGold: {
+    borderColor: '#E9B949',
+  },
+  addSlotPlus: {
+    color: '#2BD67B',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  goldPlus: {
+    color: '#E9B949',
+  },
+  seatLabel: {
+    color: '#F5ECD2',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  modeTabsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginVertical: 16,
+  },
+  modeTab: {
+    flex: 1,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  backArrow: {
-    fontSize: 16,
-    color: THEME.colors.brass,
+  modeTabActive: {
+    borderColor: '#2BD67B',
   },
-  headerTextWrap: {
-    flex: 1,
+  modeTabGoldActive: {
+    backgroundColor: '#E9B949',
+    borderColor: '#F7D070',
+    borderBottomWidth: 4,
+    borderBottomColor: '#A57E24',
   },
-  headerStep: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    letterSpacing: 1.2,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.5,
-  },
-  rulesCard: {
-    padding: 12,
-    marginBottom: 14,
-  },
-  ruleBadgeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modeBadge: {
-    backgroundColor: '#07261C',
-    borderColor: THEME.colors.neonEmerald,
-    borderWidth: 1.5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  modeBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: THEME.colors.neonEmerald,
-    letterSpacing: 0.5,
-  },
-  rulesSummary: {
-    fontSize: 11,
-    color: THEME.colors.brass,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  boardPreviewWrap: {
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  rosterTitle: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    letterSpacing: 1.2,
-    marginTop: 14,
-    marginBottom: 8,
-  },
-  rosterGrid: {
-    marginBottom: 14,
-  },
-  playerSlotCard: {
-    padding: 12,
-    marginBottom: 10,
-  },
-  firstPlayerCard: {
-    borderColor: THEME.colors.neonEmerald,
-    ...THEME.shadows.glowEmerald,
-  },
-  slotHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  seatPill: {
-    backgroundColor: '#07261C',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderColor: '#1B7050',
-    borderWidth: 1,
-  },
-  seatPillText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: THEME.colors.mutedMint,
-  },
-  firstTurnBadge: {
-    backgroundColor: '#07261C',
-    borderColor: THEME.colors.brass,
-    borderWidth: 1.5,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  firstTurnText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-  },
-  slotBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#07261C',
-    borderColor: '#1B7050',
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarEmoji: {
-    fontSize: 22,
-  },
-  playerMeta: {
-    flex: 1,
-  },
-  playerName: {
+  modeTabText: {
+    color: '#F5ECD2',
     fontSize: 14,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.3,
+    fontWeight: '900',
   },
-  playerRole: {
-    fontSize: 10,
-    color: THEME.colors.mutedMint,
-    marginTop: 2,
-    fontWeight: '600',
+  modeTabTextActive: {
+    color: '#2BD67B',
+  },
+  modeTabGoldTextActive: {
+    color: '#261B04',
   },
   footer: {
-    marginTop: 10,
+    marginTop: 'auto',
   },
   startBtn: {
-    marginBottom: 10,
+    width: '100%',
   },
-  editBtn: {},
 });
