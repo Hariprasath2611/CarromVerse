@@ -101,6 +101,8 @@ export class Coin {
     (body as any).entity = this;
     (body as any).entityType = this.coinType;
     (body as any).entityId = this.id;
+    body.inertia = Infinity;
+    this.scene.matter.body.setMass(body, PHYSICS_CONFIG.coins.mass);
     this.physicsBody = body;
     return body;
   }
@@ -196,6 +198,10 @@ export class Coin {
 
   public getPixelPosition(): Vector2D {
     return { x: this.container.x, y: this.container.y };
+  }
+
+  public getRadius(): number {
+    return this.baseRadius;
   }
 
   public attachPhysicsBody(body: MatterJS.BodyType): void {

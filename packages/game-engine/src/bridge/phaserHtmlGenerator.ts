@@ -5,13 +5,15 @@ export interface PhaserHtmlOptions {
   strikerSkin?: StrikerSkin | string;
   activeSeat?: number;
   canvasSize?: number;
+  debugOverlay?: boolean;
 }
 
 export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): string {
   const initialTheme = options.themeId || 'forest';
   const initialSkin = options.strikerSkin || 'emerald';
   const initialSeat = options.activeSeat ?? 0;
-  const canvasSize = options.canvasSize || 800;
+  const canvasSize = options.canvasSize || 840;
+  const initialDebug = options.debugOverlay ?? false;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -47,7 +49,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
     }
     canvas {
       display: block;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.85);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9);
       border-radius: 8px;
     }
   </style>
@@ -58,6 +60,57 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
   <script>
     (function() {
+      // 1. PHYSICAL CONSTANTS (Single Source of Truth)
+      var BOARD_PX = 740;
+      var BOARD_CM = 74;
+      var PX_PER_CM = BOARD_PX / BOARD_CM; // 10.0 px per cm
+
+      var COIN_RADIUS_CM = 1.55;
+      var COIN_RADIUS_PX = COIN_RADIUS_CM * PX_PER_CM; // 15.5 px
+      var COIN_MASS = 5.0;
+
+      var STRIKER_RADIUS_CM = 2.05;
+      var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 20.5 px
+      var STRIKER_MASS = 15.0; // 3:1 mass ratio
+
+      var POCKET_RADIUS_CM = 2.25;
+      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 22.5 px
+      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 0.85 * r
+      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20; // 1.20 * r
+
+      var WALL_THICKNESS_CM = 5.0;
+      var WALL_THICKNESS_PX = WALL_THICKNESS_CM * PX_PER_CM; // 50.0 px
+
+      var STRIKER_MIN_SPEED_CM_S = 40.0;
+      var STRIKER_MAX_SPEED_CM_S = 350.0;
+      var REST_SPEED_THRESHOLD_CM_S = 2.0;
+      var ANGULAR_REST_THRESHOLD = 0.05;
+
+      var FRICTION_DECEL_CM_S2 = 90.0;
+      var VISCOUS_DAMPING = 0.15;
+      var ANGULAR_DAMPING_PER_SEC = 6.0;
+
+      var COIN_RESTITUTION = 0.88;
+      var WALL_BOUNCE_DAMPING = 0.65;
+
+      var BASE_DT_SEC = 1 / 60;
+      var FIXED_DT_MS = 1000 / 60;
+      var MAX_SUBSTEPS = 10;
+      var SETTLED_COOLDOWN_MS = 300;
+
+      // Collision Categories
+      var CAT_WALL    = 0x0001;
+      var CAT_COIN    = 0x0002;
+      var CAT_STRIKER = 0x0004;
+      var CAT_POCKET  = 0x0008;
+
+      var MASK_WALL    = CAT_COIN | CAT_STRIKER;
+      var MASK_COIN    = CAT_WALL | CAT_COIN | CAT_STRIKER | CAT_POCKET;
+      var MASK_STRIKER = CAT_WALL | CAT_COIN | CAT_POCKET;
+      var MASK_POCKET  = CAT_COIN | CAT_STRIKER;
+
+      var DEBUG_OVERLAY = ${initialDebug};
+
       // THEMES
       var BOARD_THEMES = {
         classic: {
@@ -128,21 +181,23 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var currentOffsetRatio = 0;
       var activeScene = null;
 
-      // Collision Category Bitmasks
-      var CAT_DEFAULT = 0x0001;
-      var CAT_CUSHION = 0x0002;
-      var CAT_COIN    = 0x0004;
-      var CAT_STRIKER = 0x0008;
-      var CAT_POCKET  = 0x0010;
-
       function getTheme(id) {
         var key = id ? id.toLowerCase() : 'forest';
         return BOARD_THEMES[key] || BOARD_THEMES['forest'];
       }
 
+      // Convert speed in cm/s to step velocity (px/step)
+      function speedCmSToStepVelocity(speedCmS, dtSec) {
+        return speedCmS * PX_PER_CM * dtSec;
+      }
+
+      // Convert step velocity (px/step) to speed in cm/s
+      function stepVelocityToSpeedCmS(stepVel, dtSec) {
+        return dtSec > 0 ? (stepVel / dtSec) / PX_PER_CM : 0;
+      }
+
       // TEXTURE GENERATOR
       function generateTextures(scene, theme) {
-        // 1. Coin Shadow
         createCanvasTexture(scene, 'tex_coin_shadow', 96, 96, function(ctx) {
           var grad = ctx.createRadialGradient(48, 48, 14, 48, 48, 46);
           grad.addColorStop(0, 'rgba(0,0,0,0.6)');
@@ -154,7 +209,6 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.fill();
         });
 
-        // 2. Striker Shadow
         createCanvasTexture(scene, 'tex_striker_shadow', 128, 128, function(ctx) {
           var grad = ctx.createRadialGradient(64, 64, 18, 64, 64, 62);
           grad.addColorStop(0, 'rgba(0,0,0,0.65)');
@@ -166,7 +220,6 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.fill();
         });
 
-        // 3. White Coin
         createCanvasTexture(scene, 'tex_coin_white', 96, 96, function(ctx) {
           var r = 44;
           var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
@@ -178,36 +231,19 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.beginPath();
           ctx.arc(48, 48, r, 0, Math.PI * 2);
           ctx.fill();
-
           ctx.strokeStyle = '#B3A892';
           ctx.lineWidth = 2.5;
           ctx.stroke();
-
           ctx.strokeStyle = 'rgba(179, 168, 146, 0.55)';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.arc(48, 48, r * 0.72, 0, Math.PI * 2);
           ctx.stroke();
-
           ctx.beginPath();
           ctx.arc(48, 48, r * 0.44, 0, Math.PI * 2);
           ctx.stroke();
-
-          ctx.fillStyle = '#C9BFA8';
-          ctx.beginPath();
-          ctx.arc(48, 48, r * 0.16, 0, Math.PI * 2);
-          ctx.fill();
-
-          var gloss = ctx.createLinearGradient(48 - r, 48 - r, 48, 48);
-          gloss.addColorStop(0, 'rgba(255,255,255,0.75)');
-          gloss.addColorStop(1, 'rgba(255,255,255,0)');
-          ctx.fillStyle = gloss;
-          ctx.beginPath();
-          ctx.arc(40, 40, r * 0.45, 0, Math.PI * 2);
-          ctx.fill();
         });
 
-        // 4. Black Coin
         createCanvasTexture(scene, 'tex_coin_black', 96, 96, function(ctx) {
           var r = 44;
           var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
@@ -219,31 +255,16 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.beginPath();
           ctx.arc(48, 48, r, 0, Math.PI * 2);
           ctx.fill();
-
           ctx.strokeStyle = '#4B5563';
           ctx.lineWidth = 2;
           ctx.stroke();
-
           ctx.strokeStyle = 'rgba(156, 163, 175, 0.35)';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.arc(48, 48, r * 0.72, 0, Math.PI * 2);
           ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(48, 48, r * 0.44, 0, Math.PI * 2);
-          ctx.stroke();
-
-          var gloss = ctx.createLinearGradient(48 - r, 48 - r, 48, 48);
-          gloss.addColorStop(0, 'rgba(255,255,255,0.35)');
-          gloss.addColorStop(1, 'rgba(255,255,255,0)');
-          ctx.fillStyle = gloss;
-          ctx.beginPath();
-          ctx.arc(40, 40, r * 0.45, 0, Math.PI * 2);
-          ctx.fill();
         });
 
-        // 5. Queen Coin
         createCanvasTexture(scene, 'tex_coin_queen', 96, 96, function(ctx) {
           var r = 44;
           var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
@@ -255,49 +276,15 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.beginPath();
           ctx.arc(48, 48, r, 0, Math.PI * 2);
           ctx.fill();
-
           ctx.strokeStyle = '#FBBF24';
           ctx.lineWidth = 2.5;
           ctx.stroke();
-
-          ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(48, 48, r * 0.72, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // 8-point gold rosette
-          ctx.fillStyle = '#F59E0B';
-          var pts = 8;
-          var outR = r * 0.55;
-          var inR = r * 0.28;
-          ctx.beginPath();
-          for (var i = 0; i < pts * 2; i++) {
-            var rad = (i * Math.PI) / pts;
-            var curR = i % 2 === 0 ? outR : inR;
-            var x = 48 + Math.cos(rad) * curR;
-            var y = 48 + Math.sin(rad) * curR;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.closePath();
-          ctx.fill();
-
           ctx.fillStyle = '#EF4444';
           ctx.beginPath();
-          ctx.arc(48, 48, r * 0.18, 0, Math.PI * 2);
-          ctx.fill();
-
-          var gloss = ctx.createLinearGradient(48 - r, 48 - r, 48, 48);
-          gloss.addColorStop(0, 'rgba(255,255,255,0.7)');
-          gloss.addColorStop(1, 'rgba(255,255,255,0)');
-          ctx.fillStyle = gloss;
-          ctx.beginPath();
-          ctx.arc(40, 40, r * 0.45, 0, Math.PI * 2);
+          ctx.arc(48, 48, r * 0.22, 0, Math.PI * 2);
           ctx.fill();
         });
 
-        // 6. Striker Textures
         var strikerSkins = {
           emerald: { colors: ['#34D399', '#059669', '#044E3B'], rim: '#6EE7B7', inner: '#065F46' },
           classic: { colors: ['#FFFFFF', '#E2E8F0', '#94A3B8'], rim: '#CBD5E1', inner: '#64748B' },
@@ -317,50 +304,16 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             ctx.beginPath();
             ctx.arc(64, 64, r, 0, Math.PI * 2);
             ctx.fill();
-
             ctx.strokeStyle = cfg.rim;
             ctx.lineWidth = 4;
             ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(64, 64, r * 0.78, 0, Math.PI * 2);
-            ctx.stroke();
-
             ctx.fillStyle = cfg.inner;
             ctx.beginPath();
             ctx.arc(64, 64, r * 0.38, 0, Math.PI * 2);
             ctx.fill();
-
-            ctx.strokeStyle = cfg.rim;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(64, 64, r * 0.12, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = cfg.rim;
-            ctx.beginPath();
-            ctx.moveTo(64, 64 - r * 0.65);
-            ctx.lineTo(64 - 7, 64 - r * 0.42);
-            ctx.lineTo(64 + 7, 64 - r * 0.42);
-            ctx.closePath();
-            ctx.fill();
-
-            var gloss = ctx.createLinearGradient(64 - r, 64 - r, 64, 64);
-            gloss.addColorStop(0, 'rgba(255,255,255,0.75)');
-            gloss.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = gloss;
-            ctx.beginPath();
-            ctx.arc(52, 52, r * 0.48, 0, Math.PI * 2);
-            ctx.fill();
           });
         });
 
-        // 7. Pocket Texture
         createCanvasTexture(scene, 'tex_pocket', 96, 96, function(ctx) {
           var r = 44;
           var g = ctx.createRadialGradient(48, 48, 4, 48, 48, r);
@@ -372,7 +325,6 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.beginPath();
           ctx.arc(48, 48, r, 0, Math.PI * 2);
           ctx.fill();
-
           ctx.strokeStyle = theme.pocketRimColor;
           ctx.lineWidth = 3;
           ctx.stroke();
@@ -393,7 +345,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         }
       }
 
-      // PHASER CARROM SCENE (WITH MATTER.JS PHYSICS)
+      // PHASER CARROM SCENE (WITH TUNNEL-FREE MATTER.JS SUBSTEPPING)
       var CarromScene = new Phaser.Class({
         Extends: Phaser.Scene,
         initialize: function CarromScene() {
@@ -406,25 +358,33 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.canvasSize = size;
           var theme = getTheme(currentThemeId);
 
+          // Matter World Setup: Zero Gravity, Manual Stepping Accumulator
           this.matter.world.setGravity(0, 0);
+          this.matter.world.autoUpdate = false; // Manual step accumulator
           this.matter.world.setBounds(0, 0, 0, 0, 0, false, false, false, false);
+
+          this.physicsAccumulator = 0;
+          this.queuedPocketRemovals = [];
+          this.pocketedInCurrentShot = [];
+          this.isShotActive = false;
+          this.isStrikerOverlapping = false;
+          this.restStartTime = 0;
+          this.hasReportedSettled = false;
+          this.shotStartTime = 0;
 
           generateTextures(this, theme);
 
           this.boardGraphics = this.add.graphics();
           this.pocketsGroup = this.add.group();
+          this.aimGraphics = this.add.graphics().setDepth(25);
+          this.debugGraphics = this.add.graphics().setDepth(100);
+
           this.coins = [];
           this.cushionBodies = [];
           this.pocketSensors = [];
-          this.isAiming = false;
-          this.aimStartPoint = { x: 0, y: 0 };
-          this.aimPowerRatio = 0;
-          this.aimAngle = -Math.PI / 2;
-          this.isShotActive = false;
-          this.restStartTime = 0;
-          this.pocketedInCurrentShot = [];
 
           this.renderBoardGraphics(theme);
+          this.createThickWalls();
           this.createPocketSensors();
           this.spawnCoinCluster();
           this.createStriker(theme);
@@ -439,19 +399,19 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
           sendToReactNative({
             type: 'ENGINE_READY',
-            payload: { status: 'ready' },
+            payload: { status: 'ready', boardSizePx: BOARD_PX, pxPerCm: PX_PER_CM },
             timestamp: Date.now()
           });
         },
 
         renderBoardGraphics: function(theme) {
           var s = this.canvasSize;
-          var fw = s * 0.08;
-          var surfSize = s * 0.84;
-          var bo = s * 0.135;
-          var bl = s * 0.54;
-          var bcr = s * 0.019;
+          var fw = (s - BOARD_PX) / 2; // Frame width (50px on 840 canvas)
+          var surfSize = BOARD_PX;
           var center = s / 2;
+          var bo = BOARD_PX * 0.135;
+          var bl = BOARD_PX * 0.54;
+          var bcr = BOARD_PX * 0.019;
 
           this.boardGraphics.clear();
           this.pocketsGroup.clear(true, true);
@@ -460,7 +420,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameColor).color, 1);
           this.boardGraphics.fillRect(0, 0, s, s);
 
-          this.boardGraphics.lineStyle(3, Phaser.Display.Color.HexStringToColor(theme.frameAccent).color, 0.8);
+          this.boardGraphics.lineStyle(3, Phaser.Display.Color.HexStringToColor(theme.frameAccent).color, 0.9);
           this.boardGraphics.strokeRect(2, 2, s - 4, s - 4);
 
           // 45 deg miter joints
@@ -474,38 +434,13 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg).color, 1);
           this.boardGraphics.fillRect(fw, fw, surfSize, surfSize);
 
-          // Cushions
+          // Inner Cushion bevel
           this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion).color, 1);
-          this.boardGraphics.fillRect(fw, fw, surfSize, s * 0.022);
-          this.boardGraphics.fillRect(fw, s - fw - s * 0.022, surfSize, s * 0.022);
-          this.boardGraphics.fillRect(fw, fw, s * 0.022, surfSize);
-          this.boardGraphics.fillRect(s - fw - s * 0.022, fw, s * 0.022, surfSize);
-
-          // Create Matter Cushion Physics Bodies
-          this.cushionBodies.forEach(function(b) { activeScene.matter.world.remove(b); });
-          this.cushionBodies = [];
-
-          var cThick = s * 0.03;
-          var pClearance = s * 0.085;
-          var cLen = surfSize - pClearance * 2;
-
-          var cConfigs = [
-            { x: center, y: fw + cThick / 2, w: cLen, h: cThick, label: 'cushion_top' },
-            { x: center, y: s - fw - cThick / 2, w: cLen, h: cThick, label: 'cushion_bottom' },
-            { x: fw + cThick / 2, y: center, w: cThick, h: cLen, label: 'cushion_left' },
-            { x: s - fw - cThick / 2, y: center, w: cThick, h: cLen, label: 'cushion_right' }
-          ];
-
-          cConfigs.forEach(function(cfg) {
-            var body = activeScene.matter.add.rectangle(cfg.x, cfg.y, cfg.w, cfg.h, {
-              isStatic: true,
-              restitution: 0.90,
-              friction: 0.04,
-              label: cfg.label,
-              collisionFilter: { category: CAT_CUSHION, mask: CAT_STRIKER | CAT_COIN }
-            });
-            activeScene.cushionBodies.push(body);
-          });
+          var cBevel = 12;
+          this.boardGraphics.fillRect(fw, fw, surfSize, cBevel);
+          this.boardGraphics.fillRect(fw, s - fw - cBevel, surfSize, cBevel);
+          this.boardGraphics.fillRect(fw, fw, cBevel, surfSize);
+          this.boardGraphics.fillRect(s - fw - cBevel, fw, cBevel, surfSize);
 
           // 3. Markings
           var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor).color;
@@ -515,7 +450,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.boardGraphics.lineStyle(1.8, markCol, 0.85);
 
           var drawSide = function(g, x1, y1, x2, y2, isH) {
-            var gap = s * 0.014;
+            var gap = BOARD_PX * 0.014;
             if (isH) {
               g.lineBetween(x1, y1 - gap / 2, x2, y2 - gap / 2);
               g.lineBetween(x1, y1 + gap / 2, x2, y2 + gap / 2);
@@ -545,33 +480,15 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
           // Center Circle
           this.boardGraphics.lineStyle(2, markCol, 0.9);
-          this.boardGraphics.strokeCircle(center, center, s * 0.065);
+          this.boardGraphics.strokeCircle(center, center, BOARD_PX * 0.065);
           this.boardGraphics.lineStyle(1.5, markCol, 0.7);
-          this.boardGraphics.strokeCircle(center, center, s * 0.022);
+          this.boardGraphics.strokeCircle(center, center, BOARD_PX * 0.022);
           this.boardGraphics.fillStyle(dotCol, 1);
-          this.boardGraphics.fillCircle(center, center, s * 0.007);
+          this.boardGraphics.fillCircle(center, center, BOARD_PX * 0.007);
 
-          // Corner Foul Arrows
-          var arrLen = s * 0.085;
-          var corners = [
-            { x: fw + bo * 0.6, y: fw + bo * 0.6, a: Math.PI / 4 },
-            { x: s - fw - bo * 0.6, y: fw + bo * 0.6, a: (3 * Math.PI) / 4 },
-            { x: s - fw - bo * 0.6, y: s - fw - bo * 0.6, a: -(3 * Math.PI) / 4 },
-            { x: fw + bo * 0.6, y: s - fw - bo * 0.6, a: -Math.PI / 4 }
-          ];
-
-          corners.forEach(function(c) {
-            var ex = c.x + Math.cos(c.a) * arrLen;
-            var ey = c.y + Math.sin(c.a) * arrLen;
-            activeScene.boardGraphics.lineStyle(1.8, markCol, 0.85);
-            activeScene.boardGraphics.lineBetween(c.x, c.y, ex, ey);
-            activeScene.boardGraphics.fillStyle(circleCol, 1);
-            activeScene.boardGraphics.fillCircle(ex, ey, 4.5);
-          });
-
-          // Pockets (Visual Sprites)
-          var pr = s * 0.038;
-          var inset = fw + pr * 0.55;
+          // Corner Pockets (Visual Sprites)
+          var pr = POCKET_RADIUS_PX;
+          var inset = fw + pr * 0.85;
           var pCoords = [
             { x: inset, y: inset },
             { x: s - inset, y: inset },
@@ -587,14 +504,45 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           });
         },
 
+        createThickWalls: function() {
+          this.cushionBodies.forEach(function(b) { activeScene.matter.world.remove(b); });
+          this.cushionBodies = [];
+
+          var s = this.canvasSize;
+          var fw = (s - BOARD_PX) / 2; // 50px
+          var center = s / 2;
+          var thick = WALL_THICKNESS_PX; // 50px thick
+
+          // 4 Static Wall Rectangles placed OUTSIDE the 740px playable surface:
+          // Inner edges: Left x=fw, Right x=s-fw, Top y=fw, Bottom y=s-fw
+          var wallDefs = [
+            { x: center, y: fw - thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'wall_top' },
+            { x: center, y: s - fw + thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'wall_bottom' },
+            { x: fw - thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'wall_left' },
+            { x: s - fw + thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'wall_right' }
+          ];
+
+          wallDefs.forEach(function(def) {
+            var wall = activeScene.matter.add.rectangle(def.x, def.y, def.w, def.h, {
+              isStatic: true,
+              restitution: 0.0,
+              friction: 0.0,
+              frictionStatic: 0.0,
+              label: def.label,
+              collisionFilter: { category: CAT_WALL, mask: MASK_WALL }
+            });
+            activeScene.cushionBodies.push(wall);
+          });
+        },
+
         createPocketSensors: function() {
           this.pocketSensors.forEach(function(s) { activeScene.matter.world.remove(s); });
           this.pocketSensors = [];
 
           var s = this.canvasSize;
-          var fw = s * 0.08;
-          var pr = s * 0.038;
-          var inset = fw + pr * 0.55;
+          var fw = (s - BOARD_PX) / 2;
+          var pr = POCKET_RADIUS_PX;
+          var inset = fw + pr * 0.85;
 
           var pCoords = [
             { x: inset, y: inset, idx: 0 },
@@ -604,18 +552,17 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ];
 
           pCoords.forEach(function(coord) {
-            var sensor = activeScene.matter.add.circle(coord.x, coord.y, pr * 0.85, {
+            var sensor = activeScene.matter.add.circle(coord.x, coord.y, POCKET_SUCTION_RADIUS, {
               isStatic: true,
               isSensor: true,
               label: 'pocket_' + coord.idx,
-              collisionFilter: { category: CAT_POCKET, mask: CAT_STRIKER | CAT_COIN }
+              collisionFilter: { category: CAT_POCKET, mask: MASK_POCKET }
             });
             activeScene.pocketSensors.push(sensor);
           });
         },
 
         spawnCoinCluster: function() {
-          // Clean existing coins
           this.coins.forEach(function(c) {
             if (c.body) activeScene.matter.world.remove(c.body);
             if (c.sprite) c.sprite.destroy();
@@ -626,9 +573,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var s = this.canvasSize;
           var cx = s / 2;
           var cy = s / 2;
-          var rCoin = s * 0.020;
+          var rCoin = COIN_RADIUS_PX; // 15.5 px
 
-          var addPhysicsCoin = function(scene, id, type, x, y) {
+          var addCoin = function(scene, id, type, x, y) {
             var shadow = scene.add.sprite(x + 3, y + 4, 'tex_coin_shadow');
             shadow.setDisplaySize(rCoin * 2.3, rCoin * 2.3);
             shadow.setDepth(9);
@@ -639,40 +586,40 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             coinSprite.setDepth(10);
 
             var body = scene.matter.add.circle(x, y, rCoin, {
-              restitution: 0.93,
-              friction: 0.035,
-              frictionAir: 0.018,
-              density: 0.0025,
+              restitution: COIN_RESTITUTION,
+              friction: 0.01,
+              frictionAir: 0.0,
+              frictionStatic: 0.0,
+              inertia: Infinity,
               label: 'coin_' + id,
-              collisionFilter: {
-                category: CAT_COIN,
-                mask: CAT_CUSHION | CAT_COIN | CAT_STRIKER | CAT_POCKET
-              }
+              collisionFilter: { category: CAT_COIN, mask: MASK_COIN }
             });
+
+            scene.matter.body.setMass(body, COIN_MASS);
 
             body.coinRef = { id: id, type: type, sprite: coinSprite, shadow: shadow, body: body, isPocketed: false };
             scene.coins.push(body.coinRef);
           };
 
           // Queen
-          addPhysicsCoin(this, 'queen', 'queen', cx, cy);
+          addCoin(this, 'queen', 'queen', cx, cy);
 
           // Ring 1 (6 coins)
-          var d1 = 2 * rCoin * 1.02;
+          var d1 = 2 * rCoin * 1.01;
           var r1Types = ['white', 'black', 'white', 'black', 'white', 'black'];
           for (var i = 0; i < 6; i++) {
             var ang = (i * Math.PI) / 3;
-            addPhysicsCoin(this, 'r1_' + i, r1Types[i], cx + Math.cos(ang) * d1, cy + Math.sin(ang) * d1);
+            addCoin(this, 'r1_' + i, r1Types[i], cx + Math.cos(ang) * d1, cy + Math.sin(ang) * d1);
           }
 
           // Ring 2 (12 coins)
-          var d2Axis = 4 * rCoin * 1.02;
-          var d2Inter = 2 * Math.sqrt(3) * rCoin * 1.02;
+          var d2Axis = 4 * rCoin * 1.01;
+          var d2Inter = 2 * Math.sqrt(3) * rCoin * 1.01;
           var r2Types = ['black', 'white', 'black', 'white', 'black', 'white', 'black', 'white', 'black', 'white', 'black', 'white'];
           for (var j = 0; j < 12; j++) {
             var a2 = (j * Math.PI) / 6;
             var dist = j % 2 === 0 ? d2Axis : d2Inter;
-            addPhysicsCoin(this, 'r2_' + j, r2Types[j], cx + Math.cos(a2) * dist, cy + Math.sin(a2) * dist);
+            addCoin(this, 'r2_' + j, r2Types[j], cx + Math.cos(a2) * dist, cy + Math.sin(a2) * dist);
           }
         },
 
@@ -682,43 +629,35 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           }
           if (this.strikerSprite) this.strikerSprite.destroy();
           if (this.strikerShadow) this.strikerShadow.destroy();
-          if (this.aimRay) this.aimRay.destroy();
 
           var s = this.canvasSize;
-          var fw = s * 0.08;
-          var bo = s * 0.135;
-          var sr = s * 0.028;
+          var fw = (s - BOARD_PX) / 2;
+          var bo = BOARD_PX * 0.135;
+          var sr = STRIKER_RADIUS_PX; // 20.5 px
 
           this.strikerRadius = sr;
           var px = s / 2;
           var py = s - fw - bo;
 
-          // Shadow
           this.strikerShadow = this.add.sprite(px + 4, py + 5, 'tex_striker_shadow');
           this.strikerShadow.setDisplaySize(sr * 2.4, sr * 2.4);
           this.strikerShadow.setDepth(19);
 
-          // Sprite
           this.strikerSprite = this.add.sprite(px, py, 'tex_striker_' + currentStrikerSkin);
           this.strikerSprite.setDisplaySize(sr * 2, sr * 2);
           this.strikerSprite.setDepth(20);
 
-          // Aim Ray
-          this.aimRay = this.add.graphics();
-          this.aimRay.setDepth(21);
-
-          // Matter Body
           this.strikerBody = this.matter.add.circle(px, py, sr, {
-            restitution: 0.95,
-            friction: 0.028,
-            frictionAir: 0.014,
-            density: 0.0075,
+            restitution: COIN_RESTITUTION,
+            friction: 0.01,
+            frictionAir: 0.0,
+            frictionStatic: 0.0,
+            inertia: Infinity,
             label: 'striker',
-            collisionFilter: {
-              category: CAT_STRIKER,
-              mask: CAT_CUSHION | CAT_COIN | CAT_POCKET
-            }
+            collisionFilter: { category: CAT_STRIKER, mask: MASK_STRIKER }
           });
+
+          this.matter.body.setMass(this.strikerBody, STRIKER_MASS);
           this.strikerBody.isStriker = true;
           this.strikerIsPocketed = false;
 
@@ -729,9 +668,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           if (!this.strikerBody || this.isShotActive) return;
 
           var s = this.canvasSize;
-          var fw = s * 0.08;
-          var bo = s * 0.135;
-          var bl = s * 0.54;
+          var fw = (s - BOARD_PX) / 2;
+          var bo = BOARD_PX * 0.135;
+          var bl = BOARD_PX * 0.54;
           var halfBl = bl / 2;
           var center = s / 2;
 
@@ -753,6 +692,26 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             py = center + clampedOffset * halfBl;
           }
 
+          // Coin overlap check on baseline
+          var overlapping = false;
+          var sr = this.strikerRadius;
+          for (var i = 0; i < this.coins.length; i++) {
+            var c = this.coins[i];
+            if (c.isPocketed || !c.body) continue;
+            var dist = Math.hypot(px - c.body.position.x, py - c.body.position.y);
+            if (dist < sr + COIN_RADIUS_PX) {
+              overlapping = true;
+              break;
+            }
+          }
+
+          this.isStrikerOverlapping = overlapping;
+          if (overlapping) {
+            this.strikerSprite.setTint(0xFF4444); // Red flag on illegal overlap
+          } else {
+            this.strikerSprite.clearTint();
+          }
+
           this.matter.body.setPosition(this.strikerBody, { x: px, y: py });
           this.matter.body.setVelocity(this.strikerBody, { x: 0, y: 0 });
           this.matter.body.setAngularVelocity(this.strikerBody, 0);
@@ -771,7 +730,11 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             var py = scene.strikerBody.position.y;
             var dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, px, py);
 
-            if (dist <= scene.strikerRadius * 2.4) {
+            if (dist <= scene.strikerRadius * 2.5) {
+              if (scene.isStrikerOverlapping) {
+                // Striker is overlapping a coin, block aiming
+                return;
+              }
               scene.isAiming = true;
               scene.aimStartPoint = { x: pointer.x, y: pointer.y };
               scene.updateAim(pointer.x, pointer.y);
@@ -786,9 +749,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             } else if (!scene.isShotActive) {
               // Direct drag on baseline
               var s = scene.canvasSize;
-              var fw = s * 0.08;
-              var bo = s * 0.135;
-              var bl = s * 0.54;
+              var bl = BOARD_PX * 0.54;
               var halfBl = bl / 2;
               var center = s / 2;
 
@@ -804,7 +765,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
               sendToReactNative({
                 type: 'STRIKER_DRAGGED',
-                payload: { offset: currentOffsetRatio },
+                payload: { offset: currentOffsetRatio, isOverlapping: scene.isStrikerOverlapping },
                 timestamp: Date.now()
               });
             }
@@ -813,9 +774,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.input.on('pointerup', function() {
             if (scene.isAiming) {
               scene.isAiming = false;
-              scene.aimRay.clear();
+              scene.aimGraphics.clear();
 
-              if (scene.aimPowerRatio > 0.05) {
+              if (!scene.isStrikerOverlapping && scene.aimPowerRatio > 0.05) {
                 scene.executeShot(scene.aimAngle, scene.aimPowerRatio);
               }
             }
@@ -828,53 +789,118 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var dist = Math.hypot(dx, dy);
 
           if (dist < 8) {
-            this.aimRay.clear();
+            this.aimGraphics.clear();
             this.aimPowerRatio = 0;
             return;
           }
 
           var angle = Math.atan2(dy, dx);
-          var maxDrag = 140;
-          var clampedDist = Math.min(dist, maxDrag);
-          this.aimPowerRatio = Math.max(0, Math.min(1, (clampedDist - 8) / (maxDrag - 8)));
+          var maxDragPx = 120; // 12 cm * 10 px/cm
+          var clampedDist = Math.min(dist, maxDragPx);
+          this.aimPowerRatio = Math.max(0, Math.min(1, (clampedDist - 8) / (maxDragPx - 8)));
           this.aimAngle = angle;
 
           var px = this.strikerBody.position.x;
           var py = this.strikerBody.position.y;
-          var rayLen = this.strikerRadius * 2.5 + this.aimPowerRatio * this.strikerRadius * 5.0;
-          var ex = px + Math.cos(angle) * rayLen;
-          var ey = py + Math.sin(angle) * rayLen;
+          var sr = this.strikerRadius;
 
-          this.aimRay.clear();
+          // Raycast to find contact point against coins and cushions
+          var cosA = Math.cos(angle);
+          var sinA = Math.sin(angle);
+          var nearestDist = 800;
+          var hitType = 'none';
+
+          for (var i = 0; i < this.coins.length; i++) {
+            var c = this.coins[i];
+            if (c.isPocketed || !c.body) continue;
+            var toX = c.body.position.x - px;
+            var toY = c.body.position.y - py;
+            var proj = toX * cosA + toY * sinA;
+            if (proj <= 0) continue;
+            var combR = sr + COIN_RADIUS_PX;
+            var perpSq = (toX * toX + toY * toY) - proj * proj;
+            if (perpSq <= combR * combR) {
+              var halfChord = Math.sqrt(Math.max(0, combR * combR - perpSq));
+              var hitD = proj - halfChord;
+              if (hitD > 0 && hitD < nearestDist) {
+                nearestDist = hitD;
+                hitType = 'coin';
+              }
+            }
+          }
+
+          var s = this.canvasSize;
+          var fw = (s - BOARD_PX) / 2;
+          var boardMin = fw + sr;
+          var boardMax = s - fw - sr;
+
+          if (cosA > 0.001) nearestDist = Math.min(nearestDist, (boardMax - px) / cosA);
+          else if (cosA < -0.001) nearestDist = Math.min(nearestDist, (boardMin - px) / cosA);
+          if (sinA > 0.001) nearestDist = Math.min(nearestDist, (boardMax - py) / sinA);
+          else if (sinA < -0.001) nearestDist = Math.min(nearestDist, (boardMin - py) / sinA);
+
+          var contactX = px + cosA * nearestDist;
+          var contactY = py + sinA * nearestDist;
+
+          // Render Aim Line & Contact Point Ghost Striker
+          this.aimGraphics.clear();
           var col = this.aimPowerRatio > 0.75 ? 0xF59E0B : 0x4ADE80;
-          this.aimRay.lineStyle(2.5, col, 0.5 + this.aimPowerRatio * 0.5);
-          this.aimRay.lineBetween(px, py, ex, ey);
-          this.aimRay.fillStyle(col, 0.9);
-          this.aimRay.fillCircle(ex, ey, 4 + this.aimPowerRatio * 3.5);
+
+          // Dotted guide line
+          var segLen = 8;
+          var gapLen = 6;
+          var step = segLen + gapLen;
+          for (var d = 0; d < nearestDist; d += step) {
+            var curD1 = d;
+            var curD2 = Math.min(d + segLen, nearestDist);
+            this.aimGraphics.lineStyle(2, col, 0.7);
+            this.aimGraphics.lineBetween(
+              px + cosA * curD1, py + sinA * curD1,
+              px + cosA * curD2, py + sinA * curD2
+            );
+          }
+
+          // Ghost striker circle at contact point
+          this.aimGraphics.lineStyle(1.5, col, 0.6);
+          this.aimGraphics.strokeCircle(contactX, contactY, sr);
+          this.aimGraphics.fillStyle(col, 0.2);
+          this.aimGraphics.fillCircle(contactX, contactY, sr);
 
           sendToReactNative({
             type: 'AIM_CHANGED',
-            payload: { angle: angle, powerRatio: this.aimPowerRatio },
+            payload: {
+              angle: angle,
+              powerRatio: this.aimPowerRatio,
+              speed_cm_s: STRIKER_MIN_SPEED_CM_S + this.aimPowerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S)
+            },
             timestamp: Date.now()
           });
         },
 
         executeShot: function(angle, powerRatio) {
-          if (this.isShotActive || !this.strikerBody) return;
+          if (this.isShotActive || !this.strikerBody || this.isStrikerOverlapping) return;
 
           this.isShotActive = true;
           this.restStartTime = 0;
+          this.hasReportedSettled = false;
+          this.shotStartTime = Date.now();
           this.pocketedInCurrentShot = [];
 
-          var power = 1.5 + powerRatio * 26.5;
-          var fx = Math.cos(angle) * power * 0.18;
-          var fy = Math.sin(angle) * power * 0.18;
+          var speedCmS = STRIKER_MIN_SPEED_CM_S + powerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S);
+          var vStep = speedCmSToStepVelocity(speedCmS, BASE_DT_SEC);
+          var vxStep = Math.cos(angle) * vStep;
+          var vyStep = Math.sin(angle) * vStep;
 
-          this.matter.body.applyForce(this.strikerBody, this.strikerBody.position, { x: fx, y: fy });
+          // Direct physical velocity setting (no raw impulses)
+          this.matter.body.setVelocity(this.strikerBody, { x: vxStep, y: vyStep });
 
           sendToReactNative({
             type: 'SHOT_STARTED',
-            payload: { power: power, powerRatio: powerRatio, angle: angle },
+            payload: {
+              speed_cm_s: speedCmS,
+              angle: angle,
+              impulse: { x: vxStep, y: vyStep }
+            },
             timestamp: Date.now()
           });
         },
@@ -887,167 +913,306 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
               var bodyA = pair.bodyA;
               var bodyB = pair.bodyB;
 
-              var isSensA = bodyA.isSensor && bodyA.label && bodyA.label.indexOf('pocket_') === 0;
-              var isSensB = bodyB.isSensor && bodyB.label && bodyB.label.indexOf('pocket_') === 0;
+              // 1. Cushion / Wall Collision
+              var isWallA = bodyA.label && bodyA.label.indexOf('wall') === 0;
+              var isWallB = bodyB.label && bodyB.label.indexOf('wall') === 0;
 
-              if (isSensA) {
-                scene.handlePocketEntry(bodyB, parseInt(bodyA.label.split('_')[1], 10));
-              } else if (isSensB) {
-                scene.handlePocketEntry(bodyA, parseInt(bodyB.label.split('_')[1], 10));
+              if (isWallA || isWallB) {
+                pair.restitution = WALL_BOUNCE_DAMPING;
+
+                var movingBody = isWallA ? bodyB : bodyA;
+                var wallBody = isWallA ? bodyA : bodyB;
+
+                // Adjust tangential component to maintain incidence angle
+                var isHorizontal = wallBody.label.indexOf('top') >= 0 || wallBody.label.indexOf('bottom') >= 0;
+                if (isHorizontal) {
+                  scene.matter.body.setVelocity(movingBody, {
+                    x: movingBody.velocity.x * WALL_BOUNCE_DAMPING,
+                    y: movingBody.velocity.y
+                  });
+                } else {
+                  scene.matter.body.setVelocity(movingBody, {
+                    x: movingBody.velocity.x,
+                    y: movingBody.velocity.y * WALL_BOUNCE_DAMPING
+                  });
+                }
+                return;
+              }
+
+              // 2. Coin-to-Coin or Striker-to-Coin Impact
+              var isPieceA = bodyA.isStriker || bodyA.coinRef;
+              var isPieceB = bodyB.isStriker || bodyB.coinRef;
+
+              if (isPieceA && isPieceB) {
+                var relVx = bodyA.velocity.x - bodyB.velocity.x;
+                var relVy = bodyA.velocity.y - bodyB.velocity.y;
+                var relStep = Math.hypot(relVx, relVy);
+                var speedCmS = stepVelocityToSpeedCmS(relStep, BASE_DT_SEC);
+
+                if (speedCmS > 2.0) {
+                  var dx = bodyB.position.x - bodyA.position.x;
+                  var dy = bodyB.position.y - bodyA.position.y;
+                  var d = Math.hypot(dx, dy) || 1;
+                  var normal = { x: dx / d, y: dy / d };
+
+                  sendToReactNative({
+                    type: 'COIN_COLLISION',
+                    payload: {
+                      bodyA: bodyA.label,
+                      bodyB: bodyB.label,
+                      speed_cm_s: speedCmS,
+                      normal: normal
+                    },
+                    timestamp: Date.now()
+                  });
+                }
               }
             });
           });
         },
 
-        handlePocketEntry: function(body, pocketIdx) {
-          if (!body || body.isPocketed) return;
-          body.isPocketed = true;
+        update: function(time, delta) {
+          // Fixed Timestep Accumulator
+          this.physicsAccumulator += delta;
 
-          var scene = this;
+          while (this.physicsAccumulator >= FIXED_DT_MS) {
+            this.stepSimulation();
+            this.physicsAccumulator -= FIXED_DT_MS;
+          }
 
-          if (body.isStriker) {
-            this.strikerIsPocketed = true;
-            this.pocketedInCurrentShot.push({ id: 'striker', type: 'striker', pocketIndex: pocketIdx });
+          // Visual Sync
+          this.syncVisuals();
 
-            this.tweens.add({
-              targets: [scene.strikerSprite, scene.strikerShadow],
-              scaleX: 0.1,
-              scaleY: 0.1,
-              alpha: 0,
-              duration: 250,
-              ease: 'Back.easeIn',
-              onComplete: function() {
-                scene.matter.body.setVelocity(body, { x: 0, y: 0 });
-                scene.strikerSprite.setVisible(false);
-                scene.strikerShadow.setVisible(false);
-              }
-            });
+          // Motion & Settle Check
+          this.checkSettled();
 
-            sendToReactNative({
-              type: 'STRIKER_POCKETED',
-              payload: { pocketIndex: pocketIdx },
-              timestamp: Date.now()
-            });
-          } else if (body.coinRef) {
-            var c = body.coinRef;
-            if (c.isPocketed) return;
-            c.isPocketed = true;
-
-            this.pocketedInCurrentShot.push({ id: c.id, type: c.type, pocketIndex: pocketIdx });
-
-            this.tweens.add({
-              targets: [c.sprite, c.shadow],
-              scaleX: 0.1,
-              scaleY: 0.1,
-              alpha: 0,
-              duration: 250,
-              ease: 'Back.easeIn',
-              onComplete: function() {
-                c.sprite.setVisible(false);
-                c.shadow.setVisible(false);
-                scene.matter.world.remove(body);
-              }
-            });
-
-            sendToReactNative({
-              type: 'OBJECT_POCKETED',
-              payload: { id: c.id, type: c.type, pocketIndex: pocketIdx },
-              timestamp: Date.now()
-            });
+          // Debug Overlay
+          if (DEBUG_OVERLAY) {
+            this.renderDebugOverlay();
           }
         },
 
-        update: function() {
+        stepSimulation: function() {
           var scene = this;
-          var linearThreshold = 0.07;
-          var angularThreshold = 0.04;
 
-          // 1. Update Striker Visual & Physics Damping
-          var strikerMoving = false;
-          if (this.strikerBody && !this.strikerIsPocketed) {
-            var sx = this.strikerBody.position.x;
-            var sy = this.strikerBody.position.y;
-            var svx = this.strikerBody.velocity.x;
-            var svy = this.strikerBody.velocity.y;
-            var sSpeed = Math.hypot(svx, svy);
-            var sav = this.strikerBody.angularVelocity;
+          // 1. Gather all active moving bodies
+          var activeBodies = [];
+          if (this.strikerBody && !this.strikerIsPocketed) activeBodies.push(this.strikerBody);
+          this.coins.forEach(function(c) {
+            if (c.body && !c.isPocketed) activeBodies.push(c.body);
+          });
 
-            if (sSpeed < linearThreshold && Math.abs(sav) < angularThreshold) {
-              if (sSpeed > 0 || sav !== 0) {
-                this.matter.body.setVelocity(this.strikerBody, { x: 0, y: 0 });
-                this.matter.body.setAngularVelocity(this.strikerBody, 0);
+          // 2. Find fastest velocity in step
+          var maxV = 0;
+          activeBodies.forEach(function(b) {
+            var v = Math.hypot(b.velocity.x, b.velocity.y);
+            if (v > maxV) maxV = v;
+          });
+
+          // 3. Adaptive Substeps: fastest body moves <= 0.5 * coinRadius per substep
+          var maxDisp = 0.5 * COIN_RADIUS_PX; // 7.75 px
+          var nSubsteps = Math.min(MAX_SUBSTEPS, Math.max(1, Math.ceil(maxV / maxDisp)));
+          var subDtSec = BASE_DT_SEC / nSubsteps;
+
+          for (var s = 0; s < nSubsteps; s++) {
+            // A. Surface Coulomb friction & viscous damping
+            activeBodies.forEach(function(b) {
+              var vx = b.velocity.x;
+              var vy = b.velocity.y;
+              var stepSp = Math.hypot(vx, vy);
+              var spCmS = stepVelocityToSpeedCmS(stepSp, BASE_DT_SEC);
+              var av = b.angularVelocity;
+
+              if (spCmS < REST_SPEED_THRESHOLD_CM_S && Math.abs(av) < ANGULAR_REST_THRESHOLD) {
+                if (stepSp > 0 || av !== 0) {
+                  scene.matter.body.setVelocity(b, { x: 0, y: 0 });
+                  scene.matter.body.setAngularVelocity(b, 0);
+                }
+              } else if (spCmS >= REST_SPEED_THRESHOLD_CM_S) {
+                var newSp = Math.max(0, spCmS - FRICTION_DECEL_CM_S2 * subDtSec);
+                newSp = newSp * Math.max(0, 1 - VISCOUS_DAMPING * subDtSec);
+
+                if (newSp < REST_SPEED_THRESHOLD_CM_S) {
+                  scene.matter.body.setVelocity(b, { x: 0, y: 0 });
+                } else {
+                  var factor = (speedCmSToStepVelocity(newSp, BASE_DT_SEC)) / stepSp;
+                  scene.matter.body.setVelocity(b, { x: vx * factor, y: vy * factor });
+                }
               }
-            } else {
-              strikerMoving = true;
-              this.matter.body.setVelocity(this.strikerBody, { x: svx * 0.992, y: svy * 0.992 });
-              this.matter.body.setAngularVelocity(this.strikerBody, sav * 0.95);
+
+              if (Math.abs(av) >= ANGULAR_REST_THRESHOLD) {
+                var newAv = av * Math.max(0, 1 - ANGULAR_DAMPING_PER_SEC * subDtSec);
+                scene.matter.body.setAngularVelocity(b, Math.abs(newAv) < ANGULAR_REST_THRESHOLD ? 0 : newAv);
+              }
+            });
+
+            // B. Pocket Suction & Capture Check
+            var pSensors = this.pocketSensors;
+            for (var pIdx = 0; pIdx < pSensors.length; pIdx++) {
+              var pSens = pSensors[pIdx];
+              var pX = pSens.position.x;
+              var pY = pSens.position.y;
+
+              for (var bIdx = 0; bIdx < activeBodies.length; bIdx++) {
+                var b = activeBodies[bIdx];
+                if ((b).isPocketed) continue;
+
+                var distToHole = Math.hypot(pX - b.position.x, pY - b.position.y);
+
+                // Gentle suction pull
+                if (distToHole <= POCKET_SUCTION_RADIUS && distToHole > 1.0) {
+                  var pull = (1 - distToHole / POCKET_SUCTION_RADIUS) * 0.0006;
+                  scene.matter.body.applyForce(b, b.position, {
+                    x: (pX - b.position.x) * pull,
+                    y: (pY - b.position.y) * pull
+                  });
+                }
+
+                // Hole capture
+                if (distToHole <= POCKET_CAPTURE_RADIUS) {
+                  (b).isPocketed = true;
+                  scene.queuedPocketRemovals.push({ body: b, pocketIndex: pIdx });
+                }
+              }
             }
 
-            this.strikerSprite.setPosition(sx, sy);
-            this.strikerSprite.setRotation(this.strikerBody.angle);
-            this.strikerShadow.setPosition(sx + 4, sy + 5);
+            // Step Matter world
+            this.matter.world.step(subDtSec * 1000);
           }
 
-          // 2. Update Coins Visual & Physics Damping
-          var anyCoinMoving = false;
+          // Process queued removals at end of substeps (deduplicated)
+          this.processQueuedPocketRemovals();
+        },
+
+        processQueuedPocketRemovals: function() {
+          if (this.queuedPocketRemovals.length === 0) return;
+
+          var scene = this;
+          var items = this.queuedPocketRemovals.slice();
+          this.queuedPocketRemovals = [];
+
+          items.forEach(function(item) {
+            var body = item.body;
+            var pIdx = item.pocketIndex;
+
+            if (body.isStriker) {
+              scene.strikerIsPocketed = true;
+              scene.pocketedInCurrentShot.push({ id: 'striker', type: 'striker', pocketIndex: pIdx });
+
+              scene.tweens.add({
+                targets: [scene.strikerSprite, scene.strikerShadow],
+                scaleX: 0.1,
+                scaleY: 0.1,
+                alpha: 0,
+                duration: 250,
+                ease: 'Back.easeIn',
+                onComplete: function() {
+                  scene.matter.body.setVelocity(body, { x: 0, y: 0 });
+                  scene.strikerSprite.setVisible(false);
+                  scene.strikerShadow.setVisible(false);
+                }
+              });
+
+              sendToReactNative({
+                type: 'OBJECT_POCKETED',
+                payload: { id: 'striker', type: 'striker', pocketIndex: pIdx },
+                timestamp: Date.now()
+              });
+            } else if (body.coinRef) {
+              var c = body.coinRef;
+              scene.pocketedInCurrentShot.push({ id: c.id, type: c.type, pocketIndex: pIdx });
+
+              scene.tweens.add({
+                targets: [c.sprite, c.shadow],
+                scaleX: 0.1,
+                scaleY: 0.1,
+                alpha: 0,
+                duration: 250,
+                ease: 'Back.easeIn',
+                onComplete: function() {
+                  c.sprite.setVisible(false);
+                  c.shadow.setVisible(false);
+                  scene.matter.world.remove(body);
+                }
+              });
+
+              sendToReactNative({
+                type: 'OBJECT_POCKETED',
+                payload: { id: c.id, type: c.type, pocketIndex: pIdx },
+                timestamp: Date.now()
+              });
+            }
+          });
+        },
+
+        syncVisuals: function() {
+          if (this.strikerBody && !this.strikerIsPocketed) {
+            this.strikerSprite.setPosition(this.strikerBody.position.x, this.strikerBody.position.y);
+            this.strikerSprite.setRotation(this.strikerBody.angle);
+            this.strikerShadow.setPosition(this.strikerBody.position.x + 4, this.strikerBody.position.y + 5);
+          }
+
           this.coins.forEach(function(c) {
             if (c.isPocketed || !c.body) return;
-
-            var cx = c.body.position.x;
-            var cy = c.body.position.y;
-            var cvx = c.body.velocity.x;
-            var cvy = c.body.velocity.y;
-            var cSpeed = Math.hypot(cvx, cvy);
-            var cav = c.body.angularVelocity;
-
-            if (cSpeed < linearThreshold && Math.abs(cav) < angularThreshold) {
-              if (cSpeed > 0 || cav !== 0) {
-                scene.matter.body.setVelocity(c.body, { x: 0, y: 0 });
-                scene.matter.body.setAngularVelocity(c.body, 0);
-              }
-            } else {
-              anyCoinMoving = true;
-              scene.matter.body.setVelocity(c.body, { x: cvx * 0.992, y: cvy * 0.992 });
-              scene.matter.body.setAngularVelocity(c.body, cav * 0.95);
-            }
-
-            c.sprite.setPosition(cx, cy);
+            c.sprite.setPosition(c.body.position.x, c.body.position.y);
             c.sprite.setRotation(c.body.angle);
-            c.shadow.setPosition(cx + 3, cy + 4);
+            c.shadow.setPosition(c.body.position.x + 3, c.body.position.y + 4);
           });
+        },
 
-          // 3. Motion & Settled Detection
-          if (this.isShotActive) {
-            var allStopped = !strikerMoving && !anyCoinMoving;
-            var now = Date.now();
+        checkSettled: function() {
+          if (!this.isShotActive) return;
 
-            if (allStopped) {
-              if (this.restStartTime === 0) {
-                this.restStartTime = now;
-              } else if (now - this.restStartTime >= 250) {
-                // Board has settled!
+          var strikerMoving = false;
+          if (this.strikerBody && !this.strikerIsPocketed) {
+            var sSp = stepVelocityToSpeedCmS(Math.hypot(this.strikerBody.velocity.x, this.strikerBody.velocity.y), BASE_DT_SEC);
+            strikerMoving = sSp >= REST_SPEED_THRESHOLD_CM_S || Math.abs(this.strikerBody.angularVelocity) >= ANGULAR_REST_THRESHOLD;
+          }
+
+          var anyCoinMoving = false;
+          for (var i = 0; i < this.coins.length; i++) {
+            var c = this.coins[i];
+            if (c.isPocketed || !c.body) continue;
+            var cSp = stepVelocityToSpeedCmS(Math.hypot(c.body.velocity.x, c.body.velocity.y), BASE_DT_SEC);
+            if (cSp >= REST_SPEED_THRESHOLD_CM_S || Math.abs(c.body.angularVelocity) >= ANGULAR_REST_THRESHOLD) {
+              anyCoinMoving = true;
+              break;
+            }
+          }
+
+          var allStopped = !strikerMoving && !anyCoinMoving;
+          var now = Date.now();
+
+          if (allStopped) {
+            if (this.restStartTime === 0) {
+              this.restStartTime = now;
+              sendToReactNative({ type: 'ALL_OBJECTS_STOPPED', timestamp: now });
+            } else if (now - this.restStartTime >= SETTLED_COOLDOWN_MS) {
+              if (!this.hasReportedSettled) {
+                this.hasReportedSettled = true;
                 this.isShotActive = false;
                 this.restStartTime = 0;
 
                 var pocketed = this.pocketedInCurrentShot.slice();
                 this.pocketedInCurrentShot = [];
+                var duration = now - this.shotStartTime;
 
                 sendToReactNative({
                   type: 'SHOT_SETTLED',
                   payload: {
                     pocketedCount: pocketed.length,
-                    pocketedItems: pocketed,
+                    pocketed: pocketed,
+                    duration_ms: duration,
                     strikerPocketed: this.strikerIsPocketed
                   },
                   timestamp: now
                 });
 
-                // Reset striker back to player's baseline
                 this.resetStriker();
               }
-            } else {
-              this.restStartTime = 0;
             }
+          } else {
+            this.restStartTime = 0;
           }
         },
 
@@ -1065,6 +1230,65 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           }
           currentOffsetRatio = 0;
           this.updateStrikerPosition();
+        },
+
+        renderDebugOverlay: function() {
+          this.debugGraphics.clear();
+
+          // 1. Cushion / Wall Outlines (Red)
+          this.debugGraphics.lineStyle(1.5, 0xEF4444, 0.8);
+          this.cushionBodies.forEach(function(w) {
+            activeScene.debugGraphics.strokeRect(
+              w.position.x - w.width / 2,
+              w.position.y - w.height / 2,
+              w.width,
+              w.height
+            );
+          });
+
+          // 2. Pocket Sensors (Blue dashed/solid)
+          this.pocketSensors.forEach(function(p) {
+            activeScene.debugGraphics.lineStyle(1, 0x3B82F6, 0.7);
+            activeScene.debugGraphics.strokeCircle(p.position.x, p.position.y, POCKET_SUCTION_RADIUS);
+            activeScene.debugGraphics.lineStyle(1.5, 0x1D4ED8, 0.9);
+            activeScene.debugGraphics.strokeCircle(p.position.x, p.position.y, POCKET_CAPTURE_RADIUS);
+          });
+
+          // 3. Body outlines & velocity vectors
+          var drawBodyDebug = function(g, body, radius, colorHex) {
+            g.lineStyle(1.5, colorHex, 0.85);
+            g.strokeCircle(body.position.x, body.position.y, radius);
+
+            // Velocity vector colored by speed cm/s
+            var vx = body.velocity.x;
+            var vy = body.velocity.y;
+            var spStep = Math.hypot(vx, vy);
+            var spCmS = stepVelocityToSpeedCmS(spStep, BASE_DT_SEC);
+
+            if (spCmS >= 2.0) {
+              var vCol = spCmS < 100 ? 0x22C55E : (spCmS < 250 ? 0xEAB308 : 0xEF4444);
+              var vLen = spCmS * 0.4;
+              var dirX = vx / spStep;
+              var dirY = vy / spStep;
+              g.lineStyle(2, vCol, 0.95);
+              g.lineBetween(
+                body.position.x,
+                body.position.y,
+                body.position.x + dirX * vLen,
+                body.position.y + dirY * vLen
+              );
+            }
+          };
+
+          if (this.strikerBody && !this.strikerIsPocketed) {
+            drawBodyDebug(this.debugGraphics, this.strikerBody, STRIKER_RADIUS_PX, 0x06B6D4);
+          }
+
+          this.coins.forEach(function(c) {
+            if (c.body && !c.isPocketed) {
+              drawBodyDebug(activeScene.debugGraphics, c.body, COIN_RADIUS_PX, 0x10B981);
+            }
+          });
         },
 
         changeTheme: function(themeId) {
@@ -1093,11 +1317,17 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           }
         },
 
+        toggleDebugOverlay: function(enabled) {
+          DEBUG_OVERLAY = typeof enabled === 'boolean' ? enabled : !DEBUG_OVERLAY;
+          if (!DEBUG_OVERLAY) this.debugGraphics.clear();
+        },
+
         resetBoard: function() {
           this.spawnCoinCluster();
           this.resetStriker();
           this.isShotActive = false;
           this.restStartTime = 0;
+          this.hasReportedSettled = false;
           this.pocketedInCurrentShot = [];
         }
       });
@@ -1143,6 +1373,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
                 activeScene.executeShot(angle, msg.payload.power);
               }
               break;
+            case 'TOGGLE_DEBUG':
+              activeScene.toggleDebugOverlay(msg.payload ? msg.payload.enabled : undefined);
+              break;
             case 'RESET_BOARD':
               activeScene.resetBoard();
               break;
@@ -1170,6 +1403,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           default: 'matter',
           matter: {
             gravity: { x: 0, y: 0 },
+            autoUpdate: false,
+            positionIterations: 8,
+            velocityIterations: 6,
             debug: false
           }
         },

@@ -95,6 +95,8 @@ export class Striker {
     (body as any).entity = this;
     (body as any).entityType = 'striker';
     (body as any).entityId = this.id;
+    body.inertia = Infinity;
+    this.scene.matter.body.setMass(body, PHYSICS_CONFIG.striker.mass);
     this.physicsBody = body;
     return body;
   }
@@ -125,6 +127,14 @@ export class Striker {
       this.physicsBody.position,
       { x: fx, y: fy }
     );
+  }
+
+  /**
+   * Sets linear velocity vector directly on the striker's Matter body.
+   */
+  public setVelocity(vx: number, vy: number): void {
+    if (!this.physicsBody) return;
+    this.scene.matter.body.setVelocity(this.physicsBody, { x: vx, y: vy });
   }
 
   /**
