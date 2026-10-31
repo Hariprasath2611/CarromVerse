@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { Coin } from '../entities/Coin.js';
 import { Striker } from '../entities/Striker.js';
 import { CoinType } from '../types/GameTypes.js';
+import { SIZES, POCKET, PX_PER_CM, SIMULATION } from '../physics/PhysicsConfig.js';
+import { PhysicsUtils } from '../utils/PhysicsUtils.js';
 
 export interface PocketEventData {
   id: string;
@@ -25,26 +27,83 @@ export class PocketDetection {
   }
 
   /**
-   * Called by collision manager when an entity intersects a pocket sensor.
+   * Called when an entity is within a pocket sensor zone.
+   * Checks if body center is within capture distance (<= 0.85 * pocketRadius).
+   * Applies gentle suction pull if within suction distance (<= 1.20 * pocketRadius).
    */
-  public handleSensorOverlap(body: MatterJS.BodyType, pocketIndex: number): void {
-    const entity = (body as any).entity as (Coin | Striker) | undefined;
-    if (!entity) return;
+  public handleSensorOverlap(
+    body: MatterJS.BodyType,
+    pocketIndex: number,
+    pocketSensorBody?: MatterJS.BodyType
+  ): void {
+    this.evaluatePocketInteraction(body, pocketIndex, pocketSensorBody);
+  }
 
-    const id = entity.id;
-    if (this.pocketedIds.has(id)) {
-      // Prevent duplicate detection
+  public handleSensorActive(
+    body: MatterJS.BodyType,
+    pocketIndex: number,
+    pocketSensorBody?: MatterJS.BodyType
+  ): void {
+    this.evaluatePocketInteraction(body, pocketIndex, pocketSensorBody);
+  }
+
+  private evaluatePocketInteraction(
+    body: MatterJS.BodyType,
+    pocketIndex: number,
+    pocketSensorBody?: MatterJS.BodyType
+  ): void {
+    const entity = (body as any).entity as (Coin | Striker) | undefined;
+    const bodyId = entity ? entity.id : ((body as any).entityId || body.label);
+    if (!bodyId || this.pocketedIds.has(bodyId) || (body as any).isPocketed) {
       return;
     }
 
-    this.pocketedIds.add(id);
+    if (!pocketSensorBody) return;
 
-    // Queue for safe removal after physics step
-    this.queuedRemovals.push({ body, entity, pocketIdx: pocketIndex });
+    // Calculate exact Euclidean distance from piece center to pocket hole center
+    const dx = pocketSensorBody.position.x - body.position.x;
+    const dy = pocketSensorBody.position.y - body.position.y;
+    const distPx = Math.hypot(dx, dy);
+
+    const pocketRadiusPx = SIZES.pocketRadiusPx;
+    const captureDistPx = pocketRadiusPx * POCKET.captureRadiusRatio; // 0.85 * r
+    const suctionDistPx = pocketRadiusPx * POCKET.suctionRadiusRatio; // 1.20 * r
+
+    // 1. Suction pull: gentle radial attraction towards hole center
+    if (distPx <= suctionDistPx && distPx > 1.0) {
+      const suctionFactor = (1 - distPx / suctionDistPx) * 0.0008;
+      this.scene.matter.body.applyForce(body, body.position, {
+        x: dx * suctionFactor,
+        y: dy * suctionFactor,
+      });
+    }
+
+    // 2. Capture condition: center must be within 0.85 * pocketRadius
+    if (distPx <= captureDistPx) {
+      (body as any).isPocketed = true;
+      this.pocketedIds.add(bodyId);
+
+      if (entity) {
+        this.queuedRemovals.push({ body, entity, pocketIdx: pocketIndex });
+      } else {
+        // Fallback if raw Matter body without entity wrapper
+        const type = (body as any).entityType || (body.label === 'striker' ? 'striker' : 'white');
+        const eventData: PocketEventData = {
+          id: bodyId,
+          type: type as CoinType | 'striker',
+          pocketIndex,
+          timestamp: Date.now(),
+        };
+        this.pocketedInCurrentShot.push(eventData);
+        this.scene.matter.world.remove(body);
+        this.onPocketedCallback?.(eventData);
+      }
+    }
   }
 
   /**
    * Safely process queued removals outside of the collision step.
+   * Deduplicates by entity id so each pocketed object fires exactly once.
    */
   public processQueuedRemovals(): void {
     if (this.queuedRemovals.length === 0) return;
@@ -89,4 +148,3 @@ export class PocketDetection {
     this.pocketedIds.clear();
   }
 }
-
