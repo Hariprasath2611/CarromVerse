@@ -15,6 +15,7 @@ export interface PauseModalProps {
 export const PauseModal: React.FC<PauseModalProps> = ({
   visible,
   onResume,
+  onRestart,
   onExit,
 }) => {
   const router = useRouter();
@@ -32,16 +33,18 @@ export const PauseModal: React.FC<PauseModalProps> = ({
           onPress={onResume}
           style={styles.actionBtn}
         />
+        {onRestart && (
+          <Button
+            title="RESTART MATCH"
+            variant="secondary"
+            onPress={onRestart}
+            style={styles.actionBtn}
+          />
+        )}
         <Button
           title="SETTINGS"
           variant="secondary"
           onPress={() => router.push('/settings')}
-          style={styles.actionBtn}
-        />
-        <Button
-          title="HOW TO PLAY"
-          variant="secondary"
-          onPress={() => {}}
           style={styles.actionBtn}
         />
         <Button
