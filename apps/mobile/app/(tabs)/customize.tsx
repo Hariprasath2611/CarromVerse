@@ -1,276 +1,218 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
+  BoardPreview,
+  Button,
+  Card,
   CoinBalance,
-  CustomizationCard,
-  GameCard,
   ScreenContainer,
 } from '../../src/components';
-import { CustomizationCategory, CustomizationItem, useEconomyStore } from '../../src/store/economyStore';
+import { useEconomyStore } from '../../src/store/economyStore';
 import { THEME } from '../../src/constants/theme';
 
+type TabType = 'BOARDS' | 'COINS' | 'STRIKERS' | 'STICKERS';
+
+interface ItemConfig {
+  id: string;
+  name: string;
+  theme: string;
+  status: 'equipped' | 'equip' | 'locked';
+  price?: number;
+}
+
+const BOARDS_DATA: ItemConfig[] = [
+  { id: 'classic', name: 'CLASSIC', theme: 'classic', status: 'equipped' },
+  { id: 'emerald', name: 'EMERALD', theme: 'emerald', status: 'equip' },
+  { id: 'midnight', name: 'MIDNIGHT', theme: 'mahogany', status: 'locked', price: 1500 },
+  { id: 'rosewood', name: 'ROSEWOOD', theme: 'rosewood', status: 'locked', price: 2000 },
+];
+
 export default function CustomizeScreen() {
-  const { coins, boards, coinsItems, strikers, equipItem, unlockItem, addCoins } =
-    useEconomyStore();
+  const { coins, addCoins } = useEconomyStore();
+  const [activeTab, setActiveTab] = useState<TabType>('BOARDS');
+  const [items, setItems] = useState<ItemConfig[]>(BOARDS_DATA);
 
-  const [activeTab, setActiveTab] = useState<CustomizationCategory>('boards');
+  const tabs: TabType[] = ['BOARDS', 'COINS', 'STRIKERS', 'STICKERS'];
 
-  const currentItems =
-    activeTab === 'boards' ? boards : activeTab === 'coins' ? coinsItems : strikers;
-
-  const equippedBoard = boards.find((b) => b.isEquipped) || boards[0];
-  const equippedStriker = strikers.find((s) => s.isEquipped) || strikers[0];
-  const equippedCoins = coinsItems.find((c) => c.isEquipped) || coinsItems[0];
-
-  const handleAction = (item: CustomizationItem) => {
-    if (item.isEquipped) return;
-
-    if (item.isUnlocked) {
-      equipItem(activeTab, item.id);
-      return;
-    }
-
-    // Attempt to unlock
-    if (coins < item.price) {
-      Alert.alert(
-        'Insufficient Coins',
-        `You need ${item.price} coins to unlock "${item.name}". Your current vault balance is ${coins} coins.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Get +1000 Coins',
-            onPress: () => addCoins(1000),
-          },
-        ]
+  const handleAction = (item: ItemConfig) => {
+    if (item.status === 'equipped') return;
+    if (item.status === 'equip') {
+      setItems((prev) =>
+        prev.map((i) => ({
+          ...i,
+          status: i.id === item.id ? 'equipped' : i.status === 'equipped' ? 'equip' : i.status,
+        }))
       );
-      return;
+    } else if (item.status === 'locked') {
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, status: 'equipped' } : i.status === 'equipped' ? 'equip' : i.status))
+      );
     }
-
-    Alert.alert(
-      'Unlock Gear',
-      `Unlock "${item.name}" for ${item.price} coins?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unlock & Equip',
-          onPress: () => {
-            const success = unlockItem(activeTab, item.id);
-            if (success) {
-              equipItem(activeTab, item.id);
-            }
-          },
-        },
-      ]
-    );
   };
 
   return (
-    <ScreenContainer scrollable={false} style={styles.container}>
-      {/* Top Header & Coin Counter */}
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.screenTitle}>GEAR VAULT</Text>
-          <Text style={styles.screenSubtitle}>Customize your playing equipment</Text>
-        </View>
-        <CoinBalance balance={coins} onAddPress={() => addCoins(500)} />
+    <ScreenContainer scrollable contentContainerStyle={styles.container}>
+      {/* Decorative background shapes */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
+
+      {/* Title */}
+      <View style={styles.header}>
+        <Text style={styles.title}>CUSTOMIZE</Text>
       </View>
-
-      {/* Currently Equipped Loadout Showcase */}
-      <GameCard style={styles.loadoutCard}>
-        <Text style={styles.loadoutTitle}>EQUIPPED LOADOUT</Text>
-        <View style={styles.loadoutGrid}>
-          <View style={styles.loadoutItem}>
-            <View
-              style={[
-                styles.previewMiniSwatch,
-                { backgroundColor: equippedBoard.previewColor || '#7A431C' },
-              ]}
-            >
-              <Text style={styles.swatchIcon}>🪵</Text>
-            </View>
-            <Text style={styles.loadoutLabel}>BOARD</Text>
-            <Text style={styles.loadoutName} numberOfLines={1}>
-              {equippedBoard.name}
-            </Text>
-          </View>
-
-          <View style={styles.loadoutItem}>
-            <View
-              style={[
-                styles.previewMiniSwatch,
-                { backgroundColor: equippedStriker.previewColor || '#2BD67B' },
-              ]}
-            >
-              <Text style={styles.swatchIcon}>⭐</Text>
-            </View>
-            <Text style={styles.loadoutLabel}>STRIKER</Text>
-            <Text style={styles.loadoutName} numberOfLines={1}>
-              {equippedStriker.name}
-            </Text>
-          </View>
-
-          <View style={styles.loadoutItem}>
-            <View
-              style={[
-                styles.previewMiniSwatch,
-                { backgroundColor: equippedCoins.previewColor || '#F5ECD2' },
-              ]}
-            >
-              <Text style={styles.swatchIcon}>⚪</Text>
-            </View>
-            <Text style={styles.loadoutLabel}>COINS</Text>
-            <Text style={styles.loadoutName} numberOfLines={1}>
-              {equippedCoins.name}
-            </Text>
-          </View>
-        </View>
-      </GameCard>
 
       {/* Category Tabs */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'boards' && styles.activeTabButton]}
-          onPress={() => setActiveTab('boards')}
-        >
-          <Text
-            style={[styles.tabButtonText, activeTab === 'boards' && styles.activeTabText]}
-          >
-            🪵 BOARDS
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'strikers' && styles.activeTabButton]}
-          onPress={() => setActiveTab('strikers')}
-        >
-          <Text
-            style={[styles.tabButtonText, activeTab === 'strikers' && styles.activeTabText]}
-          >
-            ⭐ STRIKERS
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'coins' && styles.activeTabButton]}
-          onPress={() => setActiveTab('coins')}
-        >
-          <Text
-            style={[styles.tabButtonText, activeTab === 'coins' && styles.activeTabText]}
-          >
-            ⚪ COINS
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.tabsRow}>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Items List */}
-      <FlatList
-        data={currentItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <CustomizationCard item={item} onAction={() => handleAction(item)} />
-        )}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* 2x2 Grid of Items */}
+      <View style={styles.grid}>
+        {items.map((item) => (
+          <Card key={item.id} style={styles.gridCard}>
+            {/* Visual Board Swatch */}
+            <View style={styles.boardThumbWrap}>
+              <BoardPreview size={96} theme={item.theme} />
+            </View>
+
+            <Text style={styles.itemName}>{item.name}</Text>
+
+            {item.status === 'equipped' ? (
+              <Button
+                title="EQUIPPED"
+                variant="gold"
+                onPress={() => {}}
+                style={styles.cardBtn}
+              />
+            ) : item.status === 'equip' ? (
+              <Button
+                title="EQUIP"
+                variant="secondary"
+                onPress={() => handleAction(item)}
+                style={styles.cardBtn}
+              />
+            ) : (
+              <Button
+                title={item.price ? `${item.price.toLocaleString()}` : 'UNLOCK'}
+                variant="gold"
+                onPress={() => handleAction(item)}
+                style={styles.cardBtn}
+              />
+            )}
+          </Card>
+        ))}
+      </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    flex: 1,
+    flexGrow: 1,
+    backgroundColor: '#07261C',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  bokehTop: {
+    position: 'absolute',
+    top: 40,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 80,
+    left: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
+  },
+  header: {
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.5,
+  title: {
+    color: '#F5ECD2',
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    textAlign: 'center',
   },
-  screenSubtitle: {
-    fontSize: 12,
-    color: THEME.colors.mutedMint,
-    marginTop: 2,
-  },
-  loadoutCard: {
-    padding: 12,
-    marginBottom: 14,
-  },
-  loadoutTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    letterSpacing: 1.2,
-    marginBottom: 8,
-  },
-  loadoutGrid: {
+  tabsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    gap: 8,
+    marginBottom: 20,
   },
-  loadoutItem: {
-    alignItems: 'center',
+  tabBtn: {
     flex: 1,
-  },
-  previewMiniSwatch: {
-    width: 42,
     height: 42,
-    borderRadius: 21,
+    borderRadius: 14,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    borderColor: '#1B7050',
-    borderWidth: 2,
-    marginBottom: 6,
   },
-  swatchIcon: {
-    fontSize: 18,
+  tabBtnActive: {
+    backgroundColor: '#2BD67B',
+    borderColor: '#2BD67B',
   },
-  loadoutLabel: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: THEME.colors.mutedMint,
+  tabText: {
+    color: '#9FD8B8',
+    fontSize: 11,
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
-  loadoutName: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    marginTop: 1,
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#07261C',
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 14,
-    borderWidth: 1.5,
-    borderColor: '#1B7050',
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  activeTabButton: {
-    backgroundColor: THEME.colors.neonEmerald,
-  },
-  tabButtonText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.colors.mutedMint,
-    letterSpacing: 0.5,
-  },
-  activeTabText: {
+  tabTextActive: {
     color: '#07261C',
   },
-  listContent: {
-    paddingBottom: 40,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 14,
+  },
+  gridCard: {
+    width: '47.5%',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 20,
+  },
+  boardThumbWrap: {
+    width: 104,
+    height: 104,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  itemName: {
+    color: '#F5ECD2',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    marginVertical: 10,
+    textAlign: 'center',
+  },
+  cardBtn: {
+    width: '100%',
+    height: 44,
   },
 });
