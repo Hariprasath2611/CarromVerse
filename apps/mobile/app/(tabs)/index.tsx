@@ -53,7 +53,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenContainer contentContainerStyle={styles.container}>
+    <ScreenContainer
+      scrollable
+      edges={['top', 'left', 'right']}
+      contentContainerStyle={styles.container}
+    >
       {/* Subtle Background Decorative Circles */}
       <View style={styles.bokehTop} pointerEvents="none" />
       <View style={styles.bokehBottom} pointerEvents="none" />
@@ -155,12 +159,12 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#07261C',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   bokehTop: {
     position: 'absolute',
