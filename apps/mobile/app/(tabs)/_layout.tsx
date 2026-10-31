@@ -12,61 +12,42 @@ export default function TabsLayout() {
         tabBarActiveTintColor: THEME.colors.neonEmerald,
         tabBarInactiveTintColor: THEME.colors.mutedMint,
         tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Text style={styles.tabIcon}>🎯</Text>
-            </View>
-          ),
+          title: 'HOME',
+          tabBarIcon: () => null,
         }}
       />
       <Tabs.Screen
         name="friends"
         options={{
-          title: 'Friends',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Text style={styles.tabIcon}>👥</Text>
-            </View>
-          ),
+          title: 'FRIENDS',
+          tabBarIcon: () => null,
         }}
       />
       <Tabs.Screen
         name="customize"
         options={{
-          title: 'Vault',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Text style={styles.tabIcon}>🎨</Text>
-            </View>
-          ),
+          title: 'CUSTOMIZE',
+          tabBarIcon: () => null,
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: 'Ranks',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Text style={styles.tabIcon}>🏆</Text>
-            </View>
-          ),
+          title: 'RANKINGS',
+          tabBarIcon: () => null,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Text style={styles.tabIcon}>👤</Text>
-            </View>
-          ),
+          title: 'PROFILE',
+          tabBarIcon: () => null,
         }}
       />
       <Tabs.Screen
@@ -84,29 +65,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#07261C',
     borderTopColor: '#1B7050',
     borderTopWidth: 2,
-    height: 68,
-    paddingBottom: 10,
-    paddingTop: 8,
+    height: 56,
+    paddingBottom: 4,
+    paddingTop: 4,
+  },
+  tabItem: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontWeight: '900',
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-  },
-  iconWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  iconWrapActive: {
-    backgroundColor: '#0E4A33',
-    borderWidth: 1.5,
-    borderColor: THEME.colors.neonEmerald,
-  },
-  tabIcon: {
-    fontSize: 18,
   },
 });

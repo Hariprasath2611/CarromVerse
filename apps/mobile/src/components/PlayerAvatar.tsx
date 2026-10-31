@@ -10,8 +10,20 @@ export interface PlayerAvatarProps {
   showHalo?: boolean;
   level?: number;
   teamColor?: 'team_a' | 'team_b';
+  colorVariant?: 'gold' | 'emerald' | 'pink' | 'mint' | 'cream' | 'auto';
+  ringColor?: string;
+  fillColor?: string;
   style?: ViewStyle;
 }
+
+const COLOR_MAP: Record<string, { fill: string; ring: string; text: string }> = {
+  H: { fill: '#E9B949', ring: '#2BD67B', text: '#07261C' },
+  A: { fill: '#2BD67B', ring: '#E9B949', text: '#07261C' },
+  M: { fill: '#F472B6', ring: '#F472B6', text: '#07261C' },
+  K: { fill: '#9FD8B8', ring: '#9FD8B8', text: '#07261C' },
+  D: { fill: '#2BD67B', ring: '#2BD67B', text: '#07261C' },
+  Y: { fill: '#E9B949', ring: '#2BD67B', text: '#07261C' },
+};
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   name,
@@ -21,18 +33,62 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   showHalo = false,
   level,
   teamColor,
+  colorVariant = 'auto',
+  ringColor,
+  fillColor,
   style,
 }) => {
   const isGlowing = isActive || showHalo;
   const initial = (name || 'P').trim()[0].toUpperCase();
   const radius = size / 2;
 
-  const getBorderColor = () => {
-    if (isGlowing) return '#2BD67B'; // Neon Emerald active ring
-    if (teamColor === 'team_a') return '#2BD67B';
-    if (teamColor === 'team_b') return '#E9B949'; // Brass ring
-    return '#1B7050'; // Panel edge default
+  const defaultPalette = COLOR_MAP[initial] || {
+    fill: '#E9B949',
+    ring: '#2BD67B',
+    text: '#07261C',
   };
+
+  const getResolvedColors = () => {
+    let fill = fillColor || defaultPalette.fill;
+    let ring = ringColor || defaultPalette.ring;
+    let text = defaultPalette.text;
+
+    if (colorVariant === 'gold') {
+      fill = '#E9B949';
+      ring = ringColor || '#2BD67B';
+      text = '#07261C';
+    } else if (colorVariant === 'emerald') {
+      fill = '#2BD67B';
+      ring = ringColor || '#E9B949';
+      text = '#07261C';
+    } else if (colorVariant === 'pink') {
+      fill = '#F472B6';
+      ring = ringColor || '#F472B6';
+      text = '#07261C';
+    } else if (colorVariant === 'mint') {
+      fill = '#9FD8B8';
+      ring = ringColor || '#9FD8B8';
+      text = '#07261C';
+    } else if (colorVariant === 'cream') {
+      fill = '#F5ECD2';
+      ring = ringColor || '#1B7050';
+      text = '#07261C';
+    }
+
+    if (teamColor === 'team_a') {
+      ring = '#2BD67B';
+    } else if (teamColor === 'team_b') {
+      ring = '#E9B949';
+    }
+
+    if (isGlowing) {
+      ring = '#2BD67B';
+    }
+
+    return { fill, ring, text };
+  };
+
+  const colors = getResolvedColors();
 
   return (
     <View style={[styles.wrapper, style]}>
@@ -43,13 +99,22 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
             width: size,
             height: size,
             borderRadius: radius,
-            borderColor: getBorderColor(),
+            borderColor: colors.ring,
+            backgroundColor: colors.fill,
           },
           isGlowing && styles.activeHalo,
         ]}
       >
-        <Text style={[styles.initial, { fontSize: size * 0.42 }]}>
-          {avatarUrl || initial}
+        <Text
+          style={[
+            styles.initial,
+            {
+              fontSize: size * 0.44,
+              color: colors.text,
+            },
+          ]}
+        >
+          {initial}
         </Text>
       </View>
 
@@ -69,7 +134,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circle: {
-    backgroundColor: '#07261C', // Forest ground dark
     borderWidth: 3,             // 3px colored ring
     alignItems: 'center',
     justifyContent: 'center',
@@ -83,8 +147,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   initial: {
-    fontWeight: 'bold',
-    color: '#F5ECD2',
+    fontWeight: '900',
+    color: '#07261C',
   },
   levelBadge: {
     position: 'absolute',

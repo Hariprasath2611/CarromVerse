@@ -79,11 +79,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackActive: {
-    backgroundColor: '#0E4A33',
+    backgroundColor: '#2BD67B',
     borderColor: '#2BD67B',
   },
   trackInactive: {
-    backgroundColor: '#07261C',
+    backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
   },
   thumb: {
@@ -92,12 +92,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   thumbActive: {
-    backgroundColor: '#2BD67B',
-    shadowColor: '#2BD67B',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: '#07261C',
   },
   thumbInactive: {
     backgroundColor: '#9FD8B8',

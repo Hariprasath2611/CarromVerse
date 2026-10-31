@@ -1,12 +1,10 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withRepeat,
-  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -21,27 +19,17 @@ export default function SplashScreen() {
   const isSettingsLoading = useSettingsStore((state) => state.isLoading);
   const onboarded = useSettingsStore((state) => state.settings.onboarded);
 
-  // Reanimated values for entrance & ambient particle glow
-  const logoScale = useSharedValue(0.3);
+  // Reanimated values
+  const logoScale = useSharedValue(0.4);
   const logoOpacity = useSharedValue(0);
-  const textTranslateY = useSharedValue(30);
   const textOpacity = useSharedValue(0);
-  const glowPulse = useSharedValue(0.4);
+  const progressBar = useSharedValue(0);
 
   useEffect(() => {
-    // 1. Entrance animation sequence
     logoScale.value = withSpring(1, { damping: 12, stiffness: 90 });
-    logoOpacity.value = withTiming(1, { duration: 600 });
-
-    textTranslateY.value = withDelay(350, withSpring(0, { damping: 15 }));
-    textOpacity.value = withDelay(350, withTiming(1, { duration: 500 }));
-
-    // 2. Ambient pulse
-    glowPulse.value = withRepeat(
-      withSequence(withTiming(0.85, { duration: 1200 }), withTiming(0.4, { duration: 1200 })),
-      -1,
-      true
-    );
+    logoOpacity.value = withTiming(1, { duration: 500 });
+    textOpacity.value = withDelay(250, withTiming(1, { duration: 500 }));
+    progressBar.value = withDelay(100, withTiming(1, { duration: 1300 }));
   }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
@@ -50,12 +38,11 @@ export default function SplashScreen() {
   }));
 
   const textAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: textTranslateY.value }],
     opacity: textOpacity.value,
   }));
 
-  const glowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: glowPulse.value,
+  const progressAnimatedStyle = useAnimatedStyle(() => ({
+    width: `${progressBar.value * 100}%`,
   }));
 
   useEffect(() => {
@@ -69,41 +56,39 @@ export default function SplashScreen() {
       } else {
         router.replace('/(auth)/login');
       }
-    }, 1500);
+    }, 1600);
 
     return () => clearTimeout(timer);
   }, [isAuthInitialized, isSettingsLoading, onboarded, isAuthenticated]);
 
   return (
     <View style={styles.container}>
-      {/* Background Glow Aura */}
-      <Animated.View style={[styles.glowAura, glowAnimatedStyle]} />
+      {/* Subtle Background Decorative Circles */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
 
       <View style={styles.centerBox}>
-        {/* Animated Carrom Emblem */}
-        <Animated.View style={[styles.emblemOuter, logoAnimatedStyle]}>
-          <View style={styles.emblemInner}>
-            <View style={styles.woodRing}>
-              <View style={styles.brassRing}>
-                <View style={styles.queenCenter} />
-              </View>
-            </View>
+        {/* Gold Coin Medal with C */}
+        <Animated.View style={[styles.medalOuter, logoAnimatedStyle]}>
+          <View style={styles.medalInner}>
+            <Text style={styles.medalLetter}>C</Text>
           </View>
         </Animated.View>
 
-        {/* Animated Typography */}
+        {/* Brand Typography */}
         <Animated.View style={[styles.titleBox, textAnimatedStyle]}>
-          <Text style={styles.title}>CARROMVERSE</Text>
-          <Text style={styles.subtitle}>EMERALD CLUB NIGHT</Text>
-          <View style={styles.pillContainer}>
-            <Text style={styles.pillText}>PREMIUM TABLETOP CARROM</Text>
-          </View>
+          <Text style={styles.titleCarrom}>
+            CARROM<Text style={styles.titleVerse}>VERSE</Text>
+          </Text>
+          <Text style={styles.subtitle}>THE ULTIMATE BOARD EXPERIENCE</Text>
         </Animated.View>
       </View>
 
+      {/* Horizontal Loading Bar */}
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color={THEME.colors.neonEmerald} />
-        <Text style={styles.loadingText}>PREPARING CLUB TABLE & ENGINES...</Text>
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressBar, progressAnimatedStyle]} />
+        </View>
       </View>
     </View>
   );
@@ -112,116 +97,102 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: '#07261C',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 56,
+    paddingVertical: 64,
   },
-  glowAura: {
+  bokehTop: {
     position: 'absolute',
-    top: '28%',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: '#0F5A3E',
-    opacity: 0.5,
+    top: 60,
+    right: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 80,
+    left: 20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   centerBox: {
     alignItems: 'center',
     marginTop: 'auto',
     marginBottom: 'auto',
   },
-  emblemOuter: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: THEME.colors.neonEmerald,
-    backgroundColor: '#0E4A33',
+  medalOuter: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E9B949',
+    borderWidth: 4,
+    borderColor: '#F7D070',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    ...THEME.shadows.glowEmerald,
+    marginBottom: 28,
+    shadowColor: '#E9B949',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  emblemInner: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+  medalInner: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
     borderWidth: 2,
-    borderColor: '#1B7050',
-    backgroundColor: '#07261C',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  woodRing: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    backgroundColor: '#7A431C',
-    borderWidth: 2,
-    borderColor: '#4D270E',
+    borderColor: '#C4962C',
+    backgroundColor: '#E9B949',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brassRing: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 2,
-    borderColor: '#E9B949',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F5ECD2',
-  },
-  queenCenter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#E23B5A',
-    borderWidth: 2,
-    borderColor: '#981C33',
+  medalLetter: {
+    fontSize: 44,
+    fontWeight: '900',
+    color: '#261B04',
+    textAlign: 'center',
+    lineHeight: 50,
   },
   titleBox: {
     alignItems: 'center',
   },
-  title: {
-    color: THEME.colors.cream,
-    fontSize: 28,
-    fontWeight: 'bold',
-    letterSpacing: 4,
-    textAlign: 'center',
+  titleCarrom: {
+    color: '#F5ECD2', // Cream
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  titleVerse: {
+    color: '#2BD67B', // Neon Emerald
   },
   subtitle: {
-    color: THEME.colors.neonEmerald,
+    color: '#9FD8B8', // Muted Mint
     fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 3,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  pillContainer: {
-    marginTop: 16,
-    backgroundColor: '#0E4A33',
-    borderColor: '#1B7050',
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  pillText: {
-    color: THEME.colors.brass,
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 1.2,
+    fontWeight: '700',
+    letterSpacing: 1.6,
+    marginTop: 8,
   },
   footer: {
+    width: '100%',
     alignItems: 'center',
   },
-  loadingText: {
-    color: THEME.colors.mutedMint,
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 10,
-    letterSpacing: 1,
+  progressTrack: {
+    width: 220,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#2BD67B',
+    borderRadius: 4,
   },
 });
