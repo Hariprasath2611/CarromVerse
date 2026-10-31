@@ -2,10 +2,9 @@
  * 2D Vector math utilities for Carrom physics calculations.
  */
 
-export interface Vector2D {
-  x: number;
-  y: number;
-}
+import { Vector2D } from '../types/GameTypes.js';
+
+export { Vector2D };
 
 export class VectorUtils {
   public static distance(x1: number, y1: number, x2: number, y2: number): number {

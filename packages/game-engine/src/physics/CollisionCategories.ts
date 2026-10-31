@@ -5,9 +5,11 @@
 export const COLLISION_CATEGORIES = {
   DEFAULT: 0x0001,
   BOARD_BOUNDARY: 0x0002,
+  CUSHION: 0x0002, // Backward compatibility alias for BOARD_BOUNDARY
   WHITE_COIN: 0x0004,
   BLACK_COIN: 0x0008,
   QUEEN: 0x0010,
+  COIN: 0x001c, // 0x0004 | 0x0008 | 0x0010 (All coins)
   STRIKER: 0x0020,
   POCKET_SENSOR: 0x0040,
 } as const;
@@ -52,6 +54,17 @@ export const COLLISION_MASKS = {
   BOARD_BOUNDARY:
     COLLISION_CATEGORIES.STRIKER |
     ALL_COINS_CATEGORY,
+
+  CUSHION:
+    COLLISION_CATEGORIES.STRIKER |
+    ALL_COINS_CATEGORY,
+
+  // Generic coin mask for backward compatibility
+  COIN:
+    COLLISION_CATEGORIES.BOARD_BOUNDARY |
+    ALL_COINS_CATEGORY |
+    COLLISION_CATEGORIES.STRIKER |
+    COLLISION_CATEGORIES.POCKET_SENSOR,
 
   // Pocket sensors detect striker and all coins
   POCKET_SENSOR:

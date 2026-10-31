@@ -74,8 +74,8 @@ export class Coin {
     const pixelPos = this.board.toPixel(this.nx, this.ny);
     const radius = this.baseRadius;
 
-    let category = COLLISION_CATEGORIES.WHITE_COIN;
-    let mask = COLLISION_MASKS.WHITE_COIN;
+    let category: number = COLLISION_CATEGORIES.WHITE_COIN;
+    let mask: number = COLLISION_MASKS.WHITE_COIN;
 
     if (this.coinType === 'black') {
       category = COLLISION_CATEGORIES.BLACK_COIN;

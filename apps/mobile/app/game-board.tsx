@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   StyleSheet,
@@ -17,6 +17,7 @@ import Animated, {
 import {
   PauseModal,
   PhaserCarromView,
+  PhaserCarromViewRef,
   PlayerCard,
   PrimaryButton,
   ScreenContainer,
@@ -32,6 +33,7 @@ const BOARD_SIZE = Math.min(SCREEN_WIDTH - 24, 380);
 
 export default function GameBoardScreen() {
   const router = useRouter();
+  const carromRef = useRef<PhaserCarromViewRef>(null);
   const { players, boardTheme, targetPoints, turnTimeLimitSec, selectedMode } =
     useGameSetupStore();
   const {
@@ -50,8 +52,11 @@ export default function GameBoardScreen() {
   const [secondsRemaining, setSecondsRemaining] = useState(turnTimeLimitSec);
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0); // slider -0.95 to 0.95
-  const [pocketedWhiteCount, setPocketedWhiteCount] = useState(2);
-  const [pocketedBlackCount, setPocketedBlackCount] = useState(1);
+  const [pocketedWhiteCount, setPocketedWhiteCount] = useState(0);
+  const [pocketedBlackCount, setPocketedBlackCount] = useState(0);
+  const [isShotActive, setIsShotActive] = useState(false);
+  const [aimPowerPercent, setAimPowerPercent] = useState<number | null>(null);
+  const [pocketAlert, setPocketAlert] = useState<string | null>(null);
 
   // Animations
   const turnBannerScale = useSharedValue(1);
@@ -85,19 +90,10 @@ export default function GameBoardScreen() {
   };
 
   const handleSimulateShot = () => {
-    // Record mock physical shot with state machine if available
-    recordPhysicalShot([], false);
-
-    // Random pocket increment for visual UI demonstration
-    if (Math.random() > 0.5) {
-      if (activePlayer.assignedCoinType === 'white') {
-        setPocketedWhiteCount((c) => Math.min(c + 1, 9));
-      } else {
-        setPocketedBlackCount((c) => Math.min(c + 1, 9));
-      }
+    if (isShotActive) return;
+    if (carromRef.current) {
+      carromRef.current.shoot(0.75);
     }
-
-    handleAdvanceTurn();
   };
 
   const handleFinishMatch = () => {
@@ -219,15 +215,56 @@ export default function GameBoardScreen() {
           </View>
         )}
 
-        {/* PHASER 3 GAME ENGINE CANVAS */}
+        {/* PHASER 3 GAME ENGINE CANVAS WITH MATTER PHYSICS */}
         <PhaserCarromView
+          ref={carromRef}
           size={BOARD_SIZE}
           themeId={boardTheme}
           strikerSkin="emerald"
           activeSeat={activePlayer.seat}
           strikerOffset={strikerOffsetRatio}
           onStrikerDragged={(ratio) => setStrikerOffsetRatio(ratio)}
+          onShotStarted={() => {
+            setIsShotActive(true);
+            setAimPowerPercent(null);
+          }}
+          onAimChanged={(details) => {
+            setAimPowerPercent(Math.round(details.powerRatio * 100));
+          }}
+          onObjectPocketed={(details) => {
+            if (details.type === 'white') {
+              setPocketedWhiteCount((c) => Math.min(c + 1, 9));
+              setPocketAlert('⚪ White Coin Pocketed!');
+            } else if (details.type === 'black') {
+              setPocketedBlackCount((c) => Math.min(c + 1, 9));
+              setPocketAlert('⚫ Black Coin Pocketed!');
+            } else if (details.type === 'queen') {
+              setPocketAlert('👑 QUEEN POCKETED!');
+            }
+            setTimeout(() => setPocketAlert(null), 2400);
+          }}
+          onStrikerPocketed={() => {
+            setPocketAlert('⚠️ STRIKER FOUL POCKETED');
+            setTimeout(() => setPocketAlert(null), 2400);
+          }}
+          onShotSettled={() => {
+            setIsShotActive(false);
+            handleAdvanceTurn();
+          }}
         />
+
+        {/* AIM POWER / POCKET OVERLAY BADGE */}
+        {aimPowerPercent !== null && (
+          <View style={styles.aimPowerBadge}>
+            <Text style={styles.aimPowerText}>⚡ Strike Power: {aimPowerPercent}%</Text>
+          </View>
+        )}
+
+        {pocketAlert && (
+          <View style={styles.pocketAlertBadge}>
+            <Text style={styles.pocketAlertText}>{pocketAlert}</Text>
+          </View>
+        )}
       </View>
 
       {/* STRIKER POSITIONING SLIDER CONTROLS */}
@@ -513,5 +550,40 @@ const styles = StyleSheet.create({
   },
   actionBtnWrapSmall: {
     flex: 0.32,
+  },
+  aimPowerBadge: {
+    position: 'absolute',
+    top: 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(7, 19, 14, 0.88)',
+    borderColor: THEME.colors.accent,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    zIndex: 15,
+  },
+  aimPowerText: {
+    color: THEME.colors.accent,
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  pocketAlertBadge: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(22, 163, 74, 0.95)',
+    borderColor: '#4ADE80',
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 15,
+  },
+  pocketAlertText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

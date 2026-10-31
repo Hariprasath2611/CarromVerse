@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -11,6 +11,11 @@ import { WebView } from 'react-native-webview';
 import { generateCarromPhaserHtml } from '@carromverse/game-engine';
 import { THEME } from '../constants/theme';
 
+export interface PhaserCarromViewRef {
+  shoot: (power: number, angle?: number) => void;
+  resetBoard: () => void;
+}
+
 export interface PhaserCarromViewProps {
   size: number;
   themeId?: string;
@@ -20,166 +25,214 @@ export interface PhaserCarromViewProps {
   onEngineReady?: () => void;
   onBoardRendered?: (details: any) => void;
   onStrikerDragged?: (offset: number) => void;
+  onShotStarted?: (details: any) => void;
+  onAimChanged?: (details: { angle: number; powerRatio: number }) => void;
+  onObjectPocketed?: (details: { id: string; type: string; pocketIndex: number }) => void;
+  onStrikerPocketed?: (details: { pocketIndex: number }) => void;
+  onShotSettled?: (details: { pocketedCount: number; pocketedItems: any[]; strikerPocketed: boolean }) => void;
   style?: StyleProp<ViewStyle>;
 }
 
 const RNWebView = WebView as any;
 
-export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
-  size,
-  themeId = 'forest',
-  strikerSkin = 'emerald',
-  activeSeat = 0,
-  strikerOffset = 0,
-  onEngineReady,
-  onBoardRendered,
-  onStrikerDragged,
-  style,
-}) => {
-  const webViewRef = useRef<any>(null);
-  const iframeRef = useRef<any>(null);
-  const [isReady, setIsReady] = useState(false);
+export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromViewProps>(
+  (
+    {
+      size,
+      themeId = 'forest',
+      strikerSkin = 'emerald',
+      activeSeat = 0,
+      strikerOffset = 0,
+      onEngineReady,
+      onBoardRendered,
+      onStrikerDragged,
+      onShotStarted,
+      onAimChanged,
+      onObjectPocketed,
+      onStrikerPocketed,
+      onShotSettled,
+      style,
+    },
+    ref
+  ) => {
+    const webViewRef = useRef<any>(null);
+    const iframeRef = useRef<any>(null);
+    const [isReady, setIsReady] = useState(false);
 
-  // Generate self-contained HTML for Phaser 3
-  const htmlContent = React.useMemo(() => {
-    return generateCarromPhaserHtml({
-      themeId,
-      strikerSkin,
-      activeSeat,
-      canvasSize: 800,
-    });
-  }, []);
+    // Generate self-contained HTML for Phaser 3
+    const htmlContent = React.useMemo(() => {
+      return generateCarromPhaserHtml({
+        themeId,
+        strikerSkin,
+        activeSeat,
+        canvasSize: 800,
+      });
+    }, []);
 
-  const sendToPhaser = (type: string, payload?: any) => {
-    if (!isReady) return;
-    const msg = JSON.stringify({ type, payload });
+    const sendToPhaser = (type: string, payload?: any) => {
+      if (!isReady) return;
+      const msg = JSON.stringify({ type, payload });
 
-    if (Platform.OS === 'web') {
-      if (iframeRef.current && iframeRef.current.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(msg, '*');
-      }
-    } else if (webViewRef.current) {
-      const js = `
-        try {
-          if (typeof handleHostMessage === 'function') {
-            handleHostMessage(${JSON.stringify(msg)});
+      if (Platform.OS === 'web') {
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(msg, '*');
+        }
+      } else if (webViewRef.current) {
+        const js = `
+          try {
+            if (typeof handleHostMessage === 'function') {
+              handleHostMessage(${JSON.stringify(msg)});
+            }
+          } catch (err) {
+            console.warn('[RN->Phaser bridge error]', err);
           }
-        } catch (err) {
-          console.warn('[RN->Phaser bridge error]', err);
-        }
-        true;
-      `;
-      webViewRef.current.injectJavaScript(js);
-    }
-  };
-
-  // Sync theme changes
-  useEffect(() => {
-    sendToPhaser('CHANGE_THEME', { themeId });
-  }, [themeId]);
-
-  // Sync striker skin changes
-  useEffect(() => {
-    sendToPhaser('CHANGE_STRIKER_SKIN', { skin: strikerSkin });
-  }, [strikerSkin]);
-
-  // Sync active player seat
-  useEffect(() => {
-    sendToPhaser('SET_PLAYER_SEAT', { seat: activeSeat });
-  }, [activeSeat]);
-
-  // Sync striker offset position
-  useEffect(() => {
-    sendToPhaser('SET_STRIKER_OFFSET', { offset: strikerOffset });
-  }, [strikerOffset]);
-
-  // Native WebView message handler
-  const handleMessage = (event: any) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      dispatchBridgeMessage(data);
-    } catch (err) {
-      console.warn('[PhaserCarromView] Error parsing bridge message:', err);
-    }
-  };
-
-  const dispatchBridgeMessage = (data: any) => {
-    if (!data || !data.type) return;
-    switch (data.type) {
-      case 'ENGINE_READY':
-        setIsReady(true);
-        onEngineReady?.();
-        break;
-      case 'BOARD_RENDERED':
-        onBoardRendered?.(data.payload);
-        break;
-      case 'STRIKER_DRAGGED':
-        if (typeof data.payload?.offset === 'number') {
-          onStrikerDragged?.(data.payload.offset);
-        }
-        break;
-    }
-  };
-
-  // Web window message listener
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-
-    const onWindowMessage = (event: MessageEvent) => {
-      try {
-        const raw = event.data;
-        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        dispatchBridgeMessage(data);
-      } catch {
-        // Ignore internal non-JSON web messages
+          true;
+        `;
+        webViewRef.current.injectJavaScript(js);
       }
     };
 
-    window.addEventListener('message', onWindowMessage);
-    return () => {
-      window.removeEventListener('message', onWindowMessage);
+    useImperativeHandle(ref, () => ({
+      shoot: (power: number, angle?: number) => {
+        sendToPhaser('SHOOT', { power, angle });
+      },
+      resetBoard: () => {
+        sendToPhaser('RESET_BOARD');
+      },
+    }));
+
+    // Sync theme changes
+    useEffect(() => {
+      sendToPhaser('CHANGE_THEME', { themeId });
+    }, [themeId]);
+
+    // Sync striker skin changes
+    useEffect(() => {
+      sendToPhaser('CHANGE_STRIKER_SKIN', { skin: strikerSkin });
+    }, [strikerSkin]);
+
+    // Sync active player seat
+    useEffect(() => {
+      sendToPhaser('SET_PLAYER_SEAT', { seat: activeSeat });
+    }, [activeSeat]);
+
+    // Sync striker offset position
+    useEffect(() => {
+      sendToPhaser('SET_STRIKER_OFFSET', { offset: strikerOffset });
+    }, [strikerOffset]);
+
+    // Native WebView message handler
+    const handleMessage = (event: any) => {
+      try {
+        const data = JSON.parse(event.nativeEvent.data);
+        dispatchBridgeMessage(data);
+      } catch (err) {
+        console.warn('[PhaserCarromView] Error parsing bridge message:', err);
+      }
     };
-  }, [onEngineReady, onBoardRendered, onStrikerDragged]);
 
-  return (
-    <View style={[styles.container, { width: size, height: size }, style]}>
-      {Platform.OS === 'web' ? (
-        <iframe
-          ref={iframeRef}
-          srcDoc={htmlContent}
-          title="CarromVerse Canvas"
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            backgroundColor: '#07130E',
-          }}
-        />
-      ) : (
-        <RNWebView
-          ref={webViewRef}
-          originWhitelist={['*']}
-          source={{ html: htmlContent }}
-          onMessage={handleMessage}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          scrollEnabled={false}
-          bounces={false}
-          overScrollMode="never"
-          scalesPageToFit={false}
-          style={styles.webView}
-          containerStyle={styles.webViewContainer}
-        />
-      )}
+    const dispatchBridgeMessage = (data: any) => {
+      if (!data || !data.type) return;
+      switch (data.type) {
+        case 'ENGINE_READY':
+          setIsReady(true);
+          onEngineReady?.();
+          break;
+        case 'BOARD_RENDERED':
+          onBoardRendered?.(data.payload);
+          break;
+        case 'STRIKER_DRAGGED':
+          if (typeof data.payload?.offset === 'number') {
+            onStrikerDragged?.(data.payload.offset);
+          }
+          break;
+        case 'AIM_CHANGED':
+          onAimChanged?.(data.payload);
+          break;
+        case 'SHOT_STARTED':
+          onShotStarted?.(data.payload);
+          break;
+        case 'OBJECT_POCKETED':
+          onObjectPocketed?.(data.payload);
+          break;
+        case 'STRIKER_POCKETED':
+          onStrikerPocketed?.(data.payload);
+          break;
+        case 'SHOT_SETTLED':
+          onShotSettled?.(data.payload);
+          break;
+      }
+    };
 
-      {!isReady && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={THEME.colors.accent} />
-        </View>
-      )}
-    </View>
-  );
-};
+    // Web window message listener
+    useEffect(() => {
+      if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+      const onWindowMessage = (event: MessageEvent) => {
+        try {
+          const raw = event.data;
+          const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          dispatchBridgeMessage(data);
+        } catch {
+          // Ignore internal non-JSON web messages
+        }
+      };
+
+      window.addEventListener('message', onWindowMessage);
+      return () => {
+        window.removeEventListener('message', onWindowMessage);
+      };
+    }, [
+      onEngineReady,
+      onBoardRendered,
+      onStrikerDragged,
+      onAimChanged,
+      onShotStarted,
+      onObjectPocketed,
+      onStrikerPocketed,
+      onShotSettled,
+    ]);
+
+    return (
+      <View style={[styles.container, { width: size, height: size }, style]}>
+        {Platform.OS === 'web' ? (
+          <iframe
+            ref={iframeRef}
+            srcDoc={htmlContent}
+            title="CarromVerse Canvas"
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              backgroundColor: '#07130E',
+            }}
+          />
+        ) : (
+          <RNWebView
+            ref={webViewRef}
+            originWhitelist={['*']}
+            source={{ html: htmlContent }}
+            onMessage={handleMessage}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            scrollEnabled={false}
+            bounces={false}
+            overScrollMode="never"
+            scalesPageToFit={false}
+            style={styles.webView}
+            containerStyle={styles.webViewContainer}
+          />
+        )}
+
+        {!isReady && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={THEME.colors.accent} />
+          </View>
+        )}
+      </View>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {
