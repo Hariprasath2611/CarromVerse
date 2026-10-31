@@ -27,7 +27,11 @@ export default function LeaderboardScreen() {
   const tabs: TabType[] = ['GLOBAL', 'FRIENDS', 'WEEKLY', 'MONTHLY'];
 
   return (
-    <ScreenContainer scrollable contentContainerStyle={styles.container}>
+    <ScreenContainer
+      scrollable
+      edges={['top', 'left', 'right']}
+      contentContainerStyle={styles.container}
+    >
       {/* Decorative background shapes */}
       <View style={styles.bokehTop} pointerEvents="none" />
       <View style={styles.bokehBottom} pointerEvents="none" />
