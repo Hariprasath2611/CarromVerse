@@ -16,10 +16,12 @@ import Animated, {
 import { THEME } from '../constants/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'gold' | 'brass' | 'wood' | 'outline' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps {
   title: string;
   variant?: ButtonVariant;
+  size?: ButtonSize;
   loading?: boolean;
   disabled?: boolean;
   onPress?: () => void;
@@ -30,6 +32,7 @@ export interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   title,
   variant = 'primary',
+  size = 'md',
   loading = false,
   disabled = false,
   onPress,
@@ -115,8 +118,16 @@ export const Button: React.FC<ButtonProps> = ({
 
   const v = getVariantStyles();
 
+  const isSmall = size === 'sm';
+  const isLarge = size === 'lg';
+
+  const btnHeight = isSmall ? 38 : isLarge ? 56 : 50;
+  const btnRadius = isSmall ? 12 : isLarge ? 18 : 16;
+  const borderBottom = isPressed ? (isSmall ? 1.5 : 2) : (isSmall ? 4 : 6);
+  const textFontSize = isSmall ? 12 : isLarge ? 16 : 14;
+
   return (
-    <Animated.View style={[styles.container, animatedStyle, style]}>
+    <Animated.View style={[styles.container, { borderRadius: btnRadius }, animatedStyle, style]}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -125,9 +136,12 @@ export const Button: React.FC<ButtonProps> = ({
         style={[
           styles.base,
           {
+            height: btnHeight,
+            borderRadius: btnRadius,
+            paddingHorizontal: isSmall ? 10 : isLarge ? 20 : 16,
             backgroundColor: v.bg,
             borderBottomColor: v.borderBottom,
-            borderBottomWidth: isPressed ? 2 : 6,
+            borderBottomWidth: borderBottom,
             borderColor: v.borderColor,
             borderWidth: variant === 'outline' || variant === 'wood' || variant === 'secondary' ? 1.5 : 0,
           },
@@ -141,7 +155,7 @@ export const Button: React.FC<ButtonProps> = ({
           <Text
             style={[
               styles.textBase,
-              { color: v.textColor },
+              { color: v.textColor, fontSize: textFontSize },
               isDisabled && styles.disabledText,
               textStyle,
             ]}

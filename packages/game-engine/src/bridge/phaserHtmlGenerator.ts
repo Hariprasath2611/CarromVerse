@@ -65,18 +65,18 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var BOARD_CM = 74;
       var PX_PER_CM = BOARD_PX / BOARD_CM; // 10.0 px per cm
 
-      var COIN_RADIUS_CM = 1.55;
-      var COIN_RADIUS_PX = COIN_RADIUS_CM * PX_PER_CM; // 15.5 px
+      var COIN_RADIUS_CM = 1.85; // Increased coin size for rich mobile visibility
+      var COIN_RADIUS_PX = COIN_RADIUS_CM * PX_PER_CM; // 18.5 px
       var COIN_MASS = 5.0;
 
-      var STRIKER_RADIUS_CM = 2.05;
-      var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 20.5 px
+      var STRIKER_RADIUS_CM = 2.45; // Increased striker size
+      var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 24.5 px
       var STRIKER_MASS = 15.0; // 3:1 mass ratio
 
-      var POCKET_RADIUS_CM = 3.9;
-      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 39.0 px (visible hole radius)
-      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 33.15 px (~3.3 cm capture radius)
-      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20; // 46.8 px suction zone
+      var POCKET_RADIUS_CM = 4.2;
+      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 42.0 px (visible hole radius)
+      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 35.7 px capture radius
+      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20; // 50.4 px suction zone
 
       var WALL_THICKNESS_CM = 5.0;
       var WALL_THICKNESS_PX = WALL_THICKNESS_CM * PX_PER_CM; // 50.0 px
@@ -299,8 +299,8 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           ctx.restore();
         }
 
-        var coinW = Math.round(62 * dpr);
-        var coinH = Math.round(62 * (236 / 220) * dpr);
+        var coinW = Math.round(74 * dpr);
+        var coinH = Math.round(74 * (236 / 220) * dpr);
         var coinS = coinW / 220;
 
         createCanvasTexture(scene, 'tex_coin_white', coinW, coinH, function(ctx) {
@@ -334,8 +334,8 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         });
 
         // 2. Striker Textures
-        var strikerW = Math.round(82 * dpr);
-        var strikerH = Math.round(82 * (276 / 260) * dpr);
+        var strikerW = Math.round(98 * dpr);
+        var strikerH = Math.round(98 * (276 / 260) * dpr);
         var strikerS = strikerW / 260;
 
         function drawStrikerCanvas(ctx, w, h, s, skinKey) {
@@ -455,7 +455,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         });
 
         // 3. Pocket Texture
-        var pSize = Math.round(96 * dpr);
+        var pSize = Math.round(104 * dpr);
         createCanvasTexture(scene, 'tex_pocket', pSize, pSize, function(ctx) {
           var pcx = pSize / 2;
           var pr = (pSize / 2) - 4 * dpr;

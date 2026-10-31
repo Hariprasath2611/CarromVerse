@@ -37,16 +37,16 @@ export default function GameBoardScreen() {
   } = useGameSessionStore();
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  // Dynamically calculate board size so HUD, board, power bar, and controls fit comfortably on any screen
-  const availableBoardHeight = screenHeight - 310;
-  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 24, availableBoardHeight, 355));
+  // Dynamically calculate board size to maximize the board and coin view across screens
+  const availableBoardHeight = screenHeight - 165;
+  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 10, availableBoardHeight, 460));
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
   const [activeReaction, setActiveReaction] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(18);
   const [isShotActive, setIsShotActive] = useState(false);
-  const [powerRatio, setPowerRatio] = useState(0.65);
+  const [powerRatio, setPowerRatio] = useState(0.75);
   const [aimAngle, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
   const [pocketToast, setPocketToast] = useState<string | null>(null);
@@ -120,21 +120,9 @@ export default function GameBoardScreen() {
     setStrikerOffsetRatio(newOffset);
   };
 
-  const handlePowerTouch = (locationX: number, totalWidth: number) => {
-    if (isShotActive || totalWidth <= 0) return;
-    const ratio = Math.max(0.15, Math.min(1.0, locationX / totalWidth));
-    setPowerRatio(ratio);
-  };
-
   const showToast = (msg: string) => {
     setPocketToast(msg);
     setTimeout(() => setPocketToast(null), 2500);
-  };
-
-  const getPowerColor = () => {
-    if (powerRatio > 0.75) return '#E23B5A'; // Fiery red
-    if (powerRatio > 0.45) return '#E9B949'; // Gold
-    return '#2BD67B'; // Emerald
   };
 
   return (
@@ -258,7 +246,7 @@ export default function GameBoardScreen() {
         />
       </View>
 
-      {/* TACTILE BASELINE POSITIONER */}
+      {/* TACTILE BASELINE POSITIONER (BROUGHT DOWN NEAR CONTROLS) */}
       <View style={styles.baselineControllerRow}>
         <TouchableOpacity
           style={styles.nudgeBtn}
@@ -290,57 +278,12 @@ export default function GameBoardScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* INTERACTIVE POWER BAR SECTION */}
-      <View style={styles.powerSection}>
-        <View style={styles.powerHeaderRow}>
-          <Text style={styles.powerLabel}>POWER</Text>
-          <Text style={[styles.powerPercentText, { color: getPowerColor() }]}>
-            {Math.round(powerRatio * 100)}%
-          </Text>
-        </View>
-
-        <View
-          style={styles.powerTouchArea}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={(e) => {
-            const { locationX } = e.nativeEvent;
-            handlePowerTouch(locationX, screenWidth - 40);
-          }}
-          onResponderMove={(e) => {
-            const { locationX } = e.nativeEvent;
-            handlePowerTouch(locationX, screenWidth - 40);
-          }}
-        >
-          <View style={styles.powerTrack}>
-            <View
-              style={[
-                styles.powerFill,
-                {
-                  width: `${Math.round(powerRatio * 100)}%`,
-                  backgroundColor: getPowerColor(),
-                },
-              ]}
-            />
-            {/* Glowing tactile slider thumb */}
-            <View
-              style={[
-                styles.powerThumb,
-                {
-                  left: `${Math.max(0, Math.min(96, powerRatio * 100 - 2))}%`,
-                  borderColor: getPowerColor(),
-                },
-              ]}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* BOTTOM CONTROLS: EMOTE | SHOOT | PAUSE */}
+      {/* COMPACT BOTTOM CONTROLS: EMOTE | SHOOT | PAUSE */}
       <View style={styles.bottomControlsRow}>
         <Button
           title="EMOTE"
           variant="secondary"
+          size="sm"
           onPress={() => setShowStickersModal(true)}
           style={styles.controlBtnSide}
         />
@@ -348,6 +291,7 @@ export default function GameBoardScreen() {
         <Button
           title={isShotActive ? 'MOVING...' : 'SHOOT'}
           variant="primary"
+          size="sm"
           disabled={isShotActive}
           onPress={handleShoot}
           style={styles.shootBtn}
@@ -356,6 +300,7 @@ export default function GameBoardScreen() {
         <Button
           title="PAUSE"
           variant="secondary"
+          size="sm"
           onPress={() => setShowPauseModal(true)}
           style={styles.controlBtnSide}
         />
@@ -382,9 +327,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#07261C',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   bokehTop: {
     position: 'absolute',
@@ -507,14 +452,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    gap: 10,
-    marginVertical: 2,
+    paddingHorizontal: 8,
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 6,
   },
   nudgeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
     borderWidth: 1.5,
@@ -546,67 +492,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     top: -4,
   },
-  powerSection: {
-    width: '100%',
-    paddingHorizontal: 4,
-  },
-  powerHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  powerLabel: {
-    color: '#F5ECD2',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  powerPercentText: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  powerTouchArea: {
-    paddingVertical: 4,
-  },
-  powerTrack: {
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#0E4A33',
-    borderColor: '#1B7050',
-    borderWidth: 1.5,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  powerFill: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  powerThumb: {
-    position: 'absolute',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#F5ECD2',
-    borderWidth: 2.5,
-    top: -3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 4,
-  },
   bottomControlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 2,
+    marginBottom: 2,
+    paddingHorizontal: 4,
   },
   controlBtnSide: {
     flex: 1,
   },
   shootBtn: {
-    flex: 1.5,
+    flex: 1.4,
   },
 });
