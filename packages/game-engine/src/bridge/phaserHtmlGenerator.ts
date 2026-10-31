@@ -1469,15 +1469,16 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
         resetStriker: function() {
           this.strikerIsPocketed = false;
+          var sr = this.strikerRadius || STRIKER_RADIUS_PX;
           if (this.strikerSprite) {
             this.strikerSprite.setVisible(true);
-            this.strikerSprite.setScale(1);
             this.strikerSprite.setAlpha(1);
+            this.strikerSprite.setDisplaySize(2 * sr * (260 / 240), 2 * sr * (276 / 240));
           }
           if (this.strikerShadow) {
             this.strikerShadow.setVisible(true);
-            this.strikerShadow.setScale(1);
             this.strikerShadow.setAlpha(1);
+            this.strikerShadow.setDisplaySize(sr * 2.4, sr * 2.4);
           }
           currentOffsetRatio = 0;
           this.updateStrikerPosition();
@@ -1553,6 +1554,8 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           currentStrikerSkin = skin;
           if (this.strikerSprite) {
             this.strikerSprite.setTexture('tex_striker_' + skin);
+            var sr = this.strikerRadius || STRIKER_RADIUS_PX;
+            this.strikerSprite.setDisplaySize(2 * sr * (260 / 240), 2 * sr * (276 / 240));
           }
         },
 
