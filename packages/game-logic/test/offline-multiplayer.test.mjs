@@ -111,13 +111,13 @@ describe('Phase 1.6 – Offline Multiplayer & Seat Configuration', () => {
       const players = createInitialPlayersForMode('four_player_individual');
       const turnManager = new TurnManager('four_player_individual', players);
       assert.strictEqual(turnManager.getActivePlayer().seat, 0);
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       assert.strictEqual(turnManager.getActivePlayer().seat, 1);
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       assert.strictEqual(turnManager.getActivePlayer().seat, 2);
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       assert.strictEqual(turnManager.getActivePlayer().seat, 3);
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       assert.strictEqual(turnManager.getActivePlayer().seat, 0);
     });
   });
@@ -155,22 +155,22 @@ describe('Phase 1.6 – Offline Multiplayer & Seat Configuration', () => {
       assert.strictEqual(p1.seat, 0);
       assert.strictEqual(p1.teamId, 'team_a');
 
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       const p2 = turnManager.getActivePlayer();
       assert.strictEqual(p2.seat, 1);
       assert.strictEqual(p2.teamId, 'team_b');
 
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       const p3 = turnManager.getActivePlayer();
       assert.strictEqual(p3.seat, 2);
       assert.strictEqual(p3.teamId, 'team_a');
 
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       const p4 = turnManager.getActivePlayer();
       assert.strictEqual(p4.seat, 3);
       assert.strictEqual(p4.teamId, 'team_b');
 
-      turnManager.nextTurn();
+      turnManager.advanceTurn();
       assert.strictEqual(turnManager.getActivePlayer().seat, 0);
     });
 
