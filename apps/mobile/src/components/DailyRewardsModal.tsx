@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Modal } from './Modal';
-import { PrimaryButton } from './PrimaryButton';
+import { Button } from './Button';
 import { useEconomyStore } from '../store/economyStore';
 import { THEME } from '../constants/theme';
 
@@ -14,84 +14,83 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
   visible,
   onClose,
 }) => {
-  const { dailyRewardClaimed, dailyRewardStreak, claimDailyReward } = useEconomyStore();
-  const [claimedAmount, setClaimedAmount] = useState<number | null>(null);
+  const { dailyRewardClaimed, claimDailyReward } = useEconomyStore();
+  const [claimed, setClaimed] = useState(dailyRewardClaimed);
 
-  const days = [
-    { day: 1, reward: 300 },
-    { day: 2, reward: 600 },
-    { day: 3, reward: 900 },
-    { day: 4, reward: 1200 },
-    { day: 5, reward: 1500 },
-    { day: 6, reward: 2000 },
-    { day: 7, reward: 5000, isJackpot: true },
+  const daysGrid = [
+    { day: 1, amount: 50 },
+    { day: 2, amount: 75 },
+    { day: 3, amount: 100, isToday: true },
+    { day: 4, amount: 150 },
+    { day: 5, amount: 200 },
+    { day: 6, amount: 300 },
   ];
 
   const handleClaim = () => {
-    const amount = claimDailyReward();
-    setClaimedAmount(amount);
+    claimDailyReward();
+    setClaimed(true);
+    setTimeout(() => {
+      onClose();
+    }, 600);
   };
 
   return (
     <Modal
       visible={visible}
       onClose={onClose}
-      title="Daily Rewards"
-      subtitle="Log in daily to claim escalating coin bonuses"
+      title="DAILY REWARDS"
+      subtitle="Log in every day for bigger bonuses"
     >
       <View style={styles.container}>
+        {/* Days 1-6 Grid (3 cols x 2 rows) */}
         <View style={styles.grid}>
-          {days.map((item) => {
-            const isToday = item.day === dailyRewardStreak;
-            const isPast = item.day < dailyRewardStreak;
-
+          {daysGrid.map((item) => {
             return (
               <View
                 key={item.day}
                 style={[
                   styles.dayCard,
-                  isToday && styles.todayCard,
-                  isPast && styles.pastCard,
-                  item.isJackpot && styles.jackpotCard,
+                  item.isToday && styles.todayCard,
                 ]}
               >
-                <Text style={[styles.dayLabel, isToday && styles.todayText]}>
+                <Text style={[styles.dayLabel, item.isToday && styles.todayText]}>
                   DAY {item.day}
                 </Text>
-                <Text style={styles.coinIcon}>
-                  {item.isJackpot ? '🏆' : '🪙'}
+                <View style={styles.coinCircle}>
+                  <Text style={styles.coinText}>C</Text>
+                </View>
+                <Text style={[styles.rewardAmount, item.isToday && styles.todayText]}>
+                  {item.amount}
                 </Text>
-                <Text style={[styles.rewardAmount, isToday && styles.todayText]}>
-                  +{item.reward}
-                </Text>
-                {isPast && <Text style={styles.checkMark}>✓</Text>}
+                {item.isToday && (
+                  <View style={styles.todayPill}>
+                    <Text style={styles.todayPillText}>TODAY</Text>
+                  </View>
+                )}
               </View>
             );
           })}
         </View>
 
-        {claimedAmount !== null ? (
-          <View style={styles.celebrationBox}>
-            <Text style={styles.celebrationTitle}>REWARDS CLAIMED!</Text>
-            <Text style={styles.celebrationText}>
-              +{claimedAmount.toLocaleString()} Coins added to your vault balance.
-            </Text>
-            <PrimaryButton
-              title="COLLECT & PLAY"
-              onPress={onClose}
-              variant="emerald"
-              style={styles.actionBtn}
-            />
+        {/* Day 7 Full Width Bonus */}
+        <View style={styles.day7Card}>
+          <View>
+            <Text style={styles.day7Label}>DAY 7</Text>
+            <Text style={styles.day7Title}>500 COINS + STRIKER</Text>
           </View>
-        ) : (
-          <PrimaryButton
-            title={dailyRewardClaimed ? 'CLAIMED TODAY' : 'CLAIM REWARD'}
-            disabled={dailyRewardClaimed}
-            onPress={handleClaim}
-            variant="gold"
-            style={styles.actionBtn}
-          />
-        )}
+          <View style={styles.day7CoinBadge}>
+            <Text style={styles.day7CoinText}>C</Text>
+          </View>
+        </View>
+
+        {/* Claim Button */}
+        <Button
+          title={claimed ? 'CLAIMED TODAY' : 'CLAIM 100 COINS'}
+          variant="primary"
+          disabled={claimed}
+          onPress={handleClaim}
+          style={styles.actionBtn}
+        />
       </View>
     </Modal>
   );
@@ -99,83 +98,117 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: 8,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-    marginBottom: THEME.spacing.lg,
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 12,
   },
   dayCard: {
     width: '30%',
-    backgroundColor: '#07261C',
-    borderRadius: 14,
-    borderWidth: 1.5,
+    aspectRatio: 0.95,
+    backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
-    paddingVertical: 10,
+    borderWidth: 2,
+    borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
     position: 'relative',
   },
   todayCard: {
-    borderColor: THEME.colors.brass,
-    backgroundColor: '#124330',
-    ...THEME.shadows.glowBrass,
-  },
-  pastCard: {
-    opacity: 0.6,
-    borderColor: THEME.colors.neonEmerald,
-  },
-  jackpotCard: {
-    width: '95%',
-    borderColor: THEME.colors.brass,
-    backgroundColor: 'rgba(233, 185, 73, 0.12)',
+    borderColor: '#2BD67B',
+    backgroundColor: '#11573C',
   },
   dayLabel: {
-    color: THEME.colors.mutedMint,
+    color: '#9FD8B8',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
     letterSpacing: 0.5,
-  },
-  todayText: {
-    color: THEME.colors.brass,
-  },
-  coinIcon: {
-    fontSize: 22,
-    marginVertical: 4,
-  },
-  rewardAmount: {
-    color: THEME.colors.cream,
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  checkMark: {
-    position: 'absolute',
-    top: 4,
-    right: 6,
-    color: THEME.colors.neonEmerald,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  actionBtn: {
-    marginTop: THEME.spacing.sm,
-  },
-  celebrationBox: {
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.sm,
-  },
-  celebrationTitle: {
-    color: THEME.colors.brass,
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 0.6,
     marginBottom: 4,
   },
-  celebrationText: {
-    color: THEME.colors.mutedMint,
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.md,
+  todayText: {
+    color: '#2BD67B',
+  },
+  coinCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E9B949',
+    borderWidth: 1.5,
+    borderColor: '#F7D070',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  coinText: {
+    color: '#261B04',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  rewardAmount: {
+    color: '#E9B949',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  todayPill: {
+    position: 'absolute',
+    top: -8,
+    backgroundColor: '#2BD67B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  todayPillText: {
+    color: '#07261C',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  day7Card: {
+    backgroundColor: '#0E4A33',
+    borderColor: '#E9B949',
+    borderWidth: 2,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  day7Label: {
+    color: '#E9B949',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  day7Title: {
+    color: '#F5ECD2',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  day7CoinBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E9B949',
+    borderWidth: 2,
+    borderColor: '#F7D070',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  day7CoinText: {
+    color: '#261B04',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  actionBtn: {
+    width: '100%',
   },
 });

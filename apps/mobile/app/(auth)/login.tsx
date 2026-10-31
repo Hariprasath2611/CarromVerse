@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  GameCard,
+  Button,
+  Card,
   Input,
   LoadingOverlay,
-  PrimaryButton,
   ScreenContainer,
-  SecondaryButton,
-  Toggle,
 } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import { validateEmail, validatePassword } from '@carromverse/shared-utils';
@@ -20,9 +18,6 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberSession, setRememberSession] = useState(true);
-
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -57,30 +52,29 @@ export default function LoginScreen() {
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      <LoadingOverlay visible={isLoading} message="Authenticating Player..." />
+      <LoadingOverlay visible={isLoading} message="Signing in..." />
 
-      {/* Header Emblem & Title */}
+      {/* Decorative background shapes */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
+
+      {/* Title */}
       <View style={styles.headerBox}>
-        <View style={styles.emblemCircle}>
-          <Text style={styles.emblemEmoji}>🎯</Text>
-        </View>
         <Text style={styles.title}>WELCOME BACK</Text>
-        <Text style={styles.subtitle}>Sign in to sync your match stats and trophies</Text>
       </View>
 
       {/* Error Banner */}
       {!!error && (
         <View style={styles.errorBox}>
-          <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Login Card Form */}
-      <GameCard elevated style={styles.formCard}>
+      {/* Form Card */}
+      <Card style={styles.formCard}>
         <Input
-          label="Email Address"
-          placeholder="champion@carromverse.com"
+          label="Email"
+          placeholder="your@email.com"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -91,78 +85,48 @@ export default function LoginScreen() {
           error={emailError}
         />
 
-        <View style={styles.passwordField}>
-          <Input
-            label="Password"
-            placeholder="••••••••"
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={(val) => {
-              setPassword(val);
-              if (passwordError) setPasswordError(null);
-            }}
-            error={passwordError}
-            containerStyle={{ marginBottom: 0, flex: 1 }}
-          />
-          <Pressable
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeBtn}
-            hitSlop={10}
-          >
-            <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
-          </Pressable>
-        </View>
+        <Input
+          label="Password"
+          placeholder="••••••••"
+          secureTextEntry
+          value={password}
+          onChangeText={(val) => {
+            setPassword(val);
+            if (passwordError) setPasswordError(null);
+          }}
+          error={passwordError}
+        />
 
-        {/* Options Row */}
-        <View style={styles.optionsRow}>
-          <Toggle
-            label="Remember session"
-            value={rememberSession}
-            onValueChange={setRememberSession}
-            style={styles.rememberToggle}
-          />
-
+        <View style={styles.forgotRow}>
           <TouchableOpacity
             onPress={() => router.push('/(auth)/forgot-password')}
-            style={styles.forgotBtn}
+            hitSlop={8}
           >
             <Text style={styles.forgotText}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Sign In Primary Action */}
-        <PrimaryButton
-          title="SIGN IN"
-          icon="🔑"
+        <Button
+          title="LOGIN"
+          variant="primary"
           onPress={handleLogin}
           loading={isLoading}
-          variant="emerald"
-          size="large"
-          style={styles.signInButton}
+          style={styles.actionBtn}
         />
 
-        {/* Divider */}
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR PLAY LOCALLY</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Guest Mode Button */}
-        <SecondaryButton
-          title="PLAY OFFLINE AS GUEST"
-          icon="🎮"
-          variant="forest"
-          size="large"
+        <Button
+          title="PLAY AS GUEST"
+          variant="secondary"
           onPress={handleGuestPlay}
+          style={styles.actionBtn}
         />
-      </GameCard>
+      </Card>
 
       {/* Footer Registration Link */}
       <View style={styles.footerRow}>
-        <Text style={styles.footerText}>New to CarromVerse? </Text>
-        <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={styles.signUpText}>CREATE ACCOUNT</Text>
+        <Text style={styles.footerText}>New here? </Text>
+        <TouchableOpacity onPress={() => router.push('/(auth)/register')} hitSlop={8}>
+          <Text style={styles.signUpText}>Create account</Text>
         </TouchableOpacity>
       </View>
     </ScreenContainer>
@@ -171,127 +135,84 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
+    backgroundColor: '#07261C',
     justifyContent: 'center',
-    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  bokehTop: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 80,
+    left: 20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   headerBox: {
-    marginBottom: 20,
+    marginBottom: 24,
     alignItems: 'center',
-  },
-  emblemCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#07261C',
-    borderWidth: 2.5,
-    borderColor: THEME.colors.neonEmerald,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    ...THEME.shadows.glowEmerald,
-  },
-  emblemEmoji: {
-    fontSize: 30,
   },
   title: {
-    color: THEME.colors.cream,
-    fontSize: 24,
-    fontWeight: 'bold',
+    color: '#F5ECD2',
+    fontSize: 26,
+    fontWeight: '900',
     letterSpacing: 1.5,
-  },
-  subtitle: {
-    color: THEME.colors.mutedMint,
-    fontSize: 13,
-    marginTop: 4,
     textAlign: 'center',
   },
   errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(226, 59, 90, 0.15)',
-    borderColor: THEME.colors.queenRed,
+    backgroundColor: 'rgba(226, 59, 90, 0.18)',
+    borderColor: '#E23B5A',
     borderWidth: 1.5,
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     marginBottom: 16,
   },
-  errorIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
   errorText: {
-    color: THEME.colors.queenRed,
+    color: '#E23B5A',
     fontSize: 13,
     fontWeight: '600',
-    flex: 1,
+    textAlign: 'center',
   },
   formCard: {
-    padding: 22,
+    padding: 20,
+    marginBottom: 24,
   },
-  passwordField: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: 14,
-    top: 36,
-  },
-  eyeIcon: {
-    fontSize: 18,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  rememberToggle: {
-    paddingVertical: 0,
-    flex: 1,
-  },
-  forgotBtn: {
-    paddingVertical: 4,
-    marginLeft: 8,
+  forgotRow: {
+    alignItems: 'flex-end',
+    marginBottom: 18,
+    marginTop: -4,
   },
   forgotText: {
-    color: THEME.colors.brass,
+    color: '#9FD8B8',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  signInButton: {
+  actionBtn: {
     marginBottom: 12,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 14,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1.5,
-    backgroundColor: '#1B7050',
-  },
-  dividerText: {
-    color: THEME.colors.mutedMint,
-    marginHorizontal: 10,
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 1,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    alignItems: 'center',
   },
   footerText: {
-    color: THEME.colors.mutedMint,
-    fontSize: 13,
+    color: '#9FD8B8',
+    fontSize: 14,
   },
   signUpText: {
-    color: THEME.colors.neonEmerald,
-    fontSize: 13,
+    color: '#2BD67B',
+    fontSize: 14,
     fontWeight: 'bold',
-    letterSpacing: 0.5,
   },
 });

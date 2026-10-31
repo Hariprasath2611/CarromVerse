@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  GameCard,
+  Button,
+  Card,
   Input,
   LoadingOverlay,
-  PrimaryButton,
   ScreenContainer,
-  SecondaryButton,
 } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import { validateEmail } from '@carromverse/shared-utils';
@@ -34,7 +33,7 @@ export default function ForgotPasswordScreen() {
 
     try {
       await resetPassword(email);
-      setSuccessMessage('Password reset link sent! Check your inbox to reset your password.');
+      setSuccessMessage('Password reset link sent! Check your inbox.');
     } catch {
       // Error handled via authStore.error
     }
@@ -42,40 +41,35 @@ export default function ForgotPasswordScreen() {
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      <LoadingOverlay visible={isLoading} message="Sending Reset Link..." />
+      <LoadingOverlay visible={isLoading} message="Sending reset link..." />
 
-      {/* Header Emblem & Title */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
+
+      {/* Header */}
       <View style={styles.headerBox}>
-        <View style={styles.emblemCircle}>
-          <Text style={styles.emblemEmoji}>🔐</Text>
-        </View>
         <Text style={styles.title}>RESET PASSWORD</Text>
-        <Text style={styles.subtitle}>
-          Enter your registered email and we'll send you a password reset link
-        </Text>
+        <Text style={styles.subtitle}>Enter your email to receive a recovery link</Text>
       </View>
 
-      {/* Error Alert */}
+      {/* Messages */}
       {!!error && (
         <View style={styles.errorBox}>
-          <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Success Alert */}
       {!!successMessage && (
         <View style={styles.successBox}>
-          <Text style={styles.successIcon}>✅</Text>
           <Text style={styles.successText}>{successMessage}</Text>
         </View>
       )}
 
       {/* Form Card */}
-      <GameCard elevated style={styles.formCard}>
+      <Card style={styles.formCard}>
         <Input
-          label="Email Address"
-          placeholder="champion@carromverse.com"
+          label="Email"
+          placeholder="your@email.com"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -86,112 +80,101 @@ export default function ForgotPasswordScreen() {
           error={emailError}
         />
 
-        <PrimaryButton
+        <Button
           title="SEND RESET LINK"
+          variant="primary"
           onPress={handleReset}
           loading={isLoading}
-          variant="emerald"
-          size="large"
-          style={styles.submitButton}
+          style={styles.actionBtn}
         />
 
-        <SecondaryButton
-          title="BACK TO SIGN IN"
+        <Button
+          title="BACK TO LOGIN"
+          variant="secondary"
           onPress={() => router.back()}
-          variant="outline"
-          size="medium"
-          style={styles.backButton}
+          style={styles.actionBtn}
         />
-      </GameCard>
+      </Card>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xxl,
-    paddingBottom: THEME.spacing.xxl,
+    flexGrow: 1,
+    backgroundColor: '#07261C',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  bokehTop: {
+    position: 'absolute',
+    top: 40,
+    right: 10,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 60,
+    left: 10,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   headerBox: {
+    marginBottom: 24,
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  emblemCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#07261C',
-    borderColor: THEME.colors.neonEmerald,
-    borderWidth: 2.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    ...THEME.shadows.glowEmerald,
-  },
-  emblemEmoji: {
-    fontSize: 30,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
+    color: '#F5ECD2',
+    fontSize: 26,
+    fontWeight: '900',
     letterSpacing: 1.5,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 13,
-    color: THEME.colors.mutedMint,
+    color: '#9FD8B8',
+    fontSize: 14,
+    marginTop: 6,
     textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: 16,
   },
   errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(226, 59, 90, 0.15)',
-    borderColor: THEME.colors.queenRed,
+    backgroundColor: 'rgba(226, 59, 90, 0.18)',
+    borderColor: '#E23B5A',
     borderWidth: 1.5,
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     marginBottom: 16,
-  },
-  errorIcon: {
-    fontSize: 16,
-    marginRight: 8,
   },
   errorText: {
-    color: THEME.colors.queenRed,
+    color: '#E23B5A',
     fontSize: 13,
     fontWeight: '600',
-    flex: 1,
+    textAlign: 'center',
   },
   successBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(43, 214, 123, 0.15)',
-    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: 'rgba(43, 214, 123, 0.18)',
+    borderColor: '#2BD67B',
     borderWidth: 1.5,
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     marginBottom: 16,
   },
-  successIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
   successText: {
-    color: THEME.colors.neonEmerald,
+    color: '#2BD67B',
     fontSize: 13,
     fontWeight: '600',
-    flex: 1,
+    textAlign: 'center',
   },
   formCard: {
-    padding: 22,
+    padding: 20,
+    marginBottom: 24,
   },
-  submitButton: {
-    marginTop: 20,
-  },
-  backButton: {
-    marginTop: 12,
+  actionBtn: {
+    marginBottom: 12,
   },
 });

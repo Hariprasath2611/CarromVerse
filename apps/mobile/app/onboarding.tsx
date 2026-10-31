@@ -1,37 +1,25 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { GameCard, PrimaryButton, SecondaryButton, ScreenContainer } from '../src/components';
+import { BoardPreview, Button, ScreenContainer } from '../src/components';
 import { useSettingsStore } from '../src/store/settingsStore';
 import { THEME } from '../src/constants/theme';
 
 const SLIDES = [
   {
-    step: '01',
-    badge: 'WELCOME TO CARROMVERSE',
-    title: 'The Royal Board\nReimagined',
-    description:
-      'Step into a world of master tabletop carrom. Crafted with realistic wood textures, fluid physical strikes, and our signature Emerald Club Night aesthetic.',
-    icon: '🎯',
-    accentColor: THEME.colors.neonEmerald,
+    title: 'FLICK LIKE A PRO',
+    description: 'Drag the striker along the baseline, pull back for power, and release to strike.',
+    boardTheme: 'classic',
   },
   {
-    step: '02',
-    badge: 'LOCAL MULTIPLAYER',
-    title: 'Play with Friends\n& Family Anywhere',
-    description:
-      'Gather around a single device for 2-Player Duels, 3-Player Free-for-All, or 4-Player 2v2 Team Doubles with zero internet connection required.',
-    icon: '👥',
-    accentColor: THEME.colors.brass,
+    title: 'PLAY WITH FRIENDS',
+    description: 'Challenge players locally or online in 2-player duels and 4-player team matches.',
+    boardTheme: 'emerald',
   },
   {
-    step: '03',
-    badge: 'PRESTIGE & STYLES',
-    title: 'Customize Boards\n& Crown the Queen',
-    description:
-      'Unlock luxurious boards, tournament-grade strikers, and gem-inlaid coins. Track match history and rise through the club ranks to become a Legend.',
-    icon: '👑',
-    accentColor: THEME.colors.brass,
+    title: 'CUSTOMIZE YOUR GEAR',
+    description: 'Unlock exclusive handcrafted boards, weighted strikers, and legendary puck designs.',
+    boardTheme: 'mahogany',
   },
 ];
 
@@ -59,67 +47,50 @@ export default function OnboardingScreen() {
 
   return (
     <ScreenContainer contentContainerStyle={styles.container}>
-      {/* Top Header Bar */}
-      <View style={styles.topRow}>
-        <View style={styles.brandGroup}>
-          <Text style={styles.brandTitle}>CARROMVERSE</Text>
-          <View style={styles.brandDot} />
-        </View>
+      {/* Decorative background shapes */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
 
-        {!isLast && (
-          <SecondaryButton
-            title="SKIP"
-            variant="outline"
-            size="small"
-            onPress={handleSkip}
-            style={styles.skipButton}
-          />
-        )}
+      {/* Top Text Header */}
+      <View style={styles.textHeader}>
+        <Text style={styles.title}>{slide.title}</Text>
+        <Text style={styles.description}>{slide.description}</Text>
       </View>
 
-      {/* Main Slide Presentation Card */}
-      <GameCard elevated style={styles.slideCard}>
-        {/* Step Indicator Pill */}
-        <View style={styles.badgeRow}>
-          <View style={styles.stepPill}>
-            <Text style={styles.stepText}>{slide.step}</Text>
-          </View>
-          <Text style={styles.badgeText}>{slide.badge}</Text>
+      {/* Tilted 3D Hero Board */}
+      <View style={styles.heroBoardContainer}>
+        <View style={styles.tiltedWrapper}>
+          <BoardPreview size={260} theme={slide.boardTheme} />
+          {/* Visual aim indicator line for realistic flick look */}
+          <View style={styles.aimLine} />
         </View>
+      </View>
 
-        {/* Hero Visual Icon Container */}
-        <View style={[styles.visualBox, { borderColor: slide.accentColor }]}>
-          <Text style={styles.heroEmoji}>{slide.icon}</Text>
-        </View>
-
-        {/* Content */}
-        <Text style={styles.slideTitle}>{slide.title}</Text>
-        <Text style={styles.slideDesc}>{slide.description}</Text>
-
+      {/* Bottom Actions */}
+      <View style={styles.bottomSection}>
         {/* Pagination Dots */}
         <View style={styles.dotsRow}>
-          {SLIDES.map((_, i) => (
+          {SLIDES.map((_, idx) => (
             <View
-              key={i}
+              key={idx}
               style={[
                 styles.dot,
-                i === currentSlide && styles.activeDot,
+                idx === currentSlide ? styles.dotActive : styles.dotInactive,
               ]}
             />
           ))}
         </View>
-      </GameCard>
 
-      {/* Bottom Navigation Buttons */}
-      <View style={styles.bottomControls}>
-        <PrimaryButton
-          title={isLast ? 'GET STARTED' : 'NEXT STEP'}
-          icon={isLast ? '🚀' : '→'}
+        <Button
+          title={isLast ? 'GET STARTED' : 'NEXT'}
+          variant="primary"
           onPress={handleNext}
-          variant="emerald"
-          size="large"
-          style={styles.actionButton}
+          style={styles.nextButton}
         />
+
+        <TouchableOpacity onPress={handleSkip} hitSlop={12} style={styles.skipButton}>
+          <Text style={styles.skipText}>SKIP</Text>
+        </TouchableOpacity>
       </View>
     </ScreenContainer>
   );
@@ -127,111 +98,102 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'space-between',
-    paddingVertical: THEME.spacing.lg,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  brandGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandTitle: {
-    color: THEME.colors.cream,
-    fontSize: 20,
-    fontWeight: 'bold',
-    letterSpacing: 2,
-  },
-  brandDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: THEME.colors.neonEmerald,
-    marginLeft: 6,
-  },
-  skipButton: {
-    borderWidth: 0,
-  },
-  slideCard: {
-    padding: 24,
-    minHeight: 400,
-    justifyContent: 'center',
-    marginVertical: 'auto',
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  stepPill: {
+    flex: 1,
     backgroundColor: '#07261C',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: THEME.colors.brass,
-    marginRight: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 36,
   },
-  stepText: {
-    color: THEME.colors.brass,
-    fontSize: 11,
-    fontWeight: 'bold',
+  bokehTop: {
+    position: 'absolute',
+    top: 40,
+    left: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
   },
-  badgeText: {
-    color: THEME.colors.mutedMint,
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 1.2,
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 100,
+    right: -20,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
-  visualBox: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#07261C',
-    borderWidth: 2.5,
+  textHeader: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    ...THEME.shadows.glowEmerald,
+    paddingTop: 16,
   },
-  heroEmoji: {
-    fontSize: 40,
-  },
-  slideTitle: {
-    color: THEME.colors.cream,
+  title: {
     fontSize: 26,
-    fontWeight: 'bold',
-    lineHeight: 34,
+    fontWeight: '900',
+    color: '#F5ECD2', // Cream
+    letterSpacing: 1.5,
+    textAlign: 'center',
     marginBottom: 12,
   },
-  slideDesc: {
-    color: THEME.colors.mutedMint,
+  description: {
     fontSize: 14,
-    lineHeight: 22,
+    color: '#9FD8B8', // Muted Mint
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 16,
+  },
+  heroBoardContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
+  },
+  tiltedWrapper: {
+    transform: [{ perspective: 800 }, { rotateX: '26deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  aimLine: {
+    position: 'absolute',
+    bottom: 50,
+    width: 2,
+    height: 48,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#2BD67B',
+  },
+  bottomSection: {
+    width: '100%',
+    alignItems: 'center',
   },
   dotsRow: {
     flexDirection: 'row',
-    marginTop: 24,
+    alignItems: 'center',
+    marginBottom: 20,
     gap: 8,
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#1B7050',
+    height: 6,
+    borderRadius: 3,
   },
-  activeDot: {
-    width: 32,
-    backgroundColor: THEME.colors.neonEmerald,
+  dotActive: {
+    width: 20,
+    backgroundColor: '#2BD67B',
   },
-  bottomControls: {
-    marginTop: 20,
+  dotInactive: {
+    width: 6,
+    backgroundColor: '#0E4A33',
   },
-  actionButton: {
+  nextButton: {
     width: '100%',
+    marginBottom: 14,
+  },
+  skipButton: {
+    paddingVertical: 8,
+  },
+  skipText: {
+    color: '#9FD8B8',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
 });
