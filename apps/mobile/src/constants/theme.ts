@@ -27,10 +27,17 @@ export const THEME = {
     accent: '#2BD67B',               // Neon Emerald Accent
     accentGlow: 'rgba(43, 214, 123, 0.45)',
 
+    // Explicit Theme Color Names
+    neonEmerald: '#2BD67B',
+    cream: '#F5ECD2',
+    mutedMint: '#9FD8B8',
+    panelBorder: '#1B7050',
+    coal: '#0B0F0D',
+
     // Backgrounds
     background: '#07261C',           // Forest Ground Dark
     backgroundSecondary: '#0F5A3E',  // Forest Ground Light
-    backgroundGradient: ['#0F5A3E', '#07261C'],
+    backgroundGradient: ['#0F5A3E', '#07261C'] as const,
 
     // Panels & Surfaces
     surface: '#0E4A33',              // Felt Panel Green
@@ -77,7 +84,6 @@ export const THEME = {
     strikerNeon: '#2BD67B',          // Neon Emerald Striker
 
     // System Status
-    coal: '#0B0F0D',
     success: '#2BD67B',
     successBg: 'rgba(43, 214, 123, 0.18)',
     error: '#E23B5A',
@@ -97,6 +103,34 @@ export const THEME = {
     // Overlays
     overlay: 'rgba(7, 38, 28, 0.78)',
     overlayHeavy: 'rgba(7, 38, 28, 0.94)',
+  },
+
+  typography: {
+    fontFamily: {
+      heading: 'Bungee',
+      body: 'DMSans',
+    },
+    fontSize: {
+      headline: 28,
+      h1: 26,
+      h2: 22,
+      h3: 18,
+      title: 20,
+      subtitle: 16,
+      bodyLg: 16,
+      body: 14,
+      bodyMd: 14,
+      bodySm: 12,
+      caption: 11,
+      captionSm: 9,
+    },
+    fontWeight: {
+      regular: '400' as const,
+      medium: '500' as const,
+      semibold: '600' as const,
+      bold: '700' as const,
+      heavy: '900' as const,
+    },
   },
 
   spacing: {
@@ -188,6 +222,20 @@ export const THEME = {
       elevation: 10,
     },
     glowBrass: {
+      shadowColor: '#E9B949',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.6,
+      shadowRadius: 14,
+      elevation: 10,
+    },
+    emeraldGlow: {
+      shadowColor: '#2BD67B',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.65,
+      shadowRadius: 14,
+      elevation: 10,
+    },
+    goldGlow: {
       shadowColor: '#E9B949',
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.6,
