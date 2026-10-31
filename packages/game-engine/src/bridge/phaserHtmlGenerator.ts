@@ -810,6 +810,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var sinA = Math.sin(angle);
           var nearestDist = 800;
           var hitType = 'none';
+          var hitCoin = null;
 
           for (var i = 0; i < this.coins.length; i++) {
             var c = this.coins[i];
@@ -826,6 +827,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
               if (hitD > 0 && hitD < nearestDist) {
                 nearestDist = hitD;
                 hitType = 'coin';
+                hitCoin = c;
               }
             }
           }
@@ -854,7 +856,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           for (var d = 0; d < nearestDist; d += step) {
             var curD1 = d;
             var curD2 = Math.min(d + segLen, nearestDist);
-            this.aimGraphics.lineStyle(2, col, 0.7);
+            this.aimGraphics.lineStyle(2, col, 0.75);
             this.aimGraphics.lineBetween(
               px + cosA * curD1, py + sinA * curD1,
               px + cosA * curD2, py + sinA * curD2
@@ -862,10 +864,34 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           }
 
           // Ghost striker circle at contact point
-          this.aimGraphics.lineStyle(1.5, col, 0.6);
+          this.aimGraphics.lineStyle(2, col, 0.7);
           this.aimGraphics.strokeCircle(contactX, contactY, sr);
-          this.aimGraphics.fillStyle(col, 0.2);
+          this.aimGraphics.fillStyle(col, 0.22);
           this.aimGraphics.fillCircle(contactX, contactY, sr);
+
+          // If aimed at a target coin, render its projected deflection trajectory line
+          if (hitType === 'coin' && hitCoin && hitCoin.body) {
+            var targetX = hitCoin.body.position.x;
+            var targetY = hitCoin.body.position.y;
+            var normX = targetX - contactX;
+            var normY = targetY - contactY;
+            var normDist = Math.hypot(normX, normY) || 1;
+            var deflDirX = normX / normDist;
+            var deflDirY = normY / normDist;
+            var deflDist = Math.min(100, 35 + this.aimPowerRatio * 65);
+
+            for (var dd = 0; dd < deflDist; dd += step) {
+              var d1 = dd;
+              var d2 = Math.min(dd + segLen, deflDist);
+              this.aimGraphics.lineStyle(2, 0xF5ECD2, 0.85); // Cream trajectory for target coin
+              this.aimGraphics.lineBetween(
+                targetX + deflDirX * d1, targetY + deflDirY * d1,
+                targetX + deflDirX * d2, targetY + deflDirY * d2
+              );
+            }
+            this.aimGraphics.lineStyle(1.5, 0xF5ECD2, 0.9);
+            this.aimGraphics.strokeCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX * 0.75);
+          }
 
           sendToReactNative({
             type: 'AIM_CHANGED',
