@@ -1,237 +1,150 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  GameCard,
-  PrimaryButton,
-  ScreenContainer,
-} from '../src/components';
+import { Button, Card, ScreenContainer } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { PlayerCount } from '@carromverse/shared-types';
 import { THEME } from '../src/constants/theme';
 
 export default function PlayerSelectionScreen() {
   const router = useRouter();
-  const { selectedMode, playerCount, setGameMode, setPlayerCount, players } =
+  const { selectedMode, playerCount, setGameMode, setPlayerCount } =
     useGameSetupStore();
-
-  const handleSelectCount = (count: PlayerCount) => {
-    setPlayerCount(count);
-  };
 
   const isTeamMode = selectedMode === 'four_player_team';
 
-  const handleToggleTeamMode = (team: boolean) => {
-    if (team) {
-      setGameMode('four_player_team');
-    } else {
-      setGameMode('four_player_individual');
+  const handleSelectCount = (count: PlayerCount) => {
+    setPlayerCount(count);
+    if (count !== 4 && isTeamMode) {
+      setGameMode(count === 2 ? 'two_player_individual' : 'three_player_individual');
     }
   };
 
-  // Resolve seats
-  const southPlayer = players.find((p) => p.position === 'bottom');
-  const northPlayer = players.find((p) => p.position === 'top');
-  const eastPlayer = players.find((p) => p.position === 'right');
-  const westPlayer = players.find((p) => p.position === 'left');
+  const handleSelectGameType = (team: boolean) => {
+    if (team) {
+      setPlayerCount(4);
+      setGameMode('four_player_team');
+    } else {
+      if (playerCount === 4) {
+        setGameMode('four_player_individual');
+      } else if (playerCount === 3) {
+        setGameMode('three_player_individual');
+      } else {
+        setGameMode('two_player_individual');
+      }
+    }
+  };
+
+  const handleContinue = () => {
+    router.push('/game-config');
+  };
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      {/* Header */}
+      {/* Decorative background shapes */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
+
+      {/* Screen Title */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>◀</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTextWrap}>
-          <Text style={styles.headerStep}>STEP 2 OF 3</Text>
-          <Text style={styles.headerTitle}>PLAYER COUNT & SEATING</Text>
+        <Text style={styles.title}>OFFLINE MATCH</Text>
+      </View>
+
+      {/* PLAYERS SECTION */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>PLAYERS</Text>
+        <View style={styles.playersGrid}>
+          {([2, 3, 4] as PlayerCount[]).map((count) => {
+            const isActive = playerCount === count;
+            return (
+              <TouchableOpacity
+                key={count}
+                style={[
+                  styles.playerBox,
+                  isActive && styles.playerBoxActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => handleSelectCount(count)}
+              >
+                <Text style={[styles.playerNum, isActive && styles.playerNumActive]}>
+                  {count}
+                </Text>
+                <Text style={[styles.playerSub, isActive && styles.playerSubActive]}>
+                  players
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
-      <Text style={styles.instruction}>
-        Select how many players will compete on this device. The visual seating layout reflects your physical positions.
-      </Text>
-
-      {/* Player Count Selector Chips */}
-      <View style={styles.chipsRow}>
-        {([2, 3, 4] as PlayerCount[]).map((count) => (
+      {/* GAME TYPE SECTION */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>GAME TYPE</Text>
+        <View style={styles.gameTypeRow}>
           <TouchableOpacity
-            key={count}
             style={[
-              styles.countChip,
-              playerCount === count && styles.countChipActive,
+              styles.typeBtn,
+              !isTeamMode && styles.typeBtnIndividualActive,
             ]}
-            onPress={() => handleSelectCount(count)}
+            onPress={() => handleSelectGameType(false)}
           >
             <Text
               style={[
-                styles.chipText,
-                playerCount === count && styles.chipTextActive,
+                styles.typeBtnText,
+                !isTeamMode && styles.typeBtnTextActive,
               ]}
             >
-              {count} PLAYERS
+              INDIVIDUAL
             </Text>
           </TouchableOpacity>
-        ))}
+
+          <TouchableOpacity
+            style={[
+              styles.typeBtn,
+              isTeamMode && styles.typeBtnTeamActive,
+            ]}
+            onPress={() => handleSelectGameType(true)}
+          >
+            <Text
+              style={[
+                styles.typeBtnText,
+                isTeamMode && styles.typeBtnTeamTextActive,
+              ]}
+            >
+              TEAM 2 VS 2
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* 4-Player Team Sub-option */}
-      {playerCount === 4 && (
-        <View style={styles.teamSelectorRow}>
-          <TouchableOpacity
-            style={[
-              styles.teamOption,
-              !isTeamMode && styles.teamOptionActive,
-            ]}
-            onPress={() => handleToggleTeamMode(false)}
-          >
-            <Text
-              style={[
-                styles.teamOptionText,
-                !isTeamMode && styles.teamOptionTextActive,
-              ]}
-            >
-              👤 4-Way Individual
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.teamOption,
-              isTeamMode && styles.teamOptionActive,
-            ]}
-            onPress={() => handleToggleTeamMode(true)}
-          >
-            <Text
-              style={[
-                styles.teamOptionText,
-                isTeamMode && styles.teamOptionTextActive,
-              ]}
-            >
-              🤝 2 vs 2 Teams
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Visual Seating Diagram around the Board */}
-      <GameCard elevated style={styles.boardDiagramCard}>
-        <Text style={styles.diagramTitle}>TABLE SEATING LAYOUT</Text>
-
-        {/* North Seat (Top) */}
-        <View style={styles.northSeat}>
-          {northPlayer ? (
-            <View style={[styles.seatBox, northPlayer.teamId === 'team_a' ? styles.teamABorder : styles.seatDefaultBorder]}>
-              <Text style={styles.seatAvatar}>{northPlayer.avatarUrl || '👑'}</Text>
-              <Text style={styles.seatName} numberOfLines={1}>
-                {northPlayer.name}
-              </Text>
-              <Text style={styles.seatPos}>North (Top)</Text>
-            </View>
-          ) : (
-            <View style={styles.emptySeatBox}>
-              <Text style={styles.emptySeatText}>Empty</Text>
-            </View>
-          )}
+      {/* TEAM SETUP EXPLANATION CARD */}
+      <Card style={styles.infoCard}>
+        <View style={styles.tableDiagram}>
+          {/* North - Team A (Green) */}
+          <View style={[styles.diagramDot, styles.dotTeamA, { top: 0, left: 32 }]} />
+          {/* South - Team A (Green) */}
+          <View style={[styles.diagramDot, styles.dotTeamA, { bottom: 0, left: 32 }]} />
+          {/* West - Team B (Gold) */}
+          <View style={[styles.diagramDot, styles.dotTeamB, { top: 32, left: 0 }]} />
+          {/* East - Team B (Gold) */}
+          <View style={[styles.diagramDot, styles.dotTeamB, { top: 32, right: 0 }]} />
         </View>
 
-        {/* Middle Row: West Seat + Mini Board + East Seat */}
-        <View style={styles.middleRow}>
-          {/* West Seat (Left) */}
-          <View style={styles.lateralSeat}>
-            {westPlayer ? (
-              <View style={[styles.seatBox, westPlayer.teamId === 'team_b' ? styles.teamBBorder : styles.seatDefaultBorder]}>
-                <Text style={styles.seatAvatar}>{westPlayer.avatarUrl || '🦁'}</Text>
-                <Text style={styles.seatName} numberOfLines={1}>
-                  {westPlayer.name}
-                </Text>
-                <Text style={styles.seatPos}>West</Text>
-              </View>
-            ) : (
-              <View style={styles.emptySeatBox}>
-                <Text style={styles.emptySeatText}>Empty</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Center Graphic Board */}
-          <View style={styles.miniBoardGraphic}>
-            {/* Wooden frame & Brass inner border */}
-            <View style={styles.brassInner}>
-              <View style={styles.creamFace}>
-                {/* Pockets */}
-                <View style={[styles.cornerPocket, styles.pocketTL]} />
-                <View style={[styles.cornerPocket, styles.pocketTR]} />
-                <View style={[styles.cornerPocket, styles.pocketBL]} />
-                <View style={[styles.cornerPocket, styles.pocketBR]} />
-
-                {/* Baselines */}
-                <View style={styles.baselineTop} />
-                <View style={styles.baselineBottom} />
-                <View style={styles.baselineLeft} />
-                <View style={styles.baselineRight} />
-
-                {/* Center Circle with Red Queen */}
-                <View style={styles.boardCenterCircle}>
-                  <View style={styles.boardCenterRedDot} />
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* East Seat (Right) */}
-          <View style={styles.lateralSeat}>
-            {eastPlayer ? (
-              <View style={[styles.seatBox, eastPlayer.teamId === 'team_b' ? styles.teamBBorder : styles.seatDefaultBorder]}>
-                <Text style={styles.seatAvatar}>{eastPlayer.avatarUrl || '🐯'}</Text>
-                <Text style={styles.seatName} numberOfLines={1}>
-                  {eastPlayer.name}
-                </Text>
-                <Text style={styles.seatPos}>East</Text>
-              </View>
-            ) : (
-              <View style={styles.emptySeatBox}>
-                <Text style={styles.emptySeatText}>Empty</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* South Seat (Bottom) */}
-        <View style={styles.southSeat}>
-          {southPlayer ? (
-            <View style={[styles.seatBox, southPlayer.teamId === 'team_a' ? styles.teamABorder : styles.seatDefaultBorder]}>
-              <Text style={styles.seatAvatar}>{southPlayer.avatarUrl || '👑'}</Text>
-              <Text style={styles.seatName} numberOfLines={1}>
-                {southPlayer.name}
-              </Text>
-              <Text style={styles.seatPos}>South (Bottom)</Text>
-            </View>
-          ) : (
-            <View style={styles.emptySeatBox}>
-              <Text style={styles.emptySeatText}>Empty</Text>
-            </View>
-          )}
-        </View>
-      </GameCard>
-
-      {/* Info Tip */}
-      <GameCard style={styles.infoCard}>
-        <Text style={styles.infoTitle}>📱 Pass & Play Guidance</Text>
-        <Text style={styles.infoDesc}>
-          Players take turns shooting from their assigned edge of the board. The on-screen striker automatically aligns to each player's baseline when their turn begins.
+        <Text style={styles.infoText}>
+          <Text style={styles.boldText}>Team A</Text> sits opposite each other,{' '}
+          <Text style={styles.boldText}>Team B</Text> the sides. Partners' coins count
+          together.
         </Text>
-      </GameCard>
+      </Card>
 
-      {/* Footer */}
+      {/* Bottom Button */}
       <View style={styles.footer}>
-        <PrimaryButton
-          title="NEXT: CONFIGURE PLAYERS"
-          subtitle="Customize names, colors & match rules"
-          onPress={() => router.push('/game-config')}
-          variant="emerald"
-          size="large"
-          icon="→"
+        <Button
+          title="CONTINUE"
+          variant="primary"
+          onPress={handleContinue}
+          style={styles.continueBtn}
         />
       </View>
     </ScreenContainer>
@@ -240,288 +153,164 @@ export default function PlayerSelectionScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
+    flexGrow: 1,
+    backgroundColor: '#07261C',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+  },
+  bokehTop: {
+    position: 'absolute',
+    top: 30,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 80,
+    left: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 20,
   },
-  backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#07261C',
+  title: {
+    color: '#F5ECD2',
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    color: '#9FD8B8',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  playersGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  playerBox: {
+    flex: 1,
+    aspectRatio: 1,
+    backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
     borderWidth: 2,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  backArrow: {
-    fontSize: 16,
-    color: THEME.colors.brass,
+  playerBoxActive: {
+    backgroundColor: '#2BD67B',
+    borderColor: '#2BD67B',
   },
-  headerTextWrap: {
-    flex: 1,
+  playerNum: {
+    color: '#F5ECD2',
+    fontSize: 32,
+    fontWeight: '900',
   },
-  headerStep: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    letterSpacing: 1.2,
+  playerNumActive: {
+    color: '#07261C',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.5,
+  playerSub: {
+    color: '#9FD8B8',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
-  instruction: {
-    fontSize: 13,
-    color: THEME.colors.mutedMint,
-    marginBottom: 16,
-    lineHeight: 18,
+  playerSubActive: {
+    color: '#07261C',
   },
-  chipsRow: {
+  gameTypeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    gap: 12,
   },
-  countChip: {
-    flex: 0.31,
-    paddingVertical: 14,
-    alignItems: 'center',
+  typeBtn: {
+    flex: 1,
+    height: 52,
     backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
     borderWidth: 2,
     borderRadius: 16,
-  },
-  countChipActive: {
-    borderColor: THEME.colors.neonEmerald,
-    backgroundColor: '#125A3F',
-    ...THEME.shadows.glowEmerald,
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.5,
-  },
-  chipTextActive: {
-    color: THEME.colors.neonEmerald,
-  },
-  teamSelectorRow: {
-    flexDirection: 'row',
-    backgroundColor: '#07261C',
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 16,
-    borderColor: '#1B7050',
-    borderWidth: 1.5,
-  },
-  teamOption: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  teamOptionActive: {
-    backgroundColor: THEME.colors.neonEmerald,
-  },
-  teamOptionText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-  },
-  teamOptionTextActive: {
-    color: '#07261C',
-  },
-  boardDiagramCard: {
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  diagramTitle: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    letterSpacing: 1.2,
-    marginBottom: 10,
-  },
-  northSeat: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  southSeat: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  middleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  lateralSeat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  seatBox: {
-    backgroundColor: '#07261C',
-    borderColor: '#1B7050',
-    borderWidth: 2,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    alignItems: 'center',
-    minWidth: 88,
-  },
-  seatDefaultBorder: {
-    borderColor: '#1B7050',
-  },
-  teamABorder: {
-    borderColor: THEME.colors.neonEmerald,
-  },
-  teamBBorder: {
-    borderColor: THEME.colors.brass,
-  },
-  emptySeatBox: {
-    backgroundColor: 'rgba(7, 38, 28, 0.4)',
-    borderColor: '#1B7050',
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    minWidth: 88,
-  },
-  emptySeatText: {
-    fontSize: 11,
-    color: THEME.colors.textMuted,
-  },
-  seatAvatar: {
-    fontSize: 20,
-  },
-  seatName: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    marginTop: 2,
-  },
-  seatPos: {
-    fontSize: 9,
-    color: THEME.colors.mutedMint,
-  },
-  miniBoardGraphic: {
-    width: 140,
-    height: 140,
-    backgroundColor: '#7A431C',
-    borderColor: '#4D270E',
-    borderWidth: 6,
-    borderRadius: 14,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 4,
-  },
-  brassInner: {
-    width: 122,
-    height: 122,
-    borderWidth: 1.5,
-    borderColor: '#E9B949',
-    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  creamFace: {
-    width: 114,
-    height: 114,
-    backgroundColor: '#F5ECD2',
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 6,
-  },
-  cornerPocket: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#0B0F0D',
-    borderColor: '#1F2937',
-    borderWidth: 1,
-  },
-  pocketTL: { top: 2, left: 2 },
-  pocketTR: { top: 2, right: 2 },
-  pocketBL: { bottom: 2, left: 2 },
-  pocketBR: { bottom: 2, right: 2 },
-  baselineTop: {
-    position: 'absolute',
-    top: 16,
-    left: 18,
-    right: 18,
-    height: 1.5,
-    backgroundColor: 'rgba(11, 15, 13, 0.4)',
-  },
-  baselineBottom: {
-    position: 'absolute',
-    bottom: 16,
-    left: 18,
-    right: 18,
-    height: 1.5,
-    backgroundColor: 'rgba(11, 15, 13, 0.4)',
-  },
-  baselineLeft: {
-    position: 'absolute',
-    left: 16,
-    top: 18,
-    bottom: 18,
-    width: 1.5,
-    backgroundColor: 'rgba(11, 15, 13, 0.4)',
-  },
-  baselineRight: {
-    position: 'absolute',
-    right: 16,
-    top: 18,
-    bottom: 18,
-    width: 1.5,
-    backgroundColor: 'rgba(11, 15, 13, 0.4)',
-  },
-  boardCenterCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  typeBtnIndividualActive: {
+    backgroundColor: '#0E4A33',
     borderColor: '#2BD67B',
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  boardCenterRedDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#E23B5A',
+  typeBtnTeamActive: {
+    backgroundColor: '#E9B949',
+    borderColor: '#F7D070',
+    borderBottomWidth: 5,
+    borderBottomColor: '#A57E24',
+  },
+  typeBtnText: {
+    color: '#F5ECD2',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  typeBtnTextActive: {
+    color: '#2BD67B',
+  },
+  typeBtnTeamTextActive: {
+    color: '#261B04',
   },
   infoCard: {
-    padding: 14,
-    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 16,
+    borderRadius: 18,
+    marginBottom: 20,
   },
-  infoTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    marginBottom: 3,
+  tableDiagram: {
+    width: 88,
+    height: 88,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  infoDesc: {
-    fontSize: 12,
-    color: THEME.colors.mutedMint,
+  diagramDot: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  dotTeamA: {
+    backgroundColor: '#2BD67B',
+  },
+  dotTeamB: {
+    backgroundColor: '#E9B949',
+  },
+  infoText: {
+    flex: 1,
+    color: '#F5ECD2',
+    fontSize: 13,
     lineHeight: 18,
   },
+  boldText: {
+    fontWeight: 'bold',
+    color: '#F5ECD2',
+  },
   footer: {
-    marginTop: 4,
+    marginTop: 'auto',
+  },
+  continueBtn: {
+    width: '100%',
   },
 });

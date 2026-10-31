@@ -1,118 +1,109 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  GameModeCard,
-  PrimaryButton,
-  ScreenContainer,
-} from '../src/components';
+import { Button, Card, ScreenContainer } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
-import { GameMode } from '@carromverse/shared-types';
 import { THEME } from '../src/constants/theme';
 
-interface ModeOption {
-  mode: GameMode;
+interface ModeItem {
+  id: string;
+  num: number;
+  badgeBg: string;
   title: string;
-  subtitle: string;
-  description: string;
-  playerCount: string;
-  icon: string;
+  desc: string;
+  route: string;
 }
 
-const MODES: ModeOption[] = [
+const MODES: ModeItem[] = [
   {
-    mode: 'two_player_individual',
-    title: 'Two Players – Individual',
-    subtitle: 'Classic 1 vs 1 Head-to-Head Duel',
-    description:
-      'Players sit opposite each other. White vs Black, pocket your 9 carrom men plus the Red Queen with cover.',
-    playerCount: '2 PLAYERS',
-    icon: '⚔️',
+    id: 'offline',
+    num: 1,
+    badgeBg: '#2BD67B', // Emerald
+    title: 'OFFLINE',
+    desc: 'Play against AI or pass & play with friends',
+    route: '/player-selection',
   },
   {
-    mode: 'three_player_individual',
-    title: 'Three Players – Individual',
-    subtitle: '3-Way Free-for-All Points Battle',
-    description:
-      '3 players occupy 3 sides of the board. All coins are neutral: White is 1 pt, Black is 2 pts, Red Queen is 3 pts.',
-    playerCount: '3 PLAYERS',
-    icon: '🔺',
+    id: 'quick_match',
+    num: 2,
+    badgeBg: '#E9B949', // Gold
+    title: 'QUICK MATCH',
+    desc: 'Fast online match against random player',
+    route: '/game-board',
   },
   {
-    mode: 'four_player_individual',
-    title: 'Four Players – Individual',
-    subtitle: '4-Way Points Race Showdown',
-    description:
-      'Each player commands one edge of the board. Race to pocket highest value coins before the board is cleared.',
-    playerCount: '4 PLAYERS',
-    icon: '👑',
+    id: 'private_room',
+    num: 3,
+    badgeBg: '#F5ECD2', // Cream
+    title: 'PRIVATE ROOM',
+    desc: 'Create or join a private room with a code',
+    route: '/lobby',
   },
   {
-    mode: 'four_player_team',
-    title: 'Four Players – Team (2 vs 2)',
-    subtitle: 'Partnership Carrom Strategy',
-    description:
-      'Partners sit opposite each other (North/South vs East/West) sharing scores and white/black piece assignments.',
-    playerCount: '2 VS 2 TEAMS',
-    icon: '🛡️',
+    id: 'nearby',
+    num: 4,
+    badgeBg: '#9FD8B8', // Mint
+    title: 'NEARBY',
+    desc: 'Play with friends over local Wi-Fi / Bluetooth',
+    route: '/lobby',
   },
 ];
 
 export default function GameModeScreen() {
   const router = useRouter();
-  const { selectedMode, setGameMode } = useGameSetupStore();
+  const { setGameMode } = useGameSetupStore();
 
-  const handleSelect = (mode: GameMode) => {
-    setGameMode(mode);
-  };
-
-  const handleContinue = () => {
-    router.push('/player-selection');
+  const handleSelectMode = (item: ModeItem) => {
+    if (item.id === 'offline') {
+      setGameMode('two_player_individual');
+      router.push('/player-selection');
+    } else if (item.id === 'quick_match') {
+      setGameMode('two_player_individual');
+      router.push('/game-board');
+    } else {
+      router.push('/lobby');
+    }
   };
 
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
-      {/* Top Header */}
+      {/* Decorative background shapes */}
+      <View style={styles.bokehTop} pointerEvents="none" />
+      <View style={styles.bokehBottom} pointerEvents="none" />
+
+      {/* Screen Title */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>◀</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTextWrap}>
-          <Text style={styles.headerStep}>STEP 1 OF 3</Text>
-          <Text style={styles.headerTitle}>SELECT GAME MODE</Text>
-        </View>
+        <Text style={styles.title}>CHOOSE MODE</Text>
       </View>
 
-      <Text style={styles.instruction}>
-        Select your offline match format. All players participate smoothly on this single shared device.
-      </Text>
-
-      {/* Mode Selection Cards */}
-      <View style={styles.modeCardsList}>
+      {/* 4 Mode Cards */}
+      <View style={styles.modesList}>
         {MODES.map((item) => (
-          <GameModeCard
-            key={item.mode}
-            mode={item.mode}
-            title={item.title}
-            subtitle={item.subtitle}
-            description={item.description}
-            playerCount={item.playerCount}
-            icon={item.icon}
-            isSelected={selectedMode === item.mode}
-            onSelect={() => handleSelect(item.mode)}
-          />
+          <TouchableOpacity
+            key={item.id}
+            activeOpacity={0.85}
+            onPress={() => handleSelectMode(item)}
+          >
+            <Card style={styles.modeCard}>
+              <View style={[styles.numBadge, { backgroundColor: item.badgeBg }]}>
+                <Text style={styles.numText}>{item.num}</Text>
+              </View>
+              <View style={styles.modeContent}>
+                <Text style={styles.modeTitle}>{item.title}</Text>
+                <Text style={styles.modeDesc}>{item.desc}</Text>
+              </View>
+            </Card>
+          </TouchableOpacity>
         ))}
       </View>
 
-      {/* Bottom Action Footer */}
+      {/* Back Button */}
       <View style={styles.footer}>
-        <PrimaryButton
-          title="CONTINUE TO SEATS"
-          subtitle="Configure player seats & avatars"
-          onPress={handleContinue}
-          variant="emerald"
-          size="large"
-          icon="→"
+        <Button
+          title="BACK"
+          variant="secondary"
+          onPress={() => router.back()}
+          style={styles.backBtn}
         />
       </View>
     </ScreenContainer>
@@ -121,55 +112,82 @@ export default function GameModeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
+    flexGrow: 1,
+    backgroundColor: '#07261C',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+  },
+  bokehTop: {
+    position: 'absolute',
+    top: 30,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(15, 90, 62, 0.25)',
+  },
+  bokehBottom: {
+    position: 'absolute',
+    bottom: 80,
+    left: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   header: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    color: '#F5ECD2',
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  modesList: {
+    gap: 14,
+  },
+  modeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    padding: 16,
+    borderRadius: 18,
+    gap: 16,
   },
-  backBtn: {
+  numBadge: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#07261C',
-    borderColor: '#1B7050',
-    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  backArrow: {
-    fontSize: 16,
-    color: THEME.colors.brass,
+  numText: {
+    color: '#07261C',
+    fontSize: 22,
+    fontWeight: '900',
   },
-  headerTextWrap: {
+  modeContent: {
     flex: 1,
   },
-  headerStep: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: THEME.colors.brass,
-    letterSpacing: 1.2,
+  modeTitle: {
+    color: '#F5ECD2',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: THEME.colors.cream,
-    letterSpacing: 0.5,
-  },
-  instruction: {
+  modeDesc: {
+    color: '#9FD8B8',
     fontSize: 13,
-    color: THEME.colors.mutedMint,
-    marginBottom: 16,
     lineHeight: 18,
   },
-  modeCardsList: {
-    marginBottom: 16,
-  },
   footer: {
-    marginTop: 4,
+    marginTop: 24,
+  },
+  backBtn: {
+    width: '100%',
   },
 });
