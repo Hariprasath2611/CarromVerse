@@ -19,12 +19,22 @@ import {
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
 import { THEME } from '../src/constants/theme';
+import { Player } from '@carromverse/shared-types';
+import { createDefaultGameConfig } from '@carromverse/game-logic';
 
 export default function GameBoardScreen() {
   const router = useRouter();
   const carromRef = useRef<PhaserCarromViewRef>(null);
   const { boardTheme } = useGameSetupStore();
-  const { endSession } = useGameSessionStore();
+  const {
+    stateMachine,
+    startSession,
+    processSettledShot,
+    scores,
+    currentTurn,
+    queenStatus,
+    endSession,
+  } = useGameSessionStore();
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   // Dynamically calculate board size so HUD, board, power bar, and controls fit comfortably on any screen
@@ -39,10 +49,43 @@ export default function GameBoardScreen() {
   const [powerRatio, setPowerRatio] = useState(0.65);
   const [aimAngle, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
-
-  const [playerScore, setPlayerScore] = useState(5);
-  const [opponentScore, setOpponentScore] = useState(3);
   const [pocketToast, setPocketToast] = useState<string | null>(null);
+
+  // Initialize rules engine session if not active
+  useEffect(() => {
+    if (!stateMachine) {
+      const defaultPlayers: Player[] = [
+        {
+          id: 'p1_you',
+          name: 'You',
+          type: 'human',
+          seat: 0,
+          position: 'bottom',
+          assignedCoinType: 'white',
+          isReady: true,
+          score: 0,
+          fouls: 0,
+        },
+        {
+          id: 'p2_arun',
+          name: 'Arun',
+          type: 'bot',
+          seat: 2,
+          position: 'top',
+          assignedCoinType: 'black',
+          isReady: true,
+          score: 0,
+          fouls: 0,
+        },
+      ];
+      const config = createDefaultGameConfig('two_player_individual');
+      startSession(config, defaultPlayers);
+    }
+  }, [stateMachine, startSession]);
+
+  const playerScore = scores['p1_you']?.points ?? 0;
+  const opponentScore = scores['p2_arun']?.points ?? 0;
+  const isYourTurn = !currentTurn || currentTurn.activePlayerId === 'p1_you';
 
   // Turn timer countdown
   useEffect(() => {
@@ -138,7 +181,8 @@ export default function GameBoardScreen() {
       {/* TURN & TIMER TITLE */}
       <View style={styles.turnTitleWrap}>
         <Text style={styles.turnTitleText}>
-          YOUR TURN · 0:{secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
+          {isYourTurn ? 'YOUR TURN' : "ARUN'S TURN"}
+          {queenStatus === 'pending_cover' ? ' · COVER QUEEN' : ''} · 0:{secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
         </Text>
       </View>
 
@@ -171,21 +215,45 @@ export default function GameBoardScreen() {
           }}
           onObjectPocketed={(details) => {
             if (details.type === 'white') {
-              setPlayerScore((s) => s + 1);
-              showToast('White Coin Pocketed! +1');
+              showToast('White Coin Pocketed!');
             } else if (details.type === 'black') {
-              setOpponentScore((s) => s + 1);
-              showToast('Black Coin Pocketed! +1');
+              showToast('Black Coin Pocketed!');
             } else if (details.type === 'queen') {
-              setPlayerScore((s) => s + 3);
-              showToast('QUEEN Pocketed! +3');
+              showToast('QUEEN Pocketed!');
             }
           }}
           onStrikerPocketed={() => {
-            showToast('Striker Foul! Penalty');
+            showToast('Striker Pocketed (Foul)');
           }}
-          onShotSettled={() => {
+          onShotSettled={(details: any) => {
             setIsShotActive(false);
+            const evalResult = processSettledShot({
+              pocketedCoins: details?.pocketed ?? [],
+              strikerPocketed: !!details?.strikerPocketed,
+              durationMs: details?.duration_ms,
+            });
+
+            if (evalResult) {
+              if (evalResult.foulOccurred) {
+                showToast(`FOUL: ${evalResult.primaryFoulType === 'striker_pocketed' ? 'Striker Scratch' : 'Foul committed'}`);
+              } else if (evalResult.queenCoveredThisShot) {
+                showToast('QUEEN COVERED! +25 Points');
+              } else if (evalResult.queenStatusAfter === 'pending_cover') {
+                showToast('Queen Pocketed! Pocket assigned coin to cover');
+              } else if (evalResult.queenReturnedToCenter) {
+                showToast('Failed to cover Queen! Returned to center');
+              } else if (evalResult.extraTurnEarned) {
+                showToast('Coin Pocketed! Extra Turn');
+              } else {
+                showToast('Dry shot · Turn passed');
+              }
+
+              if (evalResult.isMatchOver) {
+                setTimeout(() => {
+                  router.replace('/game-result');
+                }, 1800);
+              }
+            }
           }}
         />
       </View>
