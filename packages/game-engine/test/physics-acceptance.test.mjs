@@ -13,9 +13,9 @@ import {
   RESTITUTION,
   POCKET,
   SIMULATION,
-  assertSymmetricCollisionTable,
-  PhysicsUtils,
-} from '../dist/index.js';
+} from '../dist/physics/PhysicsConfig.js';
+import { assertSymmetricCollisionTable } from '../dist/physics/CollisionCategories.js';
+import { PhysicsUtils } from '../dist/utils/PhysicsUtils.js';
 
 const { Engine, Bodies, Composite, Body, Events } = Matter;
 
