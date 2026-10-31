@@ -22,6 +22,8 @@ export interface PhaserCarromViewProps {
   style?: StyleProp<ViewStyle>;
 }
 
+const RNWebView = WebView as any;
+
 export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
   size,
   themeId = 'forest',
@@ -33,7 +35,7 @@ export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
   onStrikerDragged,
   style,
 }) => {
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false);
 
   // Generate self-contained HTML for Phaser 3
@@ -106,7 +108,7 @@ export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
 
   return (
     <View style={[styles.container, { width: size, height: size }, style]}>
-      <WebView
+      <RNWebView
         ref={webViewRef}
         originWhitelist={['*']}
         source={{ html: htmlContent }}
@@ -149,7 +151,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(7, 19, 14, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
