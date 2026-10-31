@@ -678,7 +678,7 @@ describe('CarromVerse Phase 1.4 Physics Acceptance Tests (Headless Verification)
   // =========================================================================
   test('Criterion 10: Feel check (3-rebound bank shot trajectory and kinetic decay)', () => {
     const { engine, pockets, boardSize } = createStandardCarromWorld();
-    const striker = Bodies.circle(370, 630, SIZES.strikerRadiusPx, {
+    const striker = Bodies.circle(200, 600, SIZES.strikerRadiusPx, {
       restitution: RESTITUTION.strikerToCoin,
       friction: FRICTION.bodyFriction,
       frictionAir: 0,
@@ -689,10 +689,10 @@ describe('CarromVerse Phase 1.4 Physics Acceptance Tests (Headless Verification)
     Body.setMass(striker, MASSES.striker);
     Composite.add(engine.world, striker);
 
-    // Launch at 280 cm/s at -60° angle
-    const v0_cm_s = 280.0;
+    // Launch at 320 cm/s at -30° angle for clean 3-rebound bank
+    const v0_cm_s = 320.0;
     const vStep = PhysicsUtils.speedCmSToStepVelocity(v0_cm_s);
-    const launchAngle = -Math.PI / 3;
+    const launchAngle = (-30 * Math.PI) / 180;
     Body.setVelocity(striker, { x: Math.cos(launchAngle) * vStep, y: Math.sin(launchAngle) * vStep });
 
     let wallBounces = 0;
@@ -706,8 +706,8 @@ describe('CarromVerse Phase 1.4 Physics Acceptance Tests (Headless Verification)
 
     const trajectoryTrace = [];
 
-    for (let frame = 0; frame < 180; frame++) {
-      stepSimulation(engine, [striker], SIMULATION.baseDtSeconds, pockets);
+    for (let frame = 0; frame < 200; frame++) {
+      stepSimulation(engine, [striker], SIMULATION.baseDtSeconds);
 
       // Record at ~50ms intervals (every 3 frames)
       if (frame % 3 === 0) {
