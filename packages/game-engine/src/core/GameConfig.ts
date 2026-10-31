@@ -31,6 +31,13 @@ export function createCarromGameConfig(options: CarromGameEngineOptions = {}): P
       pixelArt: false,
       roundPixels: false,
     },
+    physics: {
+      default: 'matter',
+      matter: {
+        gravity: { x: 0, y: 0 },
+        debug: false,
+      },
+    },
     scene: [BootScene, PreloadScene, CarromScene],
     callbacks: {
       preBoot: (game) => {

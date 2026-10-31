@@ -9,6 +9,8 @@ import { TextureManager } from '../rendering/TextureManager.js';
 import { PointerInput } from '../input/PointerInput.js';
 import { GAME_EVENTS } from '../core/GameEvents.js';
 import { StrikerSkin } from '../types/GameTypes.js';
+import { PhysicsManager } from '../physics/PhysicsManager.js';
+import { AimState } from '../mechanics/AimingController.js';
 
 export class CarromScene extends Phaser.Scene {
   public board!: CarromBoard;
@@ -16,10 +18,12 @@ export class CarromScene extends Phaser.Scene {
   public queen!: Queen;
   public striker!: Striker;
   public pointerInput!: PointerInput;
+  public physicsManager!: PhysicsManager;
 
   private currentThemeId: string = 'forest';
   private currentStrikerSkin: StrikerSkin = 'emerald';
   private activeSeat: number = 0;
+  private isAiming: boolean = false;
 
   constructor() {
     super({ key: 'CarromScene' });
@@ -34,10 +38,16 @@ export class CarromScene extends Phaser.Scene {
     this.board = new CarromBoard(this, canvasSize, this.currentThemeId);
     this.board.init();
 
-    // 2. Setup Opening Coin Cluster
+    // 2. Initialize Physics Manager
+    this.physicsManager = new PhysicsManager(this, this.board, (type, payload) => {
+      this.game.events.emit(type, payload);
+    });
+    this.physicsManager.initialize(canvasSize);
+
+    // 3. Setup Opening Coin Cluster
     this.setupOpeningFormation();
 
-    // 3. Initialize Striker on South Baseline
+    // 4. Initialize Striker on South Baseline
     this.striker = new Striker(
       this,
       this.board,
@@ -46,35 +56,13 @@ export class CarromScene extends Phaser.Scene {
       this.activeSeat
     );
 
-    // 4. Initialize Pointer Input
-    this.pointerInput = new PointerInput(this, canvasSize, {
-      onPointerMove: (coord, rawPixel, isDragging) => {
-        if (isDragging) {
-          // Calculate horizontal offset along active baseline
-          const baseline = this.board.getSeatBaseline(this.activeSeat);
-          let offsetRatio = 0;
-          if (this.activeSeat % 2 === 0) {
-            // Horizontal baseline
-            const halfLen = (baseline.x2 - baseline.x1) / 2;
-            const midX = (baseline.x1 + baseline.x2) / 2;
-            offsetRatio = (coord.nx - midX) / halfLen;
-          } else {
-            // Vertical baseline
-            const halfLen = (baseline.y2 - baseline.y1) / 2;
-            const midY = (baseline.y1 + baseline.y2) / 2;
-            offsetRatio = (coord.ny - midY) / halfLen;
-          }
+    // 5. Bind Physics to Entities
+    this.physicsManager.bindEntities(this.striker, Array.from(this.coins.values()));
 
-          this.striker.setBaselineOffset(offsetRatio);
-          this.game.events.emit(GAME_EVENTS.STRIKER_MOVED, {
-            offsetRatio,
-            pos: this.striker.getNormalizedPosition(),
-          });
-        }
-      },
-    });
+    // 6. Setup Interactive Pointer / Touch Controls
+    this.setupControls(canvasSize);
 
-    // Notify listeners that board has been completely rendered
+    // Notify listeners that engine is fully ready
     this.game.events.emit(GAME_EVENTS.BOARD_RENDERED, {
       theme: this.currentThemeId,
       coinCount: this.coins.size,
@@ -82,16 +70,64 @@ export class CarromScene extends Phaser.Scene {
     this.game.events.emit(GAME_EVENTS.ENGINE_READY);
   }
 
-  /**
-   * Clears existing pieces and spawns the official ICF opening formation.
-   */
+  private setupControls(canvasSize: number): void {
+    this.pointerInput = new PointerInput(this, canvasSize, {
+      onPointerDown: (coord, rawPixel) => {
+        if (!this.physicsManager.motionDetector.isBoardAtRest()) return;
+
+        // Check if pointer initiates aiming on striker
+        const started = this.physicsManager.aimingController?.startAim(rawPixel.x, rawPixel.y);
+        this.isAiming = !!started;
+      },
+      onPointerMove: (coord, rawPixel, isDragging) => {
+        if (!isDragging) return;
+
+        if (this.isAiming) {
+          this.physicsManager.aimingController?.updateAim(rawPixel.x, rawPixel.y);
+        } else if (this.physicsManager.motionDetector.isBoardAtRest()) {
+          // Adjust striker position along baseline
+          const baseline = this.board.getSeatBaseline(this.activeSeat);
+          let offsetRatio = 0;
+          if (this.activeSeat % 2 === 0) {
+            const halfLen = (baseline.x2 - baseline.x1) / 2;
+            const midX = (baseline.x1 + baseline.x2) / 2;
+            offsetRatio = (coord.nx - midX) / halfLen;
+          } else {
+            const halfLen = (baseline.y2 - baseline.y1) / 2;
+            const midY = (baseline.y1 + baseline.y2) / 2;
+            offsetRatio = (coord.ny - midY) / halfLen;
+          }
+
+          this.physicsManager.strikerController?.setOffset(offsetRatio);
+          this.game.events.emit(GAME_EVENTS.STRIKER_MOVED, {
+            offsetRatio,
+            pos: this.striker.getNormalizedPosition(),
+          });
+        }
+      },
+      onPointerUp: () => {
+        if (this.isAiming) {
+          this.isAiming = false;
+          const aim: AimState | null = this.physicsManager.aimingController?.releaseAim() ?? null;
+          if (aim && aim.normalizedPower > 0.05) {
+            this.physicsManager.shoot(aim);
+          }
+        }
+      },
+    });
+  }
+
+  public update(): void {
+    if (this.physicsManager) {
+      this.physicsManager.update();
+    }
+  }
+
   public setupOpeningFormation(): void {
-    // Clear old pieces
     this.coins.forEach((coin) => coin.destroy());
     this.coins.clear();
 
     const cluster = generateOpeningCoinCluster();
-
     cluster.forEach((config) => {
       if (config.type === 'queen') {
         this.queen = new Queen(this, this.board, config.id, config.nx, config.ny);
@@ -103,53 +139,36 @@ export class CarromScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Switches board theme dynamically.
-   */
   public changeTheme(themeId: string): void {
     this.currentThemeId = themeId;
     const theme = getBoardTheme(themeId);
 
-    // Regenerate procedural textures for pockets & arrows
     const tm = new TextureManager(this, theme);
     tm.generateAllTextures(theme);
-
-    // Redraw board surface and markings
     this.board.setTheme(themeId);
 
     this.game.events.emit(GAME_EVENTS.THEME_CHANGED, { themeId });
   }
 
-  /**
-   * Switches striker visual skin.
-   */
   public changeStrikerSkin(skin: StrikerSkin): void {
     this.currentStrikerSkin = skin;
     this.striker.setSkin(skin);
     this.game.events.emit(GAME_EVENTS.STRIKER_SKIN_CHANGED, { skin });
   }
 
-  /**
-   * Sets active player turn seat (0: South, 1: East, 2: North, 3: West).
-   */
   public setActiveSeat(seat: number): void {
     this.activeSeat = seat;
-    this.striker.setActiveSeat(seat);
+    this.physicsManager.strikerController?.setSeat(seat);
   }
 
-  /**
-   * Updates striker offset directly from external slider (-1.0 to 1.0).
-   */
   public setStrikerOffset(offsetRatio: number): void {
-    this.striker.setBaselineOffset(offsetRatio);
+    this.physicsManager.strikerController?.setOffset(offsetRatio);
   }
 
-  /**
-   * Resets the entire board to opening formation.
-   */
   public resetBoard(): void {
     this.setupOpeningFormation();
-    this.striker.setBaselineOffset(0);
+    this.physicsManager.bindEntities(this.striker, Array.from(this.coins.values()));
+    this.physicsManager.resetBoard();
     this.game.events.emit(GAME_EVENTS.BOARD_RESET);
   }
 }

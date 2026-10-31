@@ -23,6 +23,29 @@ export * from './board/BoardThemes.js';
 export * from './entities/Coin.js';
 export * from './entities/Queen.js';
 export * from './entities/Striker.js';
+export * from './entities/BoardBoundary.js';
+export * from './entities/PocketSensor.js';
+
+// Phase 1.4 Physics & Mechanics
+export * from './physics/PhysicsConfig.js';
+export * from './physics/PhysicsEvents.js';
+export * from './physics/PhysicsWorld.js';
+export * from './physics/CollisionCategories.js';
+export * from './physics/CollisionManager.js';
+export * from './physics/PhysicsManager.js';
+
+export * from './mechanics/FrictionController.js';
+export * from './mechanics/MotionDetector.js';
+export * from './mechanics/PocketDetection.js';
+export * from './mechanics/StrikerController.js';
+export * from './mechanics/AimingController.js';
+export * from './mechanics/ShootingController.js';
+
+export * from './systems/PhysicsSync.js';
+export * from './systems/GameEventManager.js';
+
+export * from './utils/VectorUtils.js';
+export * from './utils/PhysicsUtils.js';
 
 // Rendering & Lighting
 export * from './rendering/Lighting.js';
@@ -38,7 +61,6 @@ export * from './bridge/phaserHtmlGenerator.js';
 export * from './bridge/WebviewBridge.js';
 export * from './core/CarromEngine.js';
 export * from './physics/CarromPhysicsWorld.js';
-export * from './physics/CollisionCategories.js';
 export * from './config/physics.config.js';
 export * from './config/game.config.js';
 export * from './config/coin.config.js';
