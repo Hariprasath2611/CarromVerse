@@ -21,10 +21,12 @@ export const SIZES = {
   strikerRadiusCm: 2.05,
   strikerRadiusPx: 2.05 * PX_PER_CM, // 20.5 px
 
-  // Pocket: 4.5 cm diameter hole -> 2.25 cm radius
-  pocketDiameterCm: 4.5,
-  pocketRadiusCm: 2.25,
-  pocketRadiusPx: 2.25 * PX_PER_CM, // 22.5 px
+  // Pocket: visible hole radius 3.9 cm (diameter 7.8 cm); capture radius 0.85 * 3.9 = 3.3 cm
+  pocketDiameterCm: 7.8,
+  pocketRadiusCm: 3.9,
+  pocketRadiusPx: 3.9 * PX_PER_CM, // 39.0 px
+  pocketCaptureRadiusCm: 3.3,
+  pocketCaptureRadiusPx: 3.3 * PX_PER_CM, // 33.0 px
 
   // Wall / Cushion: >= 5 cm thick outside playing surface
   wallThicknessCm: 5.0,
