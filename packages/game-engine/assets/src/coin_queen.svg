@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 236" width="220" height="236">
+  <defs>
+    <!-- Queen Face Radial Gradient -->
+    <radialGradient id="queenCoinFaceGrad" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FF5C78" />
+      <stop offset="35%" stop-color="#E23B5A" />
+      <stop offset="75%" stop-color="#CA2A49" />
+      <stop offset="100%" stop-color="#B82545" />
+    </radialGradient>
+
+    <!-- Ground Shadow Blur Gradient -->
+    <radialGradient id="shadowGradQueen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.38" />
+      <stop offset="70%" stop-color="#000000" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- 1. Ground Shadow (84x10, 30-40% black) -->
+  <ellipse cx="110" cy="224" rx="84" ry="10" fill="url(#shadowGradQueen)" />
+
+  <!-- 2. Edge-Thickness Disc (r100, 12 units lower) in #7A1020 -->
+  <circle cx="110" cy="122" r="100" fill="#7A1020" />
+
+  <!-- 3. Face Disc (r100) with Radial Gradient #E23B5A -> #B82545 -->
+  <circle cx="110" cy="110" r="100" fill="url(#queenCoinFaceGrad)" stroke="#FFD0D8" stroke-width="1.5" />
+
+  <!-- 4. Groove Ring r84 (3 units, #FFD0D8) -->
+  <circle cx="110" cy="110" r="84" fill="none" stroke="#FFD0D8" stroke-width="3" />
+
+  <!-- 5. Inner Ring r66 (2 units, #FFD0D8) -->
+  <circle cx="110" cy="110" r="66" fill="none" stroke="#FFD0D8" stroke-width="2" />
+
+  <!-- 6. Tick Ring (r48, 10-unit stroke dashed 3 / 15.85) in #FFD0D8 -->
+  <circle cx="110" cy="110" r="48" fill="none" stroke="#FFD0D8" stroke-width="10" stroke-dasharray="3 15.85" />
+
+  <!-- 7. Center Emblem: r30 Disc with dot r8 in #FFD0D8 -->
+  <circle cx="110" cy="110" r="30" fill="none" stroke="#FFD0D8" stroke-width="2" />
+  <circle cx="110" cy="110" r="8" fill="#FFD0D8" />
+
+  <!-- 8. Highlight Ellipse (center 74, 62; 40x16; rotated -35°; white 50%) -->
+  <ellipse cx="74" cy="62" rx="20" ry="8" transform="rotate(-35 74 62)" fill="#FFFFFF" opacity="0.50" />
+</svg>
