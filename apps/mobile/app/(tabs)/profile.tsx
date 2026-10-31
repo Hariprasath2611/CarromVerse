@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   GameCard,
   Modal,
-  PlayerAvatar,
   PrimaryButton,
   ProfileHeader,
   ScreenContainer,
-  SecondaryButton,
 } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import { useUserStore } from '../../src/store/userStore';
@@ -21,7 +19,7 @@ import { THEME } from '../../src/constants/theme';
 const MOCK_ACHIEVEMENTS = [
   { id: 'a1', title: 'First Blood', desc: 'Pocket your first carrom coin', icon: '🎯', unlocked: true },
   { id: 'a2', title: 'Queen Majesty', desc: 'Pocket the Red Queen with cover', icon: '👑', unlocked: true },
-  { id: 'a3', title: 'Century Club', desc: 'Complete 100 offline matches', icon: '💯', unlocked: false },
+  { id: 'a3', title: 'Century Club', desc: 'Complete 100 offline matches', icon: '🏆', unlocked: false },
   { id: 'a4', title: 'White Wash', desc: 'Win a match without conceding any coin', icon: '⚡', unlocked: false },
 ];
 
@@ -61,7 +59,7 @@ export default function ProfileScreen() {
     setRefreshing(false);
   };
 
-  const displayName = profile?.username || user?.displayName || 'Grand Striker';
+  const displayName = profile?.username || user?.displayName || 'Club Master';
   const totalMatches = stats?.totalMatches ?? Math.max(matches.length, 34);
   const totalWins = stats?.individualWins ?? 26;
   const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 76;
@@ -75,14 +73,14 @@ export default function ProfileScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={THEME.colors.accent}
+          tintColor={THEME.colors.neonEmerald}
         />
       }
       contentContainerStyle={styles.container}
     >
       {/* Top Banner with Settings shortcut */}
       <View style={styles.topActionsRow}>
-        <Text style={styles.topTitle}>Player Career</Text>
+        <Text style={styles.topTitle}>MEMBER CAREER</Text>
         <TouchableOpacity
           style={styles.settingsBtn}
           onPress={() => router.push('/settings')}
@@ -97,7 +95,7 @@ export default function ProfileScreen() {
         level={playerLevel}
         currentExp={experience % 1000}
         nextLevelExp={1000}
-        rankTitle="BOARD GRANDMASTER"
+        rankTitle="CLUB MASTER"
         avatarEmoji="👑"
       />
 
@@ -107,37 +105,37 @@ export default function ProfileScreen() {
         <GameCard style={styles.statCard}>
           <Text style={styles.statIcon}>🎮</Text>
           <Text style={styles.statNumber}>{totalMatches}</Text>
-          <Text style={styles.statSubtitle}>Matches</Text>
+          <Text style={styles.statSubtitle}>MATCHES</Text>
         </GameCard>
 
         <GameCard style={styles.statCard}>
           <Text style={styles.statIcon}>🏆</Text>
-          <Text style={[styles.statNumber, { color: THEME.colors.goldBright }]}>
+          <Text style={[styles.statNumber, { color: THEME.colors.brass }]}>
             {totalWins}
           </Text>
-          <Text style={styles.statSubtitle}>Victories</Text>
+          <Text style={styles.statSubtitle}>VICTORIES</Text>
         </GameCard>
 
         <GameCard style={styles.statCard}>
           <Text style={styles.statIcon}>📈</Text>
-          <Text style={[styles.statNumber, { color: THEME.colors.accent }]}>
+          <Text style={[styles.statNumber, { color: THEME.colors.neonEmerald }]}>
             {winRate}%
           </Text>
-          <Text style={styles.statSubtitle}>Win Rate</Text>
+          <Text style={styles.statSubtitle}>WIN RATE</Text>
         </GameCard>
 
         <GameCard style={styles.statCard}>
           <Text style={styles.statIcon}>💰</Text>
-          <Text style={[styles.statNumber, { color: THEME.colors.goldBright }]}>
+          <Text style={[styles.statNumber, { color: THEME.colors.brass }]}>
             {coins}
           </Text>
-          <Text style={styles.statSubtitle}>Coins</Text>
+          <Text style={styles.statSubtitle}>COINS</Text>
         </GameCard>
       </View>
 
       {/* Achievements Showcase */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>ACHIEVEMENTS</Text>
+        <Text style={styles.sectionTitle}>CLUB TROPHIES</Text>
         <Text style={styles.badgeCount}>2 / 4 UNLOCKED</Text>
       </View>
 
@@ -186,11 +184,11 @@ export default function ProfileScreen() {
             Complete an offline match to record detailed match stats, turns, and scores locally.
           </Text>
           <PrimaryButton
-            title="Play Your First Match"
+            title="PLAY FIRST MATCH"
             onPress={() => router.push('/game-mode')}
             variant="emerald"
             size="small"
-            style={{ marginTop: 12 }}
+            style={{ marginTop: 14 }}
           />
         </GameCard>
       ) : (
@@ -252,7 +250,7 @@ export default function ProfileScreen() {
             <View style={styles.modalRow}>
               <Text style={styles.modalLabel}>Game Mode</Text>
               <Text style={styles.modalValue}>
-                {selectedMatch.mode.replace(/_/g, ' ')}
+                {selectedMatch.mode.replace(/_/g, ' ').toUpperCase()}
               </Text>
             </View>
             <View style={styles.modalRow}>
@@ -275,7 +273,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.modalRow}>
               <Text style={styles.modalLabel}>Local Sync Status</Text>
-              <Text style={[styles.modalValue, { color: THEME.colors.accent }]}>
+              <Text style={[styles.modalValue, { color: THEME.colors.neonEmerald }]}>
                 {selectedMatch.isSynced ? 'Synced to Cloud' : 'Stored in SQLite'}
               </Text>
             </View>
@@ -288,28 +286,29 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   topActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   topTitle: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   settingsBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -317,25 +316,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.xs,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginTop: 16,
+    marginBottom: 8,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.xs,
+    marginTop: 16,
+    marginBottom: 8,
   },
   badgeCount: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    letterSpacing: 0.5,
+    color: THEME.colors.neonEmerald,
+    letterSpacing: 0.8,
   },
   statsRow: {
     flexDirection: 'row',
@@ -344,9 +343,8 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 0.23,
     alignItems: 'center',
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: 2,
-    borderColor: THEME.colors.border,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
   },
   statIcon: {
     fontSize: 16,
@@ -355,84 +353,84 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   statSubtitle: {
     fontSize: 9,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   achievementsList: {
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 6,
   },
   achievementCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-    borderColor: THEME.colors.border,
+    padding: 12,
+    marginBottom: 8,
   },
   lockedCard: {
     opacity: 0.55,
   },
   achIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   achIconActive: {
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
-    borderColor: THEME.colors.accent,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
   },
   achIconLocked: {
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
   },
   achEmoji: {
-    fontSize: 16,
+    fontSize: 18,
   },
   achBody: {
     flex: 1,
   },
   achTitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   achDesc: {
     fontSize: 11,
-    color: THEME.colors.textSecondary,
-    marginTop: 1,
+    color: THEME.colors.mutedMint,
+    marginTop: 2,
   },
   emptyHistoryCard: {
-    padding: THEME.spacing.lg,
+    padding: 20,
     alignItems: 'center',
-    borderColor: THEME.colors.border,
   },
   emptyHistoryIcon: {
-    fontSize: 32,
-    marginBottom: THEME.spacing.xs,
+    fontSize: 34,
+    marginBottom: 6,
   },
   emptyHistoryTitle: {
-    fontSize: THEME.typography.fontSize.bodyMd,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   emptyHistorySub: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     textAlign: 'center',
     marginTop: 4,
+    lineHeight: 18,
   },
   historyCard: {
-    padding: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-    borderColor: THEME.colors.border,
+    padding: 12,
+    marginBottom: 8,
   },
   historyRow: {
     flexDirection: 'row',
@@ -443,13 +441,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   historyMode: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   historyDate: {
     fontSize: 10,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   historyOutcomeCol: {
@@ -457,51 +455,52 @@ const styles = StyleSheet.create({
   },
   outcomeTag: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: THEME.borderRadius.sm,
+    paddingVertical: 3,
+    borderRadius: 6,
     marginBottom: 2,
   },
   outcomeWin: {
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
-    borderColor: THEME.colors.accent,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 1.5,
   },
   outcomeLoss: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderColor: THEME.colors.danger,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.queenRed,
+    borderWidth: 1.5,
   },
   outcomeText: {
     fontSize: 10,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   outcomeWinText: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   outcomeLossText: {
-    color: THEME.colors.danger,
+    color: THEME.colors.queenRed,
   },
   historyDuration: {
     fontSize: 10,
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   modalContent: {
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: 8,
   },
   modalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: THEME.spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    paddingVertical: 8,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#1B7050',
   },
   modalLabel: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
   },
   modalValue: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
 });
