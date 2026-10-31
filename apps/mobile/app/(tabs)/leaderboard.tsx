@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GameCard, PlayerAvatar, ScreenContainer } from '../../src/components';
+import { GameCard, ScreenContainer } from '../../src/components';
 import { useUserStore } from '../../src/store/userStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { THEME } from '../../src/constants/theme';
@@ -81,7 +81,7 @@ const MOCK_LEADERS: LeaderboardEntry[] = [
   {
     rank: 7,
     id: 'p_curr',
-    name: 'You (Champion)',
+    name: 'You (Member)',
     level: 12,
     avatar: '🎯',
     score: 2500,
@@ -147,8 +147,8 @@ export default function LeaderboardScreen() {
     <ScreenContainer scrollable={false} style={styles.container}>
       {/* Screen Title */}
       <View style={styles.header}>
-        <Text style={styles.title}>Hall of Champions</Text>
-        <Text style={styles.subtitle}>Compete for glory and prestigious season trophies</Text>
+        <Text style={styles.title}>HALL OF CHAMPIONS</Text>
+        <Text style={styles.subtitle}>Compete for table glory and prestige season trophies</Text>
       </View>
 
       {/* Filter Tabs */}
@@ -160,7 +160,7 @@ export default function LeaderboardScreen() {
           <Text
             style={[styles.filterBtnText, filter === 'global' && styles.filterBtnTextActive]}
           >
-            Global Arena
+            GLOBAL ARENA
           </Text>
         </TouchableOpacity>
 
@@ -171,7 +171,7 @@ export default function LeaderboardScreen() {
           <Text
             style={[styles.filterBtnText, filter === 'weekly' && styles.filterBtnTextActive]}
           >
-            Weekly Cup
+            WEEKLY CUP
           </Text>
         </TouchableOpacity>
 
@@ -182,7 +182,7 @@ export default function LeaderboardScreen() {
           <Text
             style={[styles.filterBtnText, filter === 'offline' && styles.filterBtnTextActive]}
           >
-            Local Records
+            CLUB RECORDS
           </Text>
         </TouchableOpacity>
       </View>
@@ -288,7 +288,7 @@ export default function LeaderboardScreen() {
           <Text style={styles.stickyAvatarEmoji}>{currentUserEntry.avatar}</Text>
         </View>
         <View style={styles.stickyInfo}>
-          <Text style={styles.stickyTitle}>Your Standing</Text>
+          <Text style={styles.stickyTitle}>YOUR STANDING</Text>
           <Text style={styles.stickySub}>
             Lvl {currentUserEntry.level} • {currentUserEntry.wins} Wins
           </Text>
@@ -304,56 +304,58 @@ export default function LeaderboardScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     flex: 1,
   },
   header: {
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 10,
   },
   title: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   filterTabs: {
     flexDirection: 'row',
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.borderRadius.md,
-    padding: 3,
-    marginVertical: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderRadius: 16,
+    padding: 4,
+    marginVertical: 10,
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
   },
   filterBtn: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: THEME.borderRadius.sm,
+    borderRadius: 12,
   },
   filterBtnActive: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: THEME.colors.neonEmerald,
   },
   filterBtnText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
+    letterSpacing: 0.5,
   },
   filterBtnTextActive: {
-    color: '#FFFFFF',
+    color: '#07261C',
   },
   podiumContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'flex-end',
-    height: 175,
-    marginVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
+    height: 180,
+    marginVertical: 10,
+    paddingHorizontal: 8,
   },
   podiumColumn: {
     alignItems: 'center',
@@ -369,18 +371,18 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   crownEmoji: {
-    fontSize: 20,
+    fontSize: 22,
     marginBottom: -4,
   },
   podiumMedal: {
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 2,
   },
   avatarBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: THEME.colors.surface,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#07261C',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -390,11 +392,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   goldBorder: {
-    borderColor: THEME.colors.goldBright,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    borderColor: THEME.colors.brass,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 3,
+    ...THEME.shadows.glowBrass,
   },
   silverBorder: {
     borderColor: '#C0C0C0',
@@ -405,61 +408,62 @@ const styles = StyleSheet.create({
   podiumName: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
     maxWidth: 90,
   },
   goldText: {
-    color: THEME.colors.goldBright,
+    color: THEME.colors.brass,
   },
   podiumScore: {
     fontSize: 10,
-    color: THEME.colors.accent,
-    fontWeight: '600',
+    color: THEME.colors.neonEmerald,
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   pedestal: {
     width: '94%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopLeftRadius: THEME.borderRadius.md,
-    borderTopRightRadius: THEME.borderRadius.md,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
   },
   pedestal1: {
-    height: 70,
-    backgroundColor: THEME.colors.card,
-    borderColor: THEME.colors.goldPrimary,
+    height: 74,
+    backgroundColor: '#0E4A33',
+    borderColor: THEME.colors.brass,
   },
   pedestal2: {
-    height: 52,
-    backgroundColor: THEME.colors.surface,
+    height: 54,
+    backgroundColor: '#0A3324',
   },
   pedestal3: {
-    height: 38,
-    backgroundColor: THEME.colors.surface,
+    height: 40,
+    backgroundColor: '#07261C',
   },
   pedestalNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   listContent: {
-    paddingBottom: 80,
+    paddingBottom: 88,
   },
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.md,
-    marginBottom: THEME.spacing.xs,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    backgroundColor: '#0E4A33',
+    padding: 10,
+    borderRadius: 14,
+    marginBottom: 8,
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
   },
   currentUserHighlightRow: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(74, 222, 128, 0.08)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125A3F',
+    ...THEME.shadows.glowEmerald,
   },
   rankBadge: {
     width: 32,
@@ -469,18 +473,18 @@ const styles = StyleSheet.create({
   rankNumber: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
+    color: THEME.colors.brass,
   },
   rowAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: THEME.colors.card,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#07261C',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    marginRight: 10,
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
   },
   rowAvatarEmoji: {
     fontSize: 18,
@@ -489,16 +493,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowName: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   currentUserNameText: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   rowSub: {
     fontSize: 10,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   scoreWrap: {
@@ -508,7 +512,7 @@ const styles = StyleSheet.create({
   rowScore: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
+    color: THEME.colors.brass,
     marginRight: 4,
   },
   trophySmall: {
@@ -519,35 +523,37 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: THEME.colors.card,
-    borderTopColor: THEME.colors.accent,
+    backgroundColor: '#07261C',
+    borderTopColor: THEME.colors.neonEmerald,
     borderTopWidth: 2,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     elevation: 10,
   },
   stickyRankBadge: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: THEME.colors.neonEmerald,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: THEME.borderRadius.sm,
-    marginRight: THEME.spacing.sm,
+    borderRadius: 8,
+    marginRight: 10,
   },
   stickyRankText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#07261C',
   },
   stickyAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: THEME.colors.surface,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#0E4A33',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 10,
+    borderWidth: 1.5,
+    borderColor: '#1B7050',
   },
   stickyAvatarEmoji: {
     fontSize: 18,
@@ -558,21 +564,21 @@ const styles = StyleSheet.create({
   stickyTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   stickySub: {
     fontSize: 10,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
   },
   stickyScoreWrap: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   stickyScore: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: THEME.colors.goldBright,
+    color: THEME.colors.brass,
     marginRight: 4,
   },
 });
-
