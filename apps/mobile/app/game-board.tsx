@@ -43,7 +43,7 @@ export default function GameBoardScreen() {
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
-  const [activeReaction, setActiveReaction] = useState<string | null>('GG!');
+  const [activeReaction, setActiveReaction] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(18);
   const [isShotActive, setIsShotActive] = useState(false);
   const [powerRatio, setPowerRatio] = useState(0.65);
