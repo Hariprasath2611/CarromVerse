@@ -744,6 +744,8 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       function sendToReactNative(msg) {
         if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
           window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+        } else if (window.parent && window.parent !== window) {
+          window.parent.postMessage(JSON.stringify(msg), '*');
         }
       }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StyleProp,
   StyleSheet,
   View,
@@ -36,6 +37,7 @@ export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
   style,
 }) => {
   const webViewRef = useRef<any>(null);
+  const iframeRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false);
 
   // Generate self-contained HTML for Phaser 3
@@ -49,19 +51,26 @@ export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
   }, []);
 
   const sendToPhaser = (type: string, payload?: any) => {
-    if (!isReady || !webViewRef.current) return;
+    if (!isReady) return;
     const msg = JSON.stringify({ type, payload });
-    const js = `
-      try {
-        if (typeof handleHostMessage === 'function') {
-          handleHostMessage(${JSON.stringify(msg)});
-        }
-      } catch (err) {
-        console.warn('[RN->Phaser bridge error]', err);
+
+    if (Platform.OS === 'web') {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(msg, '*');
       }
-      true;
-    `;
-    webViewRef.current.injectJavaScript(js);
+    } else if (webViewRef.current) {
+      const js = `
+        try {
+          if (typeof handleHostMessage === 'function') {
+            handleHostMessage(${JSON.stringify(msg)});
+          }
+        } catch (err) {
+          console.warn('[RN->Phaser bridge error]', err);
+        }
+        true;
+      `;
+      webViewRef.current.injectJavaScript(js);
+    }
   };
 
   // Sync theme changes
@@ -84,44 +93,84 @@ export const PhaserCarromView: React.FC<PhaserCarromViewProps> = ({
     sendToPhaser('SET_STRIKER_OFFSET', { offset: strikerOffset });
   }, [strikerOffset]);
 
+  // Native WebView message handler
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      switch (data.type) {
-        case 'ENGINE_READY':
-          setIsReady(true);
-          onEngineReady?.();
-          break;
-        case 'BOARD_RENDERED':
-          onBoardRendered?.(data.payload);
-          break;
-        case 'STRIKER_DRAGGED':
-          if (typeof data.payload?.offset === 'number') {
-            onStrikerDragged?.(data.payload.offset);
-          }
-          break;
-      }
+      dispatchBridgeMessage(data);
     } catch (err) {
       console.warn('[PhaserCarromView] Error parsing bridge message:', err);
     }
   };
 
+  const dispatchBridgeMessage = (data: any) => {
+    if (!data || !data.type) return;
+    switch (data.type) {
+      case 'ENGINE_READY':
+        setIsReady(true);
+        onEngineReady?.();
+        break;
+      case 'BOARD_RENDERED':
+        onBoardRendered?.(data.payload);
+        break;
+      case 'STRIKER_DRAGGED':
+        if (typeof data.payload?.offset === 'number') {
+          onStrikerDragged?.(data.payload.offset);
+        }
+        break;
+    }
+  };
+
+  // Web window message listener
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const onWindowMessage = (event: MessageEvent) => {
+      try {
+        const raw = event.data;
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        dispatchBridgeMessage(data);
+      } catch {
+        // Ignore internal non-JSON web messages
+      }
+    };
+
+    window.addEventListener('message', onWindowMessage);
+    return () => {
+      window.removeEventListener('message', onWindowMessage);
+    };
+  }, [onEngineReady, onBoardRendered, onStrikerDragged]);
+
   return (
     <View style={[styles.container, { width: size, height: size }, style]}>
-      <RNWebView
-        ref={webViewRef}
-        originWhitelist={['*']}
-        source={{ html: htmlContent }}
-        onMessage={handleMessage}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        scrollEnabled={false}
-        bounces={false}
-        overScrollMode="never"
-        scalesPageToFit={false}
-        style={styles.webView}
-        containerStyle={styles.webViewContainer}
-      />
+      {Platform.OS === 'web' ? (
+        <iframe
+          ref={iframeRef}
+          srcDoc={htmlContent}
+          title="CarromVerse Canvas"
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            backgroundColor: '#07130E',
+          }}
+        />
+      ) : (
+        <RNWebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+          source={{ html: htmlContent }}
+          onMessage={handleMessage}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          scrollEnabled={false}
+          bounces={false}
+          overScrollMode="never"
+          scalesPageToFit={false}
+          style={styles.webView}
+          containerStyle={styles.webViewContainer}
+        />
+      )}
 
       {!isReady && (
         <View style={styles.loadingOverlay}>
