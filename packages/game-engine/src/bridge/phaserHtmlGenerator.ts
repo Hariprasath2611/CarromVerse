@@ -556,96 +556,155 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var fw = (s - BOARD_PX) / 2; // Frame width (50px on 840 canvas)
           var surfSize = BOARD_PX;
           var center = s / 2;
-          var bo = BOARD_PX * 0.135;
-          var bl = BOARD_PX * 0.54;
-          var bcr = BOARD_PX * 0.019;
+          var scale = BOARD_PX / 528; // 528 units in reference SVG = BOARD_PX (74 cm)
+
+          var bo = 74 * scale; // Baseline center line offset from cushion
+          var halfBl = 156 * scale; // Distance from center to baseline red marker centers
+          var pillLen = 336 * scale; // Full length of baseline pill
+          var pillH = 24 * scale; // Thickness of baseline pill
+          var pillRx = 12 * scale; // Corner radius of baseline pill
+          var markerR = 8 * scale; // Radius of red end markers
 
           this.boardGraphics.clear();
           this.pocketsGroup.clear(true, true);
 
-          // 1. Frame
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameColor).color, 1);
-          this.boardGraphics.fillRect(0, 0, s, s);
+          // 1. Frame: Rounded rect r30 with rich wood colors
+          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameColor || '#A0612C').color, 1);
+          this.boardGraphics.fillRoundedRect(0, 0, s, s, 30 * (s / 640));
 
-          this.boardGraphics.lineStyle(3, Phaser.Display.Color.HexStringToColor(theme.frameAccent).color, 0.9);
-          this.boardGraphics.strokeRect(2, 2, s - 4, s - 4);
+          // Brass Inlay Line inset 8 (2 units, 70% opacity)
+          var brassCol = Phaser.Display.Color.HexStringToColor(theme.frameAccent || '#E9B949').color;
+          this.boardGraphics.lineStyle(2, brassCol, 0.70);
+          this.boardGraphics.strokeRoundedRect(8 * (s / 640), 8 * (s / 640), s - 16 * (s / 640), s - 16 * (s / 640), 22 * (s / 640));
 
           // 45 deg miter joints
-          this.boardGraphics.lineStyle(1.5, 0x000000, 0.5);
+          this.boardGraphics.lineStyle(1.5, 0x4A2610, 0.5);
           this.boardGraphics.lineBetween(0, 0, fw, fw);
           this.boardGraphics.lineBetween(s, 0, s - fw, fw);
           this.boardGraphics.lineBetween(0, s, fw, s - fw);
           this.boardGraphics.lineBetween(s, s, s - fw, s - fw);
 
-          // 2. Playing Surface
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg).color, 1);
-          this.boardGraphics.fillRect(fw, fw, surfSize, surfSize);
+          // Inner Cushion Lip (Rect in #3E2210)
+          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion || '#3E2210').color, 1);
+          this.boardGraphics.fillRect(fw - 8, fw - 8, surfSize + 16, surfSize + 16);
 
-          // Inner Cushion bevel
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion).color, 1);
-          var cBevel = 12;
-          this.boardGraphics.fillRect(fw, fw, surfSize, cBevel);
-          this.boardGraphics.fillRect(fw, s - fw - cBevel, surfSize, cBevel);
-          this.boardGraphics.fillRect(fw, fw, cBevel, surfSize);
-          this.boardGraphics.fillRect(s - fw - cBevel, fw, cBevel, surfSize);
+          // 2. Playing Surface 56-584 (528 units square in #F0DDB0)
+          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg || '#F0DDB0').color, 1);
+          this.boardGraphics.fillRoundedRect(fw, fw, surfSize, surfSize, 4);
 
-          // 3. Markings
-          var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor).color;
-          var circleCol = Phaser.Display.Color.HexStringToColor(theme.baselineCircleColor).color;
-          var dotCol = Phaser.Display.Color.HexStringToColor(theme.baselineDotColor).color;
+          // Surface 2-unit border #B8955A
+          var grainCol = Phaser.Display.Color.HexStringToColor(theme.surfaceGrain || '#B8955A').color;
+          this.boardGraphics.lineStyle(2, grainCol, 1.0);
+          this.boardGraphics.strokeRoundedRect(fw, fw, surfSize, surfSize, 4);
 
-          this.boardGraphics.lineStyle(1.8, markCol, 0.85);
+          // Faint Vertical Wood Grain Lines every 13 units at 22% opacity
+          this.boardGraphics.lineStyle(1, grainCol, 0.22);
+          var grainStep = 13 * scale;
+          for (var gx = fw + grainStep; gx < s - fw; gx += grainStep) {
+            this.boardGraphics.lineBetween(gx, fw, gx, s - fw);
+          }
 
-          var drawSide = function(g, x1, y1, x2, y2, isH) {
-            var gap = BOARD_PX * 0.014;
-            if (isH) {
-              g.lineBetween(x1, y1 - gap / 2, x2, y2 - gap / 2);
-              g.lineBetween(x1, y1 + gap / 2, x2, y2 + gap / 2);
-              g.fillStyle(circleCol, 1);
-              g.fillCircle(x1, y1, bcr);
-              g.fillCircle(x2, y2, bcr);
-              g.fillStyle(dotCol, 1);
-              g.fillCircle(x1, y1, bcr * 0.42);
-              g.fillCircle(x2, y2, bcr * 0.42);
-            } else {
-              g.lineBetween(x1 - gap / 2, y1, x2 - gap / 2, y2);
-              g.lineBetween(x1 + gap / 2, y1, x2 + gap / 2, y2);
-              g.fillStyle(circleCol, 1);
-              g.fillCircle(x1, y1, bcr);
-              g.fillCircle(x2, y2, bcr);
-              g.fillStyle(dotCol, 1);
-              g.fillCircle(x1, y1, bcr * 0.42);
-              g.fillCircle(x2, y2, bcr * 0.42);
+          // 3. Diagonal Foul Lines (dashed 6 6 radiating from center to corners)
+          var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor || '#6B3A1A').color;
+          var redCol = Phaser.Display.Color.HexStringToColor(theme.redAccentColor || '#D8344A').color;
+          var greenCol = Phaser.Display.Color.HexStringToColor(theme.greenRingColor || '#1E8F5A').color;
+
+          this.boardGraphics.lineStyle(1.5, markCol, 0.85);
+          var drawDashedLine = function(g, x1, y1, x2, y2, dLen, gLen) {
+            var dx = x2 - x1;
+            var dy = y2 - y1;
+            var tot = Math.hypot(dx, dy);
+            if (tot <= 0) return;
+            var ux = dx / tot;
+            var uy = dy / tot;
+            var cur = 0;
+            while (cur < tot) {
+              var endD = Math.min(cur + dLen, tot);
+              g.lineBetween(x1 + ux * cur, y1 + uy * cur, x1 + ux * endD, y1 + uy * endD);
+              cur += dLen + gLen;
             }
           };
 
-          var halfBl = bl / 2;
-          drawSide(this.boardGraphics, center - halfBl, s - fw - bo, center + halfBl, s - fw - bo, true);
-          drawSide(this.boardGraphics, center - halfBl, fw + bo, center + halfBl, fw + bo, true);
-          drawSide(this.boardGraphics, fw + bo, center - halfBl, fw + bo, center + halfBl, false);
-          drawSide(this.boardGraphics, s - fw - bo, center - halfBl, s - fw - bo, center + halfBl, false);
+          // 4 Diagonal Guides: from (center +- 96*scale) to (center +- 202*scale)
+          drawDashedLine(this.boardGraphics, center - 96 * scale, center - 96 * scale, center - 202 * scale, center - 202 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center + 96 * scale, center - 96 * scale, center + 202 * scale, center - 202 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center - 96 * scale, center + 96 * scale, center - 202 * scale, center + 202 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center + 96 * scale, center + 96 * scale, center + 202 * scale, center + 202 * scale, 6, 6);
 
-          // Center Circle
-          this.boardGraphics.lineStyle(2, markCol, 0.9);
-          this.boardGraphics.strokeCircle(center, center, BOARD_PX * 0.065);
-          this.boardGraphics.lineStyle(1.5, markCol, 0.7);
-          this.boardGraphics.strokeCircle(center, center, BOARD_PX * 0.022);
-          this.boardGraphics.fillStyle(dotCol, 1);
-          this.boardGraphics.fillCircle(center, center, BOARD_PX * 0.007);
+          // 4. Baselines: 4 Pill Outlines (stroke 2, no fill) with Red End Markers
+          this.boardGraphics.lineStyle(2, markCol, 1.0);
 
-          // Corner Pockets (Visual Sprites)
+          // Top Baseline
+          this.boardGraphics.strokeRoundedRect(center - pillLen / 2, fw + bo - pillH / 2, pillLen, pillH, pillRx);
+          // Bottom Baseline
+          this.boardGraphics.strokeRoundedRect(center - pillLen / 2, s - fw - bo - pillH / 2, pillLen, pillH, pillRx);
+          // Left Baseline
+          this.boardGraphics.strokeRoundedRect(fw + bo - pillH / 2, center - pillLen / 2, pillH, pillLen, pillRx);
+          // Right Baseline
+          this.boardGraphics.strokeRoundedRect(s - fw - bo - pillH / 2, center - pillLen / 2, pillH, pillLen, pillRx);
+
+          // Red End Markers r8 at pill circle centers (center +- halfBl)
+          this.boardGraphics.fillStyle(redCol, 1);
+          // Top markers
+          this.boardGraphics.fillCircle(center - halfBl, fw + bo, markerR);
+          this.boardGraphics.fillCircle(center + halfBl, fw + bo, markerR);
+          // Bottom markers
+          this.boardGraphics.fillCircle(center - halfBl, s - fw - bo, markerR);
+          this.boardGraphics.fillCircle(center + halfBl, s - fw - bo, markerR);
+          // Left markers
+          this.boardGraphics.fillCircle(fw + bo, center - halfBl, markerR);
+          this.boardGraphics.fillCircle(fw + bo, center + halfBl, markerR);
+          // Right markers
+          this.boardGraphics.fillCircle(s - fw - bo, center - halfBl, markerR);
+          this.boardGraphics.fillCircle(s - fw - bo, center + halfBl, markerR);
+
+          // 5. Center Circles and Emblems
+          // Outer Green Circle r86
+          this.boardGraphics.lineStyle(3, greenCol, 0.95);
+          this.boardGraphics.strokeCircle(center, center, 86 * scale);
+
+          // Red Circle r62
+          this.boardGraphics.lineStyle(2, redCol, 0.95);
+          this.boardGraphics.strokeCircle(center, center, 62 * scale);
+
+          // Dashed Green Circle r40
+          var nDashes = 18;
+          var dAngle = (2 * Math.PI) / nDashes;
+          this.boardGraphics.lineStyle(1.5, greenCol, 0.9);
+          for (var a = 0; a < nDashes; a += 2) {
+            this.boardGraphics.beginPath();
+            this.boardGraphics.arc(center, center, 40 * scale, a * dAngle, (a + 1) * dAngle);
+            this.boardGraphics.strokePath();
+          }
+
+          // Four Red Petals (ellipses 7x16) at +-50 units on axes
+          this.boardGraphics.fillStyle(redCol, 1);
+          this.boardGraphics.fillEllipse(center, center - 50 * scale, 14 * scale, 32 * scale);
+          this.boardGraphics.fillEllipse(center, center + 50 * scale, 14 * scale, 32 * scale);
+          this.boardGraphics.fillEllipse(center - 50 * scale, center, 32 * scale, 14 * scale);
+          this.boardGraphics.fillEllipse(center + 50 * scale, center, 32 * scale, 14 * scale);
+
+          // Inner Green Ring r18
+          this.boardGraphics.lineStyle(2, greenCol, 1.0);
+          this.boardGraphics.strokeCircle(center, center, 18 * scale);
+
+          // Center Red Dot r10
+          this.boardGraphics.fillStyle(redCol, 1);
+          this.boardGraphics.fillCircle(center, center, 10 * scale);
+
+          // 6. Corner Pockets (visual sprites at exact sensor centers: fw + 24*scale)
           var pr = POCKET_RADIUS_PX;
-          var inset = fw + pr * 0.85;
+          var pocketOffset = 24 * scale;
           var pCoords = [
-            { x: inset, y: inset },
-            { x: s - inset, y: inset },
-            { x: s - inset, y: s - inset },
-            { x: inset, y: s - inset }
+            { x: fw + pocketOffset, y: fw + pocketOffset },
+            { x: s - fw - pocketOffset, y: fw + pocketOffset },
+            { x: s - fw - pocketOffset, y: s - fw - pocketOffset },
+            { x: fw + pocketOffset, y: s - fw - pocketOffset }
           ];
 
           pCoords.forEach(function(coord) {
             var p = activeScene.add.sprite(coord.x, coord.y, 'tex_pocket');
-            p.setDisplaySize(pr * 2.2, pr * 2.2);
+            p.setDisplaySize(pr * 2, pr * 2);
             p.setDepth(2);
             activeScene.pocketsGroup.add(p);
           });
