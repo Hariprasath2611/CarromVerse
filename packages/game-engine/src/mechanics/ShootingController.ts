@@ -1,14 +1,16 @@
 import { Striker } from '../entities/Striker.js';
 import { AimState } from './AimingController.js';
 import { MotionDetector } from './MotionDetector.js';
-import { PHYSICS_CONFIG } from '../physics/PhysicsConfig.js';
+import { SPEEDS, PX_PER_CM, SIMULATION } from '../physics/PhysicsConfig.js';
+import { PhysicsUtils } from '../utils/PhysicsUtils.js';
 
 export interface ShotResult {
   success: boolean;
   power?: number;
+  speed_cm_s?: number;
   angle?: number;
-  impulse?: { x: number; y: number };
-  reason?: 'board_not_at_rest' | 'insufficient_power' | 'striker_missing_body';
+  velocityStep?: { x: number; y: number };
+  reason?: 'board_not_at_rest' | 'insufficient_power' | 'striker_missing_body' | 'blocked_by_overlap';
 }
 
 export type ShotStartedCallback = (result: ShotResult) => void;
@@ -34,8 +36,13 @@ export class ShootingController {
       return { success: false, reason: 'board_not_at_rest' };
     }
 
-    // 2. Validate minimum power threshold
-    if (aim.normalizedPower <= 0.05 || aim.power < PHYSICS_CONFIG.shooting.minShotPower) {
+    // 2. Prevent shooting if overlapping a coin
+    if (aim.isBlockedByOverlap) {
+      return { success: false, reason: 'blocked_by_overlap' };
+    }
+
+    // 3. Validate minimum power threshold
+    if (aim.normalizedPower <= 0.05 || aim.speedCmS < SPEEDS.strikerMinLaunchSpeedCmS) {
       return { success: false, reason: 'insufficient_power' };
     }
 
@@ -43,26 +50,28 @@ export class ShootingController {
       return { success: false, reason: 'striker_missing_body' };
     }
 
-    // 3. Compute directional impulse force vector
-    const power = Math.min(PHYSICS_CONFIG.shooting.maxShotPower, aim.power);
-    const fx = Math.cos(aim.angle) * power * PHYSICS_CONFIG.shooting.powerScale;
-    const fy = Math.sin(aim.angle) * power * PHYSICS_CONFIG.shooting.powerScale;
+    // 4. Compute physical velocity vector in cm/s, then convert to px/step
+    const speedCmS = Math.min(SPEEDS.strikerMaxLaunchSpeedCmS, Math.max(SPEEDS.strikerMinLaunchSpeedCmS, aim.speedCmS));
+    const vxCmS = Math.cos(aim.angle) * speedCmS;
+    const vyCmS = Math.sin(aim.angle) * speedCmS;
 
-    // 4. Apply impulse to striker body
-    this.striker.applyImpulse(fx, fy);
+    const vStep = PhysicsUtils.velocityCmSToStepVector(vxCmS, vyCmS, SIMULATION.baseDtSeconds, PX_PER_CM);
 
-    // 5. Notify motion detector that shot has begun
+    // 5. Directly set velocity on striker (no arbitrary forces)
+    this.striker.setVelocity(vStep.x, vStep.y);
+
+    // 6. Notify motion detector that shot has begun
     this.motionDetector.notifyShotStarted();
 
     const result: ShotResult = {
       success: true,
-      power,
+      power: speedCmS,
+      speed_cm_s: speedCmS,
       angle: aim.angle,
-      impulse: { x: fx, y: fy },
+      velocityStep: vStep,
     };
 
     this.onShotStarted?.(result);
     return result;
   }
 }
-

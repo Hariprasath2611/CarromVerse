@@ -1,11 +1,12 @@
-import { PHYSICS_CONFIG } from '../physics/PhysicsConfig.js';
+import { SPEEDS, SIMULATION, PX_PER_CM } from '../physics/PhysicsConfig.js';
+import { PhysicsUtils } from '../utils/PhysicsUtils.js';
 import { Coin } from '../entities/Coin.js';
 import { Striker } from '../entities/Striker.js';
 
 export interface MotionCallbacks {
   onStrikerStopped?: () => void;
   onAllObjectsStopped?: () => void;
-  onShotSettled?: () => void;
+  onShotSettled?: (data: { durationMs: number }) => void;
   onCoinMoved?: (coinId: string) => void;
 }
 
@@ -16,6 +17,7 @@ export class MotionDetector {
   private isAnyCoinMoving: boolean = false;
   private restStartTime: number = 0;
   private hasReportedAllStopped: boolean = false;
+  private hasReportedSettled: boolean = false;
   private shotStartTime: number = 0;
 
   constructor(callbacks: MotionCallbacks = {}) {
@@ -28,21 +30,23 @@ export class MotionDetector {
     this.isAnyCoinMoving = false;
     this.restStartTime = 0;
     this.hasReportedAllStopped = false;
+    this.hasReportedSettled = false;
     this.shotStartTime = Date.now();
   }
 
-  public update(striker: Striker, coins: Coin[]): void {
+  public update(striker: Striker, coins: Coin[], subDtSeconds: number = SIMULATION.baseDtSeconds): void {
     if (!this.isShotActive) return;
 
-    const linearThreshold = PHYSICS_CONFIG.motion.linearRestThreshold;
-    const angularThreshold = PHYSICS_CONFIG.motion.angularRestThreshold;
+    const linearThresholdCmS = SPEEDS.restSpeedThresholdCmS;
+    const angularThresholdRadS = SPEEDS.angularRestThresholdRadS;
 
-    // Check striker motion
+    // 1. Check striker motion
     let strikerMoving = false;
     if (striker.physicsBody && !striker.isPocketed) {
-      const speed = Math.hypot(striker.physicsBody.velocity.x, striker.physicsBody.velocity.y);
+      const stepSpeed = Math.hypot(striker.physicsBody.velocity.x, striker.physicsBody.velocity.y);
+      const speedCmS = PhysicsUtils.stepVelocityToSpeedCmS(stepSpeed, subDtSeconds, PX_PER_CM);
       const av = Math.abs(striker.physicsBody.angularVelocity);
-      strikerMoving = speed >= linearThreshold || av >= angularThreshold;
+      strikerMoving = speedCmS >= linearThresholdCmS || av >= angularThresholdRadS;
     }
 
     if (this.isStrikerMoving && !strikerMoving) {
@@ -52,14 +56,15 @@ export class MotionDetector {
       this.isStrikerMoving = strikerMoving;
     }
 
-    // Check coins motion
+    // 2. Check coins motion
     let anyCoinMoving = false;
     coins.forEach((coin) => {
       if (!coin.physicsBody || coin.isPocketed) return;
 
-      const speed = Math.hypot(coin.physicsBody.velocity.x, coin.physicsBody.velocity.y);
+      const stepSpeed = Math.hypot(coin.physicsBody.velocity.x, coin.physicsBody.velocity.y);
+      const speedCmS = PhysicsUtils.stepVelocityToSpeedCmS(stepSpeed, subDtSeconds, PX_PER_CM);
       const av = Math.abs(coin.physicsBody.angularVelocity);
-      const moving = speed >= linearThreshold || av >= angularThreshold;
+      const moving = speedCmS >= linearThresholdCmS || av >= angularThresholdRadS;
 
       if (moving) {
         anyCoinMoving = true;
@@ -70,12 +75,15 @@ export class MotionDetector {
     this.isAnyCoinMoving = anyCoinMoving;
     const allStopped = !strikerMoving && !anyCoinMoving;
     const now = Date.now();
+    const shotDuration = now - this.shotStartTime;
 
     // Failsafe timeout to prevent infinite shot locking
-    const shotDuration = now - this.shotStartTime;
-    if (shotDuration > PHYSICS_CONFIG.motion.maxShotDurationMs) {
-      this.isShotActive = false;
-      this.callbacks.onShotSettled?.();
+    if (shotDuration > SIMULATION.maxShotDurationMs) {
+      if (!this.hasReportedSettled) {
+        this.hasReportedSettled = true;
+        this.isShotActive = false;
+        this.callbacks.onShotSettled?.({ durationMs: shotDuration });
+      }
       return;
     }
 
@@ -89,12 +97,15 @@ export class MotionDetector {
         this.callbacks.onAllObjectsStopped?.();
       }
 
-      // Check stable settling cooldown
+      // Check stable settling cooldown (300 ms continuous rest)
       const restDuration = now - this.restStartTime;
-      if (restDuration >= PHYSICS_CONFIG.motion.settledCooldownMs) {
-        this.isShotActive = false;
-        this.restStartTime = 0;
-        this.callbacks.onShotSettled?.();
+      if (restDuration >= SIMULATION.settledCooldownMs) {
+        if (!this.hasReportedSettled) {
+          this.hasReportedSettled = true;
+          this.isShotActive = false;
+          this.restStartTime = 0;
+          this.callbacks.onShotSettled?.({ durationMs: shotDuration });
+        }
       }
     } else {
       // Something is still moving, reset resting timer
@@ -111,4 +122,3 @@ export class MotionDetector {
     return this.isShotActive;
   }
 }
-
