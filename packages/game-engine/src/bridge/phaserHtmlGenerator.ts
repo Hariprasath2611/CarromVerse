@@ -73,10 +73,10 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 20.5 px
       var STRIKER_MASS = 15.0; // 3:1 mass ratio
 
-      var POCKET_RADIUS_CM = 2.25;
-      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 22.5 px
-      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 0.85 * r
-      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20; // 1.20 * r
+      var POCKET_RADIUS_CM = 3.9;
+      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 39.0 px (visible hole radius)
+      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 33.15 px (~3.3 cm capture radius)
+      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20; // 46.8 px suction zone
 
       var WALL_THICKNESS_CM = 5.0;
       var WALL_THICKNESS_PX = WALL_THICKNESS_CM * PX_PER_CM; // 50.0 px
@@ -115,15 +115,18 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var BOARD_THEMES = {
         classic: {
           id: 'classic',
-          frameColor: '#5C2C16',
-          frameAccent: '#8B4513',
-          frameInnerCushion: '#3D1D0E',
-          surfaceBg: '#E8D3B0',
-          markingsColor: '#3D1D0E',
-          pocketRimColor: '#A0522D',
-          baselineCircleColor: '#B91C1C',
-          baselineDotColor: '#DC2626',
-          arrowColor: '#5C2C16'
+          frameColor: '#A0612C',
+          frameAccent: '#E9B949',
+          frameInnerCushion: '#3E2210',
+          surfaceBg: '#F0DDB0',
+          surfaceGrain: '#B8955A',
+          markingsColor: '#6B3A1A',
+          pocketRimColor: '#C9A24B',
+          baselineCircleColor: '#D8344A',
+          baselineDotColor: '#D8344A',
+          greenRingColor: '#1E8F5A',
+          redAccentColor: '#D8344A',
+          arrowColor: '#6B3A1A'
         },
         forest: {
           id: 'forest',
