@@ -45,7 +45,13 @@ export default function CustomizeScreen() {
       );
     } else if (item.status === 'locked') {
       setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, status: 'equipped' } : i.status === 'equipped' ? 'equip' : i.status))
+        prev.map((i) =>
+          i.id === item.id
+            ? { ...i, status: 'equipped' }
+            : i.status === 'equipped'
+            ? { ...i, status: 'equip' }
+            : i
+        )
       );
     }
   };

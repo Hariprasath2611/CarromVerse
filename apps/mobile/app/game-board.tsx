@@ -123,7 +123,7 @@ export default function GameBoardScreen() {
           size={BOARD_SIZE}
           themeId={boardTheme}
           strikerSkin="emerald"
-          activeSeat="bottom"
+          activeSeat={0}
           strikerOffset={0}
           onShotStarted={() => setIsShotActive(true)}
           onAimChanged={(details) => setPowerRatio(details.powerRatio)}
