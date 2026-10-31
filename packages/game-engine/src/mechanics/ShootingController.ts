@@ -65,3 +65,4 @@ export class ShootingController {
     return result;
   }
 }
+

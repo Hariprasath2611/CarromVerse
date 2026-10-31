@@ -111,3 +111,4 @@ export class MotionDetector {
     return this.isShotActive;
   }
 }
+

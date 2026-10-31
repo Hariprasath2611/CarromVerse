@@ -59,3 +59,4 @@ export interface ShotSettledPayload {
   pocketedCoins: { id: string; type: CoinType | 'striker'; pocketIndex: number }[];
   strikerSettledPosition: { x: number; y: number; nx: number; ny: number };
 }
+

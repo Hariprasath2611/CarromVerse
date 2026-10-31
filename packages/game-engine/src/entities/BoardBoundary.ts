@@ -88,3 +88,4 @@ export class BoardBoundary {
     this.bodies = [];
   }
 }
+

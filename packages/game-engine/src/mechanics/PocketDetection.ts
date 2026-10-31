@@ -89,3 +89,4 @@ export class PocketDetection {
     this.pocketedIds.clear();
   }
 }
+

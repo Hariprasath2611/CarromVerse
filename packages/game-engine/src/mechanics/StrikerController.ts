@@ -54,3 +54,4 @@ export class StrikerController {
     this.setOffset(0);
   }
 }
+

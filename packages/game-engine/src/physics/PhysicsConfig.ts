@@ -75,3 +75,4 @@ export const PHYSICS_CONFIG = {
     sinkAnimationDurationMs: 280,  // Scale-down & fade visual duration
   },
 } as const;
+
