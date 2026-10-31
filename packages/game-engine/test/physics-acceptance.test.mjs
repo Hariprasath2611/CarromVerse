@@ -393,7 +393,8 @@ describe('CarromVerse Phase 1.4 Physics Acceptance Tests (Headless Verification)
     const { engine } = createStandardCarromWorld();
     const r = SIZES.coinRadiusPx;
 
-    const coin = Bodies.circle(200, 200, r, {
+    // Place coin at mid-board (550, 200) aimed at 45° towards right wall
+    const coin = Bodies.circle(550, 200, r, {
       restitution: RESTITUTION.coinToCoin,
       frictionAir: 0,
       friction: 0,
