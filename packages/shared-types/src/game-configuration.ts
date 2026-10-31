@@ -37,4 +37,9 @@ export interface GameConfiguration {
   queenCoverRequired: boolean;
   allowSuicideFoulPenalty: boolean;
   boardDimensions: BoardDimensions;
+  handoverConfirmationEnabled?: boolean;
+  soundEnabled?: boolean;
+  musicEnabled?: boolean;
+  boardTheme?: string;
+  teamNames?: { team_a: string; team_b: string };
 }

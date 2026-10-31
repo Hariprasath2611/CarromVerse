@@ -15,6 +15,16 @@ export type GameSessionStatus =
   | 'match_end'
   | 'abandoned';
 
+export type OfflineMatchStatus =
+  | 'CREATED'
+  | 'CONFIGURING'
+  | 'READY'
+  | 'IN_PROGRESS'
+  | 'PLAYER_HANDOVER'
+  | 'PAUSED'
+  | 'COMPLETED'
+  | 'ABANDONED';
+
 export type QueenStatus =
   | 'unpocketed'
   | 'pending_cover'     // Queen pocketed, must pocket a cover coin next
