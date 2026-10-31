@@ -234,117 +234,31 @@ export default function GameBoardScreen() {
           </View>
         )}
 
-        <View
-          style={[
-            styles.carromBoard,
-            {
-              width: BOARD_SIZE,
-              height: BOARD_SIZE,
-              backgroundColor: boardBg,
-              borderColor: woodBorder,
-            },
-          ]}
-        >
-          {/* Wooden Grain Corner Miters & Cushions */}
-          <View style={styles.cushionTop} />
-          <View style={styles.cushionBottom} />
-          <View style={styles.cushionLeft} />
-          <View style={styles.cushionRight} />
-
-          {/* Four Corner Pockets */}
-          <View style={[styles.boardPocket, styles.pocketTopLeft]}>
-            <View style={styles.pocketInnerWell} />
-          </View>
-          <View style={[styles.boardPocket, styles.pocketTopRight]}>
-            <View style={styles.pocketInnerWell} />
-          </View>
-          <View style={[styles.boardPocket, styles.pocketBottomLeft]}>
-            <View style={styles.pocketInnerWell} />
-          </View>
-          <View style={[styles.boardPocket, styles.pocketBottomRight]}>
-            <View style={styles.pocketInnerWell} />
-          </View>
-
-          {/* Diagonal Corner Foul Arrows */}
-          <View style={[styles.cornerArrow, styles.arrowTL]} />
-          <View style={[styles.cornerArrow, styles.arrowTR]} />
-          <View style={[styles.cornerArrow, styles.arrowBL]} />
-          <View style={[styles.cornerArrow, styles.arrowBR]} />
-
-          {/* Four Baselines */}
-          {/* North Baseline */}
-          <View style={styles.baselineH_Top}>
-            <View style={styles.baselineRedDot} />
-            <View style={styles.baselineLine} />
-            <View style={styles.baselineRedDot} />
-          </View>
-
-          {/* South Baseline */}
-          <View style={styles.baselineH_Bottom}>
-            <View style={styles.baselineRedDot} />
-            <View style={styles.baselineLine} />
-            <View style={styles.baselineRedDot} />
-          </View>
-
-          {/* West Baseline */}
-          <View style={styles.baselineV_Left}>
-            <View style={styles.baselineRedDot} />
-            <View style={styles.baselineLineV} />
-            <View style={styles.baselineRedDot} />
-          </View>
-
-          {/* East Baseline */}
-          <View style={styles.baselineV_Right}>
-            <View style={styles.baselineRedDot} />
-            <View style={styles.baselineLineV} />
-            <View style={styles.baselineRedDot} />
-          </View>
-
-          {/* Center Concentric Circles */}
-          <View style={styles.centerOuterCircle}>
-            <View style={styles.centerInnerCircle}>
-              {/* Queen (Red) in center */}
-              <View style={styles.queenPiece} />
-              {/* Surrounding Coins Cluster */}
-              <View style={[styles.carromCoin, styles.coinCluster1, styles.coinWhite]} />
-              <View style={[styles.carromCoin, styles.coinCluster2, styles.coinBlack]} />
-              <View style={[styles.carromCoin, styles.coinCluster3, styles.coinWhite]} />
-              <View style={[styles.carromCoin, styles.coinCluster4, styles.coinBlack]} />
-              <View style={[styles.carromCoin, styles.coinCluster5, styles.coinWhite]} />
-              <View style={[styles.carromCoin, styles.coinCluster6, styles.coinBlack]} />
-            </View>
-          </View>
-
-          {/* Active Striker on South Baseline */}
-          <View
-            style={[
-              styles.activeStriker,
-              {
-                transform: [{ translateX: strikerOffset }],
-              },
-            ]}
-          >
-            <View style={styles.strikerCore} />
-            {/* Striker Aiming Guide Vector */}
-            <View style={styles.aimGuideRay} />
-          </View>
-        </View>
+        {/* PHASER 3 GAME ENGINE CANVAS */}
+        <PhaserCarromView
+          size={BOARD_SIZE}
+          themeId={boardTheme}
+          strikerSkin="emerald"
+          activeSeat={activePlayer.seat}
+          strikerOffset={strikerOffsetRatio}
+          onStrikerDragged={(ratio) => setStrikerOffsetRatio(ratio)}
+        />
       </View>
 
       {/* STRIKER POSITIONING SLIDER CONTROLS */}
       <View style={styles.strikerControlsRow}>
         <TouchableOpacity
           style={styles.adjustBtn}
-          onPress={() => setStrikerOffset((o) => Math.max(o - 15, -60))}
+          onPress={() => setStrikerOffsetRatio((o) => Math.max(o - 0.15, -0.95))}
         >
           <Text style={styles.adjustBtnText}>◀ Left</Text>
         </TouchableOpacity>
 
-        <Text style={styles.adjustLabel}>Position Striker</Text>
+        <Text style={styles.adjustLabel}>Position Striker (or Drag on Board)</Text>
 
         <TouchableOpacity
           style={styles.adjustBtn}
-          onPress={() => setStrikerOffset((o) => Math.min(o + 15, 60))}
+          onPress={() => setStrikerOffsetRatio((o) => Math.min(o + 0.15, 0.95))}
         >
           <Text style={styles.adjustBtnText}>Right ▶</Text>
         </TouchableOpacity>
