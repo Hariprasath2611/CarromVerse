@@ -109,16 +109,16 @@ describe('Phase 1.6 – Offline Multiplayer & Seat Configuration', () => {
 
     it('rotates turns clockwise through all four seats 0 -> 1 -> 2 -> 3 -> 0', () => {
       const players = createInitialPlayersForMode('four_player_individual');
-      const turnManager = new TurnManager(players);
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      const turnManager = new TurnManager('four_player_individual', players);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 1);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 1);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 2);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 2);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 3);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 3);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
     });
   });
 
@@ -149,29 +149,29 @@ describe('Phase 1.6 – Offline Multiplayer & Seat Configuration', () => {
 
     it('enforces turn alternation between teams: A1 -> B1 -> A2 -> B2', () => {
       const players = createInitialPlayersForMode('four_player_team');
-      const turnManager = new TurnManager(players);
+      const turnManager = new TurnManager('four_player_team', players);
 
-      const p1 = turnManager.getCurrentPlayer();
+      const p1 = turnManager.getActivePlayer();
       assert.strictEqual(p1.seat, 0);
       assert.strictEqual(p1.teamId, 'team_a');
 
       turnManager.nextTurn();
-      const p2 = turnManager.getCurrentPlayer();
+      const p2 = turnManager.getActivePlayer();
       assert.strictEqual(p2.seat, 1);
       assert.strictEqual(p2.teamId, 'team_b');
 
       turnManager.nextTurn();
-      const p3 = turnManager.getCurrentPlayer();
+      const p3 = turnManager.getActivePlayer();
       assert.strictEqual(p3.seat, 2);
       assert.strictEqual(p3.teamId, 'team_a');
 
       turnManager.nextTurn();
-      const p4 = turnManager.getCurrentPlayer();
+      const p4 = turnManager.getActivePlayer();
       assert.strictEqual(p4.seat, 3);
       assert.strictEqual(p4.teamId, 'team_b');
 
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
     });
 
     it('rejects adjacent team seating violating carrom doubles rules', () => {
