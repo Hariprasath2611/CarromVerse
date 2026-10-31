@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GameCard, PrimaryButton, ScreenContainer, SecondaryButton } from '../../src/components';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import { GameCard, PrimaryButton, ScreenContainer } from '../../src/components';
 import { THEME } from '../../src/constants/theme';
 
 export default function FriendsScreen() {
@@ -23,7 +23,7 @@ export default function FriendsScreen() {
         <View style={styles.iconCircle}>
           <Text style={styles.headerEmoji}>👥</Text>
         </View>
-        <Text style={styles.title}>Friends & Online Hub</Text>
+        <Text style={styles.title}>FRIENDS & ONLINE CLUB</Text>
         <Text style={styles.subtitle}>
           Connect, challenge friends, and climb global multiplayer rankings.
         </Text>
@@ -38,14 +38,14 @@ export default function FriendsScreen() {
           <Text style={styles.sparkle}>✨</Text>
         </View>
 
-        <Text style={styles.roadmapHeading}>Online Arena Incoming</Text>
+        <Text style={styles.roadmapHeading}>ONLINE ARENA INCOMING</Text>
         <Text style={styles.roadmapDesc}>
-          Real-time synchronized multiplayer is actively architected on our modular game engine.
-          Stay tuned for competitive rooms and tournament circuits!
+          Real-time synchronized multiplayer is actively architected on our modular Phaser 3 Matter engine.
+          Stay tuned for private code rooms and tournament circuits!
         </Text>
 
         <PrimaryButton
-          title={isSubscribed ? 'Subscribed for Early Access ✓' : 'Notify Me at Launch'}
+          title={isSubscribed ? 'SUBSCRIBED FOR EARLY ACCESS ✓' : 'NOTIFY ME AT LAUNCH'}
           onPress={handleNotifyToggle}
           variant={isSubscribed ? 'forest' : 'emerald'}
           size="medium"
@@ -63,7 +63,7 @@ export default function FriendsScreen() {
         <View style={styles.featureContent}>
           <Text style={styles.featureTitle}>Private Rooms & Room Codes</Text>
           <Text style={styles.featureSub}>
-            Create custom private lobbies and share a 6-digit room code with friends anywhere in the world.
+            Create custom private tables and share a 6-digit room code with friends anywhere in the world.
           </Text>
         </View>
       </GameCard>
@@ -87,7 +87,7 @@ export default function FriendsScreen() {
         <View style={styles.featureContent}>
           <Text style={styles.featureTitle}>Animated Stickers & Reactions</Text>
           <Text style={styles.featureSub}>
-            Taunt, praise, and celebrate great shots with animated table reactions and custom sound emojis.
+            Taunt, praise, and celebrate great shots with animated table reactions and custom sound effects.
           </Text>
         </View>
       </GameCard>
@@ -117,107 +117,107 @@ export default function FriendsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingTop: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
+    marginBottom: 16,
   },
   iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.primary,
-    borderWidth: 2,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 10,
+    ...THEME.shadows.glowEmerald,
   },
   headerEmoji: {
-    fontSize: 26,
+    fontSize: 28,
   },
   title: {
-    fontSize: THEME.typography.fontSize.h2,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     textAlign: 'center',
     marginTop: 4,
   },
   roadmapCard: {
-    padding: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    backgroundColor: THEME.colors.card,
-    borderColor: THEME.colors.primary,
+    padding: 18,
+    marginBottom: 16,
   },
   badgeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 8,
   },
   statusBadge: {
-    backgroundColor: 'rgba(22, 163, 74, 0.2)',
-    borderColor: THEME.colors.primary,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
+    borderWidth: 1.5,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
+    borderRadius: 8,
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: THEME.colors.accent,
-    letterSpacing: 0.5,
+    color: THEME.colors.brass,
+    letterSpacing: 0.8,
   },
   sparkle: {
     fontSize: 18,
   },
   roadmapHeading: {
-    fontSize: THEME.typography.fontSize.h3,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
-    marginTop: THEME.spacing.xs,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
   roadmapDesc: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
     lineHeight: 20,
-    marginTop: 4,
+    marginTop: 6,
   },
   notifyBtn: {
-    marginTop: THEME.spacing.md,
+    marginTop: 14,
   },
   sectionHeader: {
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: THEME.spacing.sm,
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginBottom: 10,
   },
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
+    padding: 14,
+    marginBottom: 10,
   },
   featureIconBox: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.md,
+    marginRight: 12,
   },
   featureEmoji: {
     fontSize: 20,
@@ -226,33 +226,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: THEME.typography.fontSize.bodyMd,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
   },
   featureSub: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 11,
+    color: THEME.colors.mutedMint,
     lineHeight: 16,
     marginTop: 2,
   },
   localTipCard: {
-    padding: THEME.spacing.md,
-    backgroundColor: 'rgba(22, 163, 74, 0.08)',
-    borderColor: THEME.colors.secondary,
-    borderWidth: 1,
-    marginTop: THEME.spacing.sm,
+    padding: 14,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    marginTop: 10,
   },
   localTipTitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.accent,
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
     marginBottom: 4,
   },
   localTipBody: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     lineHeight: 18,
   },
 });
-
