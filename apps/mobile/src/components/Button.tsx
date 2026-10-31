@@ -15,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { THEME } from '../constants/theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'wood' | 'outline' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'gold' | 'brass' | 'wood' | 'outline' | 'danger';
 
 export interface ButtonProps {
   title: string;
@@ -60,6 +60,15 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getVariantStyles = () => {
     switch (variant) {
+      case 'gold':
+      case 'brass':
+        return {
+          bg: '#E9B949',
+          borderBottom: '#A57E24',
+          borderColor: '#F7D070',
+          textColor: '#261B04',
+          shadow: THEME.shadows.glowBrass,
+        };
       case 'secondary':
         return {
           bg: '#0E4A33',

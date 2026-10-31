@@ -23,7 +23,9 @@ export const CoinBalance: React.FC<CoinBalanceProps> = ({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.coinBadge}>
-        <Text style={styles.coinSymbol}>🪙</Text>
+        <View style={styles.coinDisc}>
+          <Text style={styles.coinDiscText}>C</Text>
+        </View>
       </View>
       <Text style={styles.amountText}>{displayAmount.toLocaleString()}</Text>
       {handlePlus && (
@@ -50,8 +52,21 @@ const styles = StyleSheet.create({
   coinBadge: {
     marginRight: 6,
   },
-  coinSymbol: {
-    fontSize: 14,
+  coinDisc: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E9B949',
+    borderWidth: 1.5,
+    borderColor: '#F7D070',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coinDiscText: {
+    color: '#261B04',
+    fontSize: 10,
+    fontWeight: '900',
+    lineHeight: 12,
   },
   amountText: {
     color: '#E9B949',
