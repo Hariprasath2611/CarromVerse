@@ -115,6 +115,72 @@ export class LocalDatabaseService {
     }));
   }
 
+  public static async getMatchById(id: string): Promise<GameResult | null> {
+    const db = await this.getDb();
+    const r = await db.getFirstAsync<any>(
+      `SELECT * FROM local_matches WHERE id = ?`,
+      [id]
+    );
+
+    if (!r) return null;
+
+    return {
+      id: r.id,
+      sessionId: r.session_id,
+      mode: r.mode,
+      variant: r.variant,
+      winnerId: r.winner_id,
+      winnerName: r.winner_name,
+      winningTeamId: r.winning_team_id,
+      isDraw: r.is_draw === 1,
+      finalScores: JSON.parse(r.final_scores_json),
+      durationSeconds: r.duration_seconds,
+      totalTurns: r.total_turns,
+      startedAt: r.started_at,
+      completedAt: r.completed_at,
+      isSynced: r.is_synced === 1,
+      syncAttemptCount: r.sync_attempt_count,
+    };
+  }
+
+  public static async getLocalStats(): Promise<{
+    totalMatches: number;
+    totalWins: number;
+    winRate: number;
+    totalDraws: number;
+  }> {
+    const db = await this.getDb();
+    const countRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM local_matches`
+    );
+    const totalMatches = countRow?.count || 0;
+
+    const drawRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM local_matches WHERE is_draw = 1`
+    );
+    const totalDraws = drawRow?.count || 0;
+
+    const winRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM local_matches WHERE winner_id IS NOT NULL AND is_draw = 0`
+    );
+    const totalWins = winRow?.count || 0;
+
+    const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+
+    return {
+      totalMatches,
+      totalWins,
+      winRate,
+      totalDraws,
+    };
+  }
+
+  public static async clearMatchHistory(): Promise<void> {
+    const db = await this.getDb();
+    await db.runAsync(`DELETE FROM local_matches`);
+    await db.runAsync(`DELETE FROM pending_sync_queue`);
+  }
+
   public static async enqueueSyncItem(record: SyncRecord): Promise<void> {
     const db = await this.getDb();
     await db.runAsync(

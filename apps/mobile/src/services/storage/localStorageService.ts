@@ -64,6 +64,28 @@ export class LocalStorageService {
     }
   }
 
+  public static async getRecentPlayerNames(): Promise<string[]> {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEYS.RECENT_PLAYER_NAMES);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public static async saveRecentPlayerName(name: string): Promise<void> {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed.startsWith('Player ') || trimmed.startsWith('Team ')) return;
+    try {
+      const current = await this.getRecentPlayerNames();
+      const filtered = current.filter((n) => n.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [trimmed, ...filtered].slice(0, 10);
+      await AsyncStorage.setItem(STORAGE_KEYS.RECENT_PLAYER_NAMES, JSON.stringify(updated));
+    } catch (error) {
+      console.warn('[LocalStorage] Failed to save recent player name:', error);
+    }
+  }
+
   public static async clearAll(): Promise<void> {
     try {
       await AsyncStorage.clear();

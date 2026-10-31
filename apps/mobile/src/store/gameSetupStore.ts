@@ -1,5 +1,16 @@
 import { create } from 'zustand';
-import { GameMode, Player, PlayerCount, PlayerPosition, PlayerSeat } from '@carromverse/shared-types';
+import {
+  GameMode,
+  Player,
+  PlayerCount,
+  PlayerSeat,
+} from '@carromverse/shared-types';
+import {
+  createInitialPlayersForMode,
+  validatePlayerConfiguration,
+  getSeatLayoutForMode,
+} from '@carromverse/game-logic';
+import { LocalStorageService } from '../services/storage/localStorageService';
 
 export interface GameSetupState {
   selectedMode: GameMode;
@@ -8,198 +19,60 @@ export interface GameSetupState {
   boardTheme: 'classic' | 'emerald' | 'mahogany';
   targetPoints: number;
   turnTimeLimitSec: number;
+  handoverConfirmationEnabled: boolean;
+  soundEnabled: boolean;
+  musicEnabled: boolean;
+  teamAName: string;
+  teamBName: string;
+  recentNames: string[];
 
   setGameMode: (mode: GameMode) => void;
   setPlayerCount: (count: PlayerCount) => void;
   updatePlayerName: (seat: PlayerSeat, name: string) => void;
   updatePlayerAvatar: (seat: PlayerSeat, avatar: string) => void;
+  togglePlayerReady: (seat: PlayerSeat) => void;
+  setTeamAName: (name: string) => void;
+  setTeamBName: (name: string) => void;
+  swapTeamPlayers: (seatA: PlayerSeat, seatB: PlayerSeat) => void;
   setBoardTheme: (theme: 'classic' | 'emerald' | 'mahogany') => void;
   setTargetPoints: (points: number) => void;
   setTurnTimeLimitSec: (seconds: number) => void;
+  setHandoverConfirmationEnabled: (enabled: boolean) => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  setMusicEnabled: (enabled: boolean) => void;
+  loadRecentNames: () => Promise<void>;
+  validateSetup: () => { isValid: boolean; error?: string };
   resetSetup: () => void;
 }
 
-const DEFAULT_AVATARS: Record<number, string> = {
-  0: '👑',
-  1: '🐯',
-  2: '🦅',
-  3: '🦁',
-};
-
-function generateInitialPlayers(mode: GameMode): Player[] {
-  const positions: PlayerPosition[] = ['bottom', 'right', 'top', 'left'];
-
-  switch (mode) {
-    case 'two_player_individual':
-      return [
-        {
-          id: 'player_0',
-          name: 'Player 1',
-          avatarUrl: DEFAULT_AVATARS[0],
-          type: 'human',
-          seat: 0,
-          position: 'bottom',
-          assignedCoinType: 'white',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-        {
-          id: 'player_1',
-          name: 'Player 2',
-          avatarUrl: DEFAULT_AVATARS[1],
-          type: 'human',
-          seat: 2,
-          position: 'top',
-          assignedCoinType: 'black',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-      ];
-
-    case 'three_player_individual':
-      return [
-        {
-          id: 'player_0',
-          name: 'Player 1',
-          avatarUrl: DEFAULT_AVATARS[0],
-          type: 'human',
-          seat: 0,
-          position: 'bottom',
-          assignedCoinType: 'any',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-        {
-          id: 'player_1',
-          name: 'Player 2',
-          avatarUrl: DEFAULT_AVATARS[1],
-          type: 'human',
-          seat: 1,
-          position: 'right',
-          assignedCoinType: 'any',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-        {
-          id: 'player_2',
-          name: 'Player 3',
-          avatarUrl: DEFAULT_AVATARS[2],
-          type: 'human',
-          seat: 2,
-          position: 'top',
-          assignedCoinType: 'any',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-      ];
-
-    case 'four_player_team':
-      return [
-        {
-          id: 'player_0',
-          name: 'Team A (P1)',
-          avatarUrl: DEFAULT_AVATARS[0],
-          type: 'human',
-          seat: 0,
-          position: 'bottom',
-          teamId: 'team_a',
-          assignedCoinType: 'white',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-        {
-          id: 'player_1',
-          name: 'Team B (P1)',
-          avatarUrl: DEFAULT_AVATARS[1],
-          type: 'human',
-          seat: 1,
-          position: 'right',
-          teamId: 'team_b',
-          assignedCoinType: 'black',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-        {
-          id: 'player_2',
-          name: 'Team A (P2)',
-          avatarUrl: DEFAULT_AVATARS[2],
-          type: 'human',
-          seat: 2,
-          position: 'top',
-          teamId: 'team_a',
-          assignedCoinType: 'white',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-        {
-          id: 'player_3',
-          name: 'Team B (P2)',
-          avatarUrl: DEFAULT_AVATARS[3],
-          type: 'human',
-          seat: 3,
-          position: 'left',
-          teamId: 'team_b',
-          assignedCoinType: 'black',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-      ];
-
-    case 'four_player_individual':
-      return [0, 1, 2, 3].map((seat) => ({
-        id: `player_${seat}`,
-        name: `Player ${seat + 1}`,
-        avatarUrl: DEFAULT_AVATARS[seat],
-        type: 'human' as const,
-        seat: seat as PlayerSeat,
-        position: positions[seat],
-        assignedCoinType: 'any' as const,
-        isReady: true,
-        score: 0,
-        fouls: 0,
-      }));
-
-    case 'practice':
-    default:
-      return [
-        {
-          id: 'player_solo',
-          name: 'Solo Player',
-          avatarUrl: DEFAULT_AVATARS[0],
-          type: 'human',
-          seat: 0,
-          position: 'bottom',
-          assignedCoinType: 'any',
-          isReady: true,
-          score: 0,
-          fouls: 0,
-        },
-      ];
-  }
-}
-
-export const useGameSetupStore = create<GameSetupState>((set) => ({
+export const useGameSetupStore = create<GameSetupState>((set, get) => ({
   selectedMode: 'two_player_individual',
   playerCount: 2,
-  players: generateInitialPlayers('two_player_individual'),
+  players: createInitialPlayersForMode('two_player_individual'),
   boardTheme: 'classic',
   targetPoints: 25,
   turnTimeLimitSec: 25,
+  handoverConfirmationEnabled: true,
+  soundEnabled: true,
+  musicEnabled: true,
+  teamAName: 'Team A',
+  teamBName: 'Team B',
+  recentNames: [],
+
+  loadRecentNames: async () => {
+    const recent = await LocalStorageService.getRecentPlayerNames();
+    set({ recentNames: recent });
+  },
 
   setGameMode: (mode: GameMode) => {
-    const players = generateInitialPlayers(mode);
+    const { teamAName, teamBName } = get();
+    const players = createInitialPlayersForMode(mode, { teamAName, teamBName });
+    const count: PlayerCount =
+      mode === 'two_player_individual' ? 2 : mode === 'three_player_individual' ? 3 : 4;
+
     set({
       selectedMode: mode,
-      playerCount: players.length as PlayerCount,
+      playerCount: count,
       players,
     });
   },
@@ -208,7 +81,9 @@ export const useGameSetupStore = create<GameSetupState>((set) => ({
     let mode: GameMode = 'two_player_individual';
     if (count === 3) mode = 'three_player_individual';
     else if (count === 4) mode = 'four_player_individual';
-    const players = generateInitialPlayers(mode);
+
+    const { teamAName, teamBName } = get();
+    const players = createInitialPlayersForMode(mode, { teamAName, teamBName });
     set({
       selectedMode: mode,
       playerCount: count,
@@ -220,12 +95,89 @@ export const useGameSetupStore = create<GameSetupState>((set) => ({
     set((state) => ({
       players: state.players.map((p) => (p.seat === seat ? { ...p, name } : p)),
     }));
+    // Save non-default custom name to local storage
+    if (name.trim()) {
+      LocalStorageService.saveRecentPlayerName(name.trim()).catch(() => {});
+    }
   },
 
   updatePlayerAvatar: (seat: PlayerSeat, avatar: string) => {
     set((state) => ({
       players: state.players.map((p) => (p.seat === seat ? { ...p, avatarUrl: avatar } : p)),
     }));
+  },
+
+  togglePlayerReady: (seat: PlayerSeat) => {
+    set((state) => ({
+      players: state.players.map((p) =>
+        p.seat === seat ? { ...p, isReady: !p.isReady } : p
+      ),
+    }));
+  },
+
+  setTeamAName: (name: string) => {
+    const newName = name.trim() || 'Team A';
+    set((state) => ({
+      teamAName: newName,
+      players: state.players.map((p) => {
+        if (p.teamId === 'team_a') {
+          return {
+            ...p,
+            name: p.name.startsWith('Team A')
+              ? `${newName} (Seat ${p.seat})`
+              : p.name,
+          };
+        }
+        return p;
+      }),
+    }));
+  },
+
+  setTeamBName: (name: string) => {
+    const newName = name.trim() || 'Team B';
+    set((state) => ({
+      teamBName: newName,
+      players: state.players.map((p) => {
+        if (p.teamId === 'team_b') {
+          return {
+            ...p,
+            name: p.name.startsWith('Team B')
+              ? `${newName} (Seat ${p.seat})`
+              : p.name,
+          };
+        }
+        return p;
+      }),
+    }));
+  },
+
+  swapTeamPlayers: (seatA: PlayerSeat, seatB: PlayerSeat) => {
+    set((state) => {
+      const idxA = state.players.findIndex((p) => p.seat === seatA);
+      const idxB = state.players.findIndex((p) => p.seat === seatB);
+      if (idxA === -1 || idxB === -1) return state;
+
+      const playerA = state.players[idxA];
+      const playerB = state.players[idxB];
+
+      const newPlayers = [...state.players];
+      newPlayers[idxA] = {
+        ...playerA,
+        seat: playerB.seat,
+        position: playerB.position,
+        teamId: playerB.teamId,
+        assignedCoinType: playerB.assignedCoinType,
+      };
+      newPlayers[idxB] = {
+        ...playerB,
+        seat: playerA.seat,
+        position: playerA.position,
+        teamId: playerA.teamId,
+        assignedCoinType: playerA.assignedCoinType,
+      };
+
+      return { players: newPlayers };
+    });
   },
 
   setBoardTheme: (theme: 'classic' | 'emerald' | 'mahogany') => {
@@ -240,16 +192,36 @@ export const useGameSetupStore = create<GameSetupState>((set) => ({
     set({ turnTimeLimitSec: seconds });
   },
 
+  setHandoverConfirmationEnabled: (enabled: boolean) => {
+    set({ handoverConfirmationEnabled: enabled });
+  },
+
+  setSoundEnabled: (enabled: boolean) => {
+    set({ soundEnabled: enabled });
+  },
+
+  setMusicEnabled: (enabled: boolean) => {
+    set({ musicEnabled: enabled });
+  },
+
+  validateSetup: () => {
+    const { selectedMode, players } = get();
+    return validatePlayerConfiguration(selectedMode, players);
+  },
+
   resetSetup: () => {
     set({
       selectedMode: 'two_player_individual',
       playerCount: 2,
-      players: generateInitialPlayers('two_player_individual'),
+      players: createInitialPlayersForMode('two_player_individual'),
       boardTheme: 'classic',
       targetPoints: 25,
       turnTimeLimitSec: 25,
+      handoverConfirmationEnabled: true,
+      soundEnabled: true,
+      musicEnabled: true,
+      teamAName: 'Team A',
+      teamBName: 'Team B',
     });
   },
 }));
-
-
