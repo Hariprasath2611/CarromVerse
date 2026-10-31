@@ -81,17 +81,17 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var WALL_THICKNESS_CM = 5.0;
       var WALL_THICKNESS_PX = WALL_THICKNESS_CM * PX_PER_CM; // 50.0 px
 
-      var STRIKER_MIN_SPEED_CM_S = 40.0;
-      var STRIKER_MAX_SPEED_CM_S = 350.0;
+      var STRIKER_MIN_SPEED_CM_S = 25.0;
+      var STRIKER_MAX_SPEED_CM_S = 180.0;
       var REST_SPEED_THRESHOLD_CM_S = 2.0;
       var ANGULAR_REST_THRESHOLD = 0.05;
 
-      var FRICTION_DECEL_CM_S2 = 90.0;
-      var VISCOUS_DAMPING = 0.15;
-      var ANGULAR_DAMPING_PER_SEC = 6.0;
+      var FRICTION_DECEL_CM_S2 = 125.0;
+      var VISCOUS_DAMPING = 0.25;
+      var ANGULAR_DAMPING_PER_SEC = 8.0;
 
-      var COIN_RESTITUTION = 0.88;
-      var WALL_BOUNCE_DAMPING = 0.65;
+      var COIN_RESTITUTION = 0.82;
+      var WALL_BOUNCE_DAMPING = 0.58;
 
       var BASE_DT_SEC = 1 / 60;
       var FIXED_DT_MS = 1000 / 60;
