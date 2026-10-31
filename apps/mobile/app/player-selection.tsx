@@ -205,11 +205,11 @@ const styles = StyleSheet.create({
   },
   playerBox: {
     flex: 1,
-    aspectRatio: 1,
+    height: 84,
     backgroundColor: '#0E4A33',
     borderColor: '#1B7050',
     borderWidth: 2,
-    borderRadius: 18,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },

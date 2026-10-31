@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#07261C',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 36,
+    paddingVertical: 24,
   },
   bokehTop: {
     position: 'absolute',
