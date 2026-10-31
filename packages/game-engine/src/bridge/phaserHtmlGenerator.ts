@@ -747,14 +747,14 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
           var s = this.canvasSize;
           var fw = (s - BOARD_PX) / 2;
-          var pr = POCKET_RADIUS_PX;
-          var inset = fw + pr * 0.85;
+          var scale = BOARD_PX / 528;
+          var pocketOffset = 24 * scale;
 
           var pCoords = [
-            { x: inset, y: inset, idx: 0 },
-            { x: s - inset, y: inset, idx: 1 },
-            { x: s - inset, y: s - inset, idx: 2 },
-            { x: inset, y: s - inset, idx: 3 }
+            { x: fw + pocketOffset, y: fw + pocketOffset, idx: 0 },
+            { x: s - fw - pocketOffset, y: fw + pocketOffset, idx: 1 },
+            { x: s - fw - pocketOffset, y: s - fw - pocketOffset, idx: 2 },
+            { x: fw + pocketOffset, y: s - fw - pocketOffset, idx: 3 }
           ];
 
           pCoords.forEach(function(coord) {
@@ -782,13 +782,15 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           var rCoin = COIN_RADIUS_PX; // 15.5 px
 
           var addCoin = function(scene, id, type, x, y) {
-            var shadow = scene.add.sprite(x + 3, y + 4, 'tex_coin_shadow');
+            var shadow = scene.add.sprite(x + 2, y + 3, 'tex_coin_shadow');
+            shadow.setOrigin(0.5, 0.5);
             shadow.setDisplaySize(rCoin * 2.3, rCoin * 2.3);
-            shadow.setDepth(9);
+            shadow.setDepth(8);
 
             var key = type === 'queen' ? 'tex_coin_queen' : (type === 'white' ? 'tex_coin_white' : 'tex_coin_black');
             var coinSprite = scene.add.sprite(x, y, key);
-            coinSprite.setDisplaySize(rCoin * 2, rCoin * 2);
+            coinSprite.setOrigin(0.5, 110 / 236);
+            coinSprite.setDisplaySize(2 * rCoin * (220 / 200), 2 * rCoin * (236 / 200));
             coinSprite.setDepth(10);
 
             var body = scene.matter.add.circle(x, y, rCoin, {
@@ -807,7 +809,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             scene.coins.push(body.coinRef);
           };
 
-          // Queen
+          // Queen (swappable texture slot ready)
           addCoin(this, 'queen', 'queen', cx, cy);
 
           // Ring 1 (6 coins)
@@ -838,19 +840,22 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
           var s = this.canvasSize;
           var fw = (s - BOARD_PX) / 2;
-          var bo = BOARD_PX * 0.135;
+          var scale = BOARD_PX / 528;
+          var bo = 74 * scale;
           var sr = STRIKER_RADIUS_PX; // 20.5 px
 
           this.strikerRadius = sr;
           var px = s / 2;
           var py = s - fw - bo;
 
-          this.strikerShadow = this.add.sprite(px + 4, py + 5, 'tex_striker_shadow');
+          this.strikerShadow = this.add.sprite(px + 3, py + 4, 'tex_striker_shadow');
+          this.strikerShadow.setOrigin(0.5, 0.5);
           this.strikerShadow.setDisplaySize(sr * 2.4, sr * 2.4);
-          this.strikerShadow.setDepth(19);
+          this.strikerShadow.setDepth(12);
 
           this.strikerSprite = this.add.sprite(px, py, 'tex_striker_' + currentStrikerSkin);
-          this.strikerSprite.setDisplaySize(sr * 2, sr * 2);
+          this.strikerSprite.setOrigin(0.5, 130 / 276);
+          this.strikerSprite.setDisplaySize(2 * sr * (260 / 240), 2 * sr * (276 / 240));
           this.strikerSprite.setDepth(20);
 
           this.strikerBody = this.matter.add.circle(px, py, sr, {
@@ -875,12 +880,12 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
           var s = this.canvasSize;
           var fw = (s - BOARD_PX) / 2;
-          var bo = BOARD_PX * 0.135;
-          var bl = BOARD_PX * 0.54;
-          var halfBl = bl / 2;
+          var scale = BOARD_PX / 528;
+          var bo = 74 * scale;
+          var halfBl = 156 * scale;
           var center = s / 2;
 
-          var clampedOffset = Math.max(-0.95, Math.min(0.95, currentOffsetRatio));
+          var clampedOffset = Math.max(-1.0, Math.min(1.0, currentOffsetRatio));
           var px = center;
           var py = center;
 
@@ -1386,15 +1391,23 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         syncVisuals: function() {
           if (this.strikerBody && !this.strikerIsPocketed) {
             this.strikerSprite.setPosition(this.strikerBody.position.x, this.strikerBody.position.y);
-            this.strikerSprite.setRotation(this.strikerBody.angle);
-            this.strikerShadow.setPosition(this.strikerBody.position.x + 4, this.strikerBody.position.y + 5);
+            if (this.isShotActive) {
+              this.strikerSprite.setRotation(this.strikerBody.angle);
+            } else if (this.isAiming && this.aimAngle !== undefined) {
+              this.strikerSprite.setRotation(this.aimAngle + Math.PI / 2);
+            } else {
+              this.strikerSprite.setRotation(0);
+            }
+            this.strikerShadow.setPosition(this.strikerBody.position.x + 3, this.strikerBody.position.y + 4);
+            this.strikerShadow.setRotation(0); // Shadows stay fixed to light angle
           }
 
           this.coins.forEach(function(c) {
             if (c.isPocketed || !c.body) return;
             c.sprite.setPosition(c.body.position.x, c.body.position.y);
             c.sprite.setRotation(c.body.angle);
-            c.shadow.setPosition(c.body.position.x + 3, c.body.position.y + 4);
+            c.shadow.setPosition(c.body.position.x + 2, c.body.position.y + 3);
+            c.shadow.setRotation(0); // Shadows stay fixed to light angle
           });
         },
 
