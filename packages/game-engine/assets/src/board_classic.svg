@@ -124,3 +124,4 @@
   <!-- 8. Finish: Diagonal White Gloss Overlay (22% -> 0%) -->
   <rect x="0" y="0" width="640" height="640" rx="30" ry="30" fill="url(#glossOverlay)" pointer-events="none" />
 </svg>
+

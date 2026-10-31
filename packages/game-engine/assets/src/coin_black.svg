@@ -41,3 +41,4 @@
   <!-- 8. Highlight Ellipse (center 74, 62; 40x16; rotated -35°; white 22%) -->
   <ellipse cx="74" cy="62" rx="20" ry="8" transform="rotate(-35 74 62)" fill="#FFFFFF" opacity="0.22" />
 </svg>
+
