@@ -123,44 +123,44 @@ export default function GameResultScreen() {
         <GameCard style={styles.analyticBox}>
           <Text style={styles.analyticIcon}>⏱️</Text>
           <Text style={styles.analyticValue}>06:48</Text>
-          <Text style={styles.analyticLabel}>Match Duration</Text>
+          <Text style={styles.analyticLabel}>MATCH DURATION</Text>
         </GameCard>
 
         <GameCard style={styles.analyticBox}>
           <Text style={styles.analyticIcon}>🎯</Text>
           <Text style={styles.analyticValue}>78%</Text>
-          <Text style={styles.analyticLabel}>Shot Accuracy</Text>
+          <Text style={styles.analyticLabel}>ACCURACY</Text>
         </GameCard>
 
         <GameCard style={styles.analyticBox}>
           <Text style={styles.analyticIcon}>👑</Text>
           <Text style={styles.analyticValue}>Covered</Text>
-          <Text style={styles.analyticLabel}>Queen Pocketed</Text>
+          <Text style={styles.analyticLabel}>QUEEN BONUS</Text>
         </GameCard>
 
         <GameCard style={styles.analyticBox}>
           <Text style={styles.analyticIcon}>⚪</Text>
           <Text style={styles.analyticValue}>9 / 9</Text>
-          <Text style={styles.analyticLabel}>White Coins</Text>
+          <Text style={styles.analyticLabel}>WHITE COINS</Text>
         </GameCard>
 
         <GameCard style={styles.analyticBox}>
           <Text style={styles.analyticIcon}>⚫</Text>
           <Text style={styles.analyticValue}>6 / 9</Text>
-          <Text style={styles.analyticLabel}>Black Coins</Text>
+          <Text style={styles.analyticLabel}>BLACK COINS</Text>
         </GameCard>
 
         <GameCard style={styles.analyticBox}>
           <Text style={styles.analyticIcon}>⚠️</Text>
           <Text style={styles.analyticValue}>1</Text>
-          <Text style={styles.analyticLabel}>Fouls / Penalties</Text>
+          <Text style={styles.analyticLabel}>FOULS</Text>
         </GameCard>
       </View>
 
       {/* ACTION BUTTONS */}
       <View style={styles.actionButtons}>
         <PrimaryButton
-          title="Play Rematch"
+          title="PLAY REMATCH"
           subtitle="Battle again with same seating"
           onPress={handleRematch}
           variant="gold"
@@ -170,9 +170,9 @@ export default function GameResultScreen() {
         />
 
         <SecondaryButton
-          title="Return to Main Menu"
+          title="RETURN TO CLUB LOBBY"
           onPress={handleReturnHome}
-          variant="surface"
+          variant="forest"
           size="medium"
           icon="🏠"
         />
@@ -183,140 +183,139 @@ export default function GameResultScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.xxl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   celebrationHero: {
     alignItems: 'center',
-    marginVertical: THEME.spacing.md,
+    marginVertical: 14,
   },
   trophyAura: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.goldBright,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
-    shadowColor: THEME.colors.goldBright,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+    marginBottom: 12,
+    ...THEME.shadows.glowBrass,
   },
   trophyEmoji: {
-    fontSize: 48,
+    fontSize: 50,
   },
   victoryTitle: {
-    fontSize: THEME.typography.fontSize.h1,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.goldBright,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
     letterSpacing: 2,
   },
   winnerSubtitle: {
-    fontSize: THEME.typography.fontSize.bodySm,
-    color: THEME.colors.textSecondary,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
     textAlign: 'center',
     marginTop: 4,
-    paddingHorizontal: THEME.spacing.lg,
+    paddingHorizontal: 16,
   },
   winnerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.card,
-    borderColor: THEME.colors.accent,
-    borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.full,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginTop: THEME.spacing.md,
+    backgroundColor: '#0E4A33',
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 14,
+    ...THEME.shadows.glowEmerald,
   },
   winnerAvatarEmoji: {
-    fontSize: 20,
-    marginRight: 6,
-  },
-  winnerNameText: {
-    fontSize: THEME.typography.fontSize.bodyMd,
-    fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    fontSize: 22,
     marginRight: 8,
   },
-  crownTag: {
-    backgroundColor: THEME.colors.primary,
-    color: '#FFFFFF',
-    fontSize: 9,
+  winnerNameText: {
+    fontSize: 15,
     fontWeight: 'bold',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    color: THEME.colors.cream,
+    marginRight: 10,
+  },
+  crownTag: {
+    backgroundColor: THEME.colors.neonEmerald,
+    color: '#07261C',
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   rewardDropsRow: {
     flexDirection: 'row',
-    marginTop: THEME.spacing.sm,
+    marginTop: 12,
   },
   rewardBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderColor: THEME.colors.goldPrimary,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: THEME.borderRadius.full,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
     marginHorizontal: 4,
   },
   rewardIcon: {
-    fontSize: 12,
+    fontSize: 13,
     marginRight: 4,
   },
   rewardText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.goldBright,
+    color: THEME.colors.brass,
+    letterSpacing: 0.5,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    letterSpacing: 1,
-    marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.xs,
+    color: THEME.colors.brass,
+    letterSpacing: 1.2,
+    marginTop: 18,
+    marginBottom: 8,
   },
   scoreCard: {
-    padding: THEME.spacing.sm,
-    borderColor: THEME.colors.border,
+    padding: 12,
   },
   playerScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   scoreRowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#1B7050',
   },
   rankCol: {
-    width: 28,
+    width: 30,
   },
   rankText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
   },
   playerAvatarCol: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: THEME.colors.surface,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#07261C',
+    borderWidth: 1.5,
+    borderColor: '#1B7050',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
+    marginRight: 12,
   },
   avatarEmoji: {
-    fontSize: 18,
+    fontSize: 20,
   },
   playerMetaCol: {
     flex: 1,
@@ -326,18 +325,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rowPlayerName: {
-    fontSize: THEME.typography.fontSize.bodySm,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
+    letterSpacing: 0.4,
   },
   winnerCrown: {
-    fontSize: 12,
-    marginLeft: 4,
+    fontSize: 14,
+    marginLeft: 6,
   },
   rowRole: {
     fontSize: 10,
-    color: THEME.colors.textSecondary,
-    marginTop: 1,
+    color: THEME.colors.mutedMint,
+    marginTop: 2,
+    fontWeight: '600',
   },
   scoreCol: {
     alignItems: 'flex-end',
@@ -345,10 +346,10 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
   },
   winnerScoreText: {
-    color: THEME.colors.goldBright,
+    color: THEME.colors.brass,
     fontSize: 16,
   },
   analyticsGrid: {
@@ -359,30 +360,31 @@ const styles = StyleSheet.create({
   analyticBox: {
     width: '31%',
     alignItems: 'center',
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: 12,
     paddingHorizontal: 4,
-    marginBottom: THEME.spacing.xs,
-    borderColor: THEME.colors.border,
+    marginBottom: 8,
   },
   analyticIcon: {
     fontSize: 18,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   analyticValue: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: THEME.colors.textPrimary,
+    color: THEME.colors.cream,
   },
   analyticLabel: {
     fontSize: 9,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
     textAlign: 'center',
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   actionButtons: {
-    marginTop: THEME.spacing.md,
+    marginTop: 18,
   },
   rematchBtn: {
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 10,
   },
 });
