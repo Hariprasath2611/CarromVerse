@@ -52,12 +52,12 @@ describe('Phase 1.6 – Offline Multiplayer & Seat Configuration', () => {
 
     it('rotates turns between seat 0 and seat 2', () => {
       const players = createInitialPlayersForMode('two_player_individual');
-      const turnManager = new TurnManager(players);
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      const turnManager = new TurnManager('two_player_individual', players);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 2);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 2);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
     });
   });
 
@@ -89,14 +89,14 @@ describe('Phase 1.6 – Offline Multiplayer & Seat Configuration', () => {
 
     it('rotates turns across seats 0 -> 1 -> 2 -> 0', () => {
       const players = createInitialPlayersForMode('three_player_individual');
-      const turnManager = new TurnManager(players);
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      const turnManager = new TurnManager('three_player_individual', players);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 1);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 1);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 2);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 2);
       turnManager.nextTurn();
-      assert.strictEqual(turnManager.getCurrentPlayer().seat, 0);
+      assert.strictEqual(turnManager.getActivePlayer().seat, 0);
     });
   });
 
