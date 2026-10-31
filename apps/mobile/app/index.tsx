@@ -76,7 +76,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Subtle Background Glow Aura */}
+      {/* Background Glow Aura */}
       <Animated.View style={[styles.glowAura, glowAnimatedStyle]} />
 
       <View style={styles.centerBox}>
@@ -84,7 +84,9 @@ export default function SplashScreen() {
         <Animated.View style={[styles.emblemOuter, logoAnimatedStyle]}>
           <View style={styles.emblemInner}>
             <View style={styles.woodRing}>
-              <View style={styles.queenCenter} />
+              <View style={styles.brassRing}>
+                <View style={styles.queenCenter} />
+              </View>
             </View>
           </View>
         </Animated.View>
@@ -92,7 +94,7 @@ export default function SplashScreen() {
         {/* Animated Typography */}
         <Animated.View style={[styles.titleBox, textAnimatedStyle]}>
           <Text style={styles.title}>CARROMVERSE</Text>
-          <Text style={styles.subtitle}>FOREST EMERALD EDITION</Text>
+          <Text style={styles.subtitle}>EMERALD CLUB NIGHT</Text>
           <View style={styles.pillContainer}>
             <Text style={styles.pillText}>PREMIUM TABLETOP CARROM</Text>
           </View>
@@ -100,8 +102,8 @@ export default function SplashScreen() {
       </View>
 
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color={THEME.colors.accent} />
-        <Text style={styles.loadingText}>Preparing Game Board & Services...</Text>
+        <ActivityIndicator size="small" color={THEME.colors.neonEmerald} />
+        <Text style={styles.loadingText}>PREPARING CLUB TABLE & ENGINES...</Text>
       </View>
     </View>
   );
@@ -113,16 +115,16 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.background,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: THEME.spacing.xxl,
+    paddingVertical: 56,
   },
   glowAura: {
     position: 'absolute',
-    top: '30%',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: THEME.colors.primary,
-    filter: 'blur(70px)',
+    top: '28%',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#0F5A3E',
+    opacity: 0.5,
   },
   centerBox: {
     alignItems: 'center',
@@ -130,85 +132,96 @@ const styles = StyleSheet.create({
     marginBottom: 'auto',
   },
   emblemOuter: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 2.5,
-    borderColor: THEME.colors.accent,
-    backgroundColor: THEME.colors.surfaceElevated,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#0E4A33',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.lg,
-    ...THEME.shadows.emeraldGlow,
+    marginBottom: 24,
+    ...THEME.shadows.glowEmerald,
   },
   emblemInner: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     borderWidth: 2,
-    borderColor: THEME.colors.primary,
-    backgroundColor: THEME.colors.secondary,
+    borderColor: '#1B7050',
+    backgroundColor: '#07261C',
     alignItems: 'center',
     justifyContent: 'center',
   },
   woodRing: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: THEME.colors.woodDark,
-    borderWidth: 1.5,
-    borderColor: THEME.colors.woodLight,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: '#7A431C',
+    borderWidth: 2,
+    borderColor: '#4D270E',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  brassRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
+    borderColor: '#E9B949',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5ECD2',
   },
   queenCenter: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: THEME.colors.queenRed,
-    borderWidth: 1.5,
-    borderColor: '#FEF08A',
+    backgroundColor: '#E23B5A',
+    borderWidth: 2,
+    borderColor: '#981C33',
   },
   titleBox: {
     alignItems: 'center',
   },
   title: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.headline,
-    fontWeight: THEME.typography.fontWeight.heavy,
+    color: THEME.colors.cream,
+    fontSize: 28,
+    fontWeight: 'bold',
     letterSpacing: 4,
     textAlign: 'center',
   },
   subtitle: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.neonEmerald,
+    fontSize: 12,
+    fontWeight: 'bold',
     letterSpacing: 3,
-    marginTop: 4,
+    marginTop: 6,
     textAlign: 'center',
   },
   pillContainer: {
-    marginTop: THEME.spacing.md,
-    backgroundColor: 'rgba(22, 163, 74, 0.15)',
-    borderColor: THEME.colors.borderHighlight,
-    borderWidth: 1,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: 4,
-    borderRadius: THEME.borderRadius.full,
+    marginTop: 16,
+    backgroundColor: '#0E4A33',
+    borderColor: '#1B7050',
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   pillText: {
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.brass,
     fontSize: 10,
-    fontWeight: THEME.typography.fontWeight.bold,
+    fontWeight: 'bold',
     letterSpacing: 1.2,
   },
   footer: {
     alignItems: 'center',
   },
   loadingText: {
-    color: THEME.colors.textMuted,
-    fontSize: THEME.typography.fontSize.caption,
-    marginTop: THEME.spacing.sm,
-    letterSpacing: 0.5,
+    color: THEME.colors.mutedMint,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 10,
+    letterSpacing: 1,
   },
 });

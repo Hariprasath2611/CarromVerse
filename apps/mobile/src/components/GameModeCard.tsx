@@ -43,7 +43,7 @@ export const GameModeCard: React.FC<GameModeCardProps> = ({
       ]}
     >
       <View style={styles.topRow}>
-        <View style={styles.iconBox}>
+        <View style={[styles.iconBox, isSelected && styles.selectedIconBox]}>
           <Text style={styles.icon}>{icon}</Text>
         </View>
         <View style={styles.badges}>
@@ -61,7 +61,7 @@ export const GameModeCard: React.FC<GameModeCardProps> = ({
           {isSelected && <View style={styles.radioInner} />}
         </View>
         <Text style={[styles.selectText, isSelected && styles.selectTextActive]}>
-          {isSelected ? 'Selected' : 'Select Mode'}
+          {isSelected ? 'SELECTED' : 'SELECT MODE'}
         </Text>
       </View>
     </Pressable>
@@ -70,36 +70,41 @@ export const GameModeCard: React.FC<GameModeCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: THEME.colors.border,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
+    backgroundColor: '#0E4A33',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#1B7050',
+    padding: 16,
+    marginBottom: 12,
     ...THEME.shadows.card,
   },
   selectedCard: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(22, 163, 74, 0.12)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125239',
+    ...THEME.shadows.glowEmerald,
   },
   pressed: {
     opacity: 0.9,
+    transform: [{ scale: 0.99 }],
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 8,
   },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
-    borderWidth: 1,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  selectedIconBox: {
+    borderColor: THEME.colors.neonEmerald,
   },
   icon: {
     fontSize: 22,
@@ -111,60 +116,63 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   title: {
-    fontSize: THEME.typography.fontSize.bodyLg,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
     marginTop: 4,
+    letterSpacing: 0.4,
   },
   selectedTitle: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
   subtitle: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.accent,
-    fontWeight: THEME.typography.fontWeight.medium,
+    fontSize: 12,
+    color: THEME.colors.brass,
+    fontWeight: '600',
     marginTop: 2,
     marginBottom: 4,
+    letterSpacing: 0.3,
   },
   description: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 13,
+    color: THEME.colors.mutedMint,
     lineHeight: 18,
     marginTop: 2,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 12,
   },
   indicatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: THEME.spacing.xs,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.border,
+    borderTopColor: '#1B7050',
   },
   radioOuter: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: THEME.colors.borderHighlight,
+    borderColor: '#1B7050',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
   radioOuterSelected: {
-    borderColor: THEME.colors.accent,
+    borderColor: THEME.colors.neonEmerald,
   },
   radioInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: THEME.colors.accent,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: THEME.colors.neonEmerald,
   },
   selectText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
     color: THEME.colors.textMuted,
+    letterSpacing: 0.5,
   },
   selectTextActive: {
-    color: THEME.colors.accent,
+    color: THEME.colors.neonEmerald,
   },
 });

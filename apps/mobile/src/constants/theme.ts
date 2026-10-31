@@ -1,94 +1,102 @@
 /**
- * CarromVerse Forest Emerald Design System
- * Theme: FOREST EMERALD
- * Palette:
- * - Primary: #16A34A
- * - Secondary: #064E3B
- * - Accent: #4ADE80
- * - Background: #07130E
- * - Surface: #10251A
- * - Card: #143322
- * - Primary Text: #FFFFFF
- * - Secondary Text: #A7B8AD
- * - Border: #234734
- * - Wood: Natural warm brown (#8B4513, #A0522D, #5C2C16, #D27D2D)
+ * CarromVerse "Emerald Club Night" Design System
+ * Theme: EMERALD CLUB NIGHT
+ * Specifications:
+ * - Forest Ground: #07261C -> #0F5A3E
+ * - Panels: #0E4A33 with 2px #1B7050 inner edge
+ * - Neon Emerald: #2BD67B (Primary actions) + #169352 (6px bottom tactile edge)
+ * - Brass: #E9B949 (Rewards, secondary actions) + #A57E24 (6px bottom tactile edge)
+ * - Cream: #F5ECD2 (Text, board face)
+ * - Muted Mint: #9FD8B8 (Metadata, subtitles)
+ * - Coal: #0B0F0D (Deep shadows, black coins, pockets)
+ * - Queen Red: #E23B5A (Queen coin, urgency alerts)
+ * - Wood Frame: #7A431C with brass #E9B949 inner line
  */
 
 export const THEME = {
   colors: {
-    // Dominant Forest Emerald Palette
-    primary: '#16A34A',              // Vibrant Emerald Green
-    primaryHover: '#15803D',
-    primaryGlow: 'rgba(22, 163, 74, 0.35)',
+    // Primary Emerald Club Palette
+    primary: '#2BD67B',              // Neon Emerald
+    primaryHover: '#23B969',
+    primaryDark: '#169352',           // 6px bottom edge
+    primaryGlow: 'rgba(43, 214, 123, 0.4)',
 
-    secondary: '#064E3B',            // Deep Forest Pine Green
-    secondaryHover: '#043427',
+    secondary: '#0E4A33',            // Panel Felt Green
+    secondaryHover: '#0A3B29',
 
-    accent: '#4ADE80',               // Radiant Mint / Lime Accent
-    accentGlow: 'rgba(74, 222, 128, 0.4)',
+    accent: '#2BD67B',               // Neon Emerald Accent
+    accentGlow: 'rgba(43, 214, 123, 0.45)',
 
-    background: '#07130E',           // Deep Obsidian Green
-    backgroundSecondary: '#0B1C15',
-    backgroundGradient: ['#07130E', '#0B1C15'],
+    // Backgrounds
+    background: '#07261C',           // Forest Ground Dark
+    backgroundSecondary: '#0F5A3E',  // Forest Ground Light
+    backgroundGradient: ['#0F5A3E', '#07261C'],
 
-    surface: '#10251A',              // Dark Emerald Surface
-    surfaceElevated: '#143322',      // Elevated Card Surface
-    surfaceHighlight: '#1A3F2B',     // Active / Pressed surface
-    card: '#143322',                 // Standard Card Green
+    // Panels & Surfaces
+    surface: '#0E4A33',              // Felt Panel Green
+    surfaceElevated: '#11573C',      // Elevated Active Panel
+    surfaceHighlight: '#166E4C',     // Hover/Pressed
+    card: '#0E4A33',                 // Felt Panel Card
 
-    border: '#234734',               // Muted Emerald Border
-    borderHighlight: '#2E6145',      // Focused Border
-    borderActive: '#4ADE80',
+    border: '#1B7050',               // 2px Panel Inner Edge
+    borderHighlight: '#2BD67B',      // Active Neon Emerald Border
+    borderActive: '#2BD67B',
 
     // Typography
-    textPrimary: '#FFFFFF',          // Pure Crisp White
-    textSecondary: '#A7B8AD',        // Soft Sage Gray
-    textMuted: '#6B8576',            // Muted Moss
-    textAccent: '#4ADE80',           // Accent Mint
-    textInverse: '#07130E',          // Dark contrast on bright buttons
+    textPrimary: '#F5ECD2',          // Tournament Cream
+    textSecondary: '#9FD8B8',        // Muted Mint
+    textMuted: '#7AA991',            // Deeper Mint
+    textAccent: '#2BD67B',           // Neon Emerald
+    textInverse: '#07261C',          // Dark contrast on emerald buttons
 
-    // Natural Warm Wood (for Carrom Board and Frame)
-    woodDark: '#451F0D',
-    woodPrimary: '#8B4513',          // Saddle Brown
-    woodMedium: '#A0522D',          // Warm Sienna
-    woodLight: '#CD853F',           // Peru Light Wood
-    woodWarm: '#D27D2D',            // Lacquered Teak
-    woodBorder: '#5C2C16',
-    playingSurface: '#E6CCA0',      // Polished Maple Board Face
+    // Brass & Rewards
+    brass: '#E9B949',                // Brass Gold
+    brassDark: '#A57E24',            // 6px bottom edge for brass buttons
+    goldPrimary: '#E9B949',
+    goldBright: '#F7D070',
+    goldDark: '#A57E24',
+    goldGlow: 'rgba(233, 185, 73, 0.4)',
+    goldBadgeBg: 'rgba(233, 185, 73, 0.18)',
+
+    // Carrom Board Art & Frame
+    woodDark: '#4D270E',
+    woodPrimary: '#7A431C',          // Rosewood Frame
+    woodMedium: '#8C4D20',
+    woodLight: '#A35D2A',
+    woodWarm: '#7A431C',
+    woodBorder: '#5E3113',
+    playingSurface: '#F5ECD2',      // Tournament Cream Playing Surface
+    frameBrassLine: '#E9B949',      // Brass inner line
 
     // Game Pieces
-    queenRed: '#DC2626',
-    queenGlow: 'rgba(220, 38, 38, 0.45)',
-    coinWhite: '#F8F9FA',
-    coinBlack: '#18241C',
-
-    // Gold for rewards, coins balance, and achievements (used sparingly)
-    goldPrimary: '#F59E0B',
-    goldBright: '#FBBF24',
-    goldDark: '#B45309',
-    goldGlow: 'rgba(245, 158, 11, 0.35)',
-    goldBadgeBg: 'rgba(245, 158, 11, 0.15)',
+    queenRed: '#E23B5A',             // Queen Ruby Red
+    queenDark: '#981C33',
+    queenGlow: 'rgba(226, 59, 90, 0.45)',
+    coinWhite: '#F5ECD2',            // Cream coin
+    coinBlack: '#0B0F0D',            // Coal coin
+    strikerNeon: '#2BD67B',          // Neon Emerald Striker
 
     // System Status
-    success: '#10B981',
-    successBg: 'rgba(16, 185, 129, 0.15)',
-    error: '#EF4444',
-    errorBg: 'rgba(239, 68, 68, 0.15)',
-    danger: '#EF4444',
-    dangerBg: 'rgba(239, 68, 68, 0.15)',
-    warning: '#F59E0B',
-    warningBg: 'rgba(245, 158, 11, 0.15)',
-    info: '#3B82F6',
-    infoBg: 'rgba(59, 130, 246, 0.15)',
+    coal: '#0B0F0D',
+    success: '#2BD67B',
+    successBg: 'rgba(43, 214, 123, 0.18)',
+    error: '#E23B5A',
+    errorBg: 'rgba(226, 59, 90, 0.18)',
+    danger: '#E23B5A',
+    dangerBg: 'rgba(226, 59, 90, 0.18)',
+    warning: '#E9B949',
+    warningBg: 'rgba(233, 185, 73, 0.18)',
+    info: '#38BDF8',
+    infoBg: 'rgba(56, 189, 248, 0.18)',
 
     // Compatibility Tokens
-    surfaceBorder: '#234734',
-    goldBorder: '#B45309',
-    woodGlow: 'rgba(210, 125, 45, 0.35)',
+    surfaceBorder: '#1B7050',
+    goldBorder: '#A57E24',
+    woodGlow: 'rgba(122, 67, 28, 0.35)',
 
     // Overlays
-    overlay: 'rgba(7, 19, 14, 0.75)',
-    overlayHeavy: 'rgba(7, 19, 14, 0.92)',
+    overlay: 'rgba(7, 38, 28, 0.78)',
+    overlayHeavy: 'rgba(7, 38, 28, 0.94)',
   },
 
   spacing: {
@@ -103,68 +111,90 @@ export const THEME = {
   borderRadius: {
     xs: 4,
     sm: 8,
-    md: 14,
-    lg: 20,
-    xl: 28,
+    md: 12,
+    lg: 16,     // 16px standard for chunky tactile buttons
+    xl: 20,     // 20px for felt-green cards
+    xxl: 28,
     full: 9999,
   },
 
-  typography: {
-    fontSize: {
-      caption: 12,
-      bodySm: 14,
-      body: 16,
-      bodyMd: 16,
-      bodyLg: 18,
-      subtitle: 18,
-      title: 22,
-      h3: 22,
-      headline: 28,
-      h2: 28,
-      display: 34,
-      h1: 34,
+  // Tactile 3D Button Shadows (6px default, 2px pressed)
+  tactile: {
+    emerald: {
+      backgroundColor: '#2BD67B',
+      borderBottomColor: '#169352',
+      borderBottomWidth: 6,
+      color: '#07261C',
     },
-    lineHeight: {
-      caption: 16,
-      bodySm: 20,
-      body: 24,
-      subtitle: 26,
-      title: 30,
-      headline: 36,
-      display: 42,
+    emeraldPressed: {
+      backgroundColor: '#2BD67B',
+      borderBottomColor: '#169352',
+      borderBottomWidth: 2,
+      transform: [{ translateY: 4 }],
+      color: '#07261C',
     },
-    fontWeight: {
-      regular: '400' as const,
-      medium: '500' as const,
-      semibold: '600' as const,
-      bold: '700' as const,
-      heavy: '800' as const,
+    brass: {
+      backgroundColor: '#E9B949',
+      borderBottomColor: '#A57E24',
+      borderBottomWidth: 6,
+      color: '#261B04',
+    },
+    brassPressed: {
+      backgroundColor: '#E9B949',
+      borderBottomColor: '#A57E24',
+      borderBottomWidth: 2,
+      transform: [{ translateY: 4 }],
+      color: '#261B04',
+    },
+    panel: {
+      backgroundColor: '#0E4A33',
+      borderColor: '#1B7050',
+      borderWidth: 2,
+      borderBottomColor: '#083021',
+      borderBottomWidth: 6,
+      color: '#F5ECD2',
+    },
+    panelPressed: {
+      backgroundColor: '#0E4A33',
+      borderColor: '#1B7050',
+      borderWidth: 2,
+      borderBottomColor: '#083021',
+      borderBottomWidth: 2,
+      transform: [{ translateY: 4 }],
+      color: '#F5ECD2',
     },
   },
 
   shadows: {
     card: {
       shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.35,
-      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.55,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    button: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.45,
+      shadowRadius: 14,
       elevation: 6,
     },
-    emeraldGlow: {
-      shadowColor: '#16A34A',
+    glowEmerald: {
+      shadowColor: '#2BD67B',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.45,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowOpacity: 0.65,
+      shadowRadius: 14,
+      elevation: 10,
     },
-    goldGlow: {
-      shadowColor: '#F59E0B',
+    glowBrass: {
+      shadowColor: '#E9B949',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.45,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowOpacity: 0.6,
+      shadowRadius: 14,
+      elevation: 10,
     },
   },
 } as const;
 
-export type AppTheme = typeof THEME;
+export type ThemeType = typeof THEME;

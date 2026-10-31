@@ -31,20 +31,19 @@ export const Card: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.borderRadius.lg,
-    borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
+    backgroundColor: '#0E4A33', // Felt panel green
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#1B7050',     // 2px inner edge
     padding: THEME.spacing.md,
     ...THEME.shadows.card,
   },
   elevated: {
-    backgroundColor: THEME.colors.surfaceElevated,
-    borderColor: THEME.colors.goldBorder,
+    backgroundColor: '#11573C',
+    borderColor: '#2BD67B',
   },
   highlighted: {
-    borderColor: THEME.colors.goldPrimary,
-    backgroundColor: THEME.colors.surfaceElevated,
+    borderColor: '#E9B949',     // Brass highlight
+    backgroundColor: '#11573C',
   },
 });
-

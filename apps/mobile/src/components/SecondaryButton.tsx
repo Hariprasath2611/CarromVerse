@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,6 +12,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { THEME } from '../constants/theme';
 
@@ -22,7 +23,7 @@ export interface SecondaryButtonProps {
   loading?: boolean;
   disabled?: boolean;
   icon?: string;
-  variant?: 'surface' | 'outline' | 'forest';
+  variant?: 'surface' | 'outline' | 'forest' | 'brass';
   size?: 'small' | 'medium' | 'large';
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -35,46 +36,63 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   loading = false,
   disabled = false,
   icon,
-  variant = 'surface',
+  variant = 'forest',
   size = 'medium',
   style,
   textStyle,
 }) => {
-  const scale = useSharedValue(1);
+  const translateY = useSharedValue(0);
+  const [isPressed, setIsPressed] = useState(false);
   const isDisabled = disabled || loading;
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   const handlePressIn = () => {
-    if (!isDisabled) scale.value = withSpring(0.96, { damping: 15 });
+    if (!isDisabled) {
+      setIsPressed(true);
+      translateY.value = withTiming(3, { duration: 80 });
+    }
   };
 
   const handlePressOut = () => {
-    if (!isDisabled) scale.value = withSpring(1, { damping: 15 });
+    if (!isDisabled) {
+      setIsPressed(false);
+      translateY.value = withSpring(0, { damping: 15, stiffness: 250 });
+    }
   };
 
   const getVariantStyles = () => {
     switch (variant) {
-      case 'forest':
+      case 'brass':
         return {
-          bg: THEME.colors.secondary,
-          border: THEME.colors.borderHighlight,
-          text: THEME.colors.accent,
+          bg: '#E9B949',
+          borderBottom: '#A57E24',
+          borderColor: '#F3D27A',
+          text: '#261B04',
         };
       case 'outline':
         return {
           bg: 'transparent',
-          border: THEME.colors.borderHighlight,
-          text: THEME.colors.textSecondary,
+          borderBottom: '#0A3223',
+          borderColor: '#1B7050',
+          text: '#9FD8B8',
         };
       case 'surface':
+        return {
+          bg: '#103728',
+          borderBottom: '#071B13',
+          borderColor: '#1B7050',
+          text: '#2BD67B',
+        };
+      case 'forest':
       default:
         return {
-          bg: THEME.colors.surfaceElevated,
-          border: THEME.colors.border,
-          text: THEME.colors.accent,
+          bg: '#0E4A33',
+          borderBottom: '#083021',
+          borderColor: '#1B7050',
+          text: '#F5ECD2',
         };
     }
   };
@@ -82,12 +100,12 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   const getSizeStyles = () => {
     switch (size) {
       case 'small':
-        return { height: 36, paddingHorizontal: 10, fontSize: 12 };
+        return { height: 38, paddingHorizontal: 12, fontSize: 12 };
       case 'large':
-        return { height: subtitle ? 56 : 50, paddingHorizontal: 18, fontSize: 15 };
+        return { height: subtitle ? 58 : 52, paddingHorizontal: 20, fontSize: 15 };
       case 'medium':
       default:
-        return { height: subtitle ? 48 : 44, paddingHorizontal: 14, fontSize: 13 };
+        return { height: subtitle ? 50 : 44, paddingHorizontal: 16, fontSize: 13 };
     }
   };
 
@@ -105,7 +123,9 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
           styles.button,
           {
             backgroundColor: v.bg,
-            borderColor: v.border,
+            borderColor: v.borderColor,
+            borderBottomColor: v.borderBottom,
+            borderBottomWidth: isPressed ? 2 : 5,
             minHeight: s.height,
             paddingHorizontal: s.paddingHorizontal,
           },
@@ -142,11 +162,11 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: THEME.borderRadius.md,
+    borderRadius: 16,
   },
   button: {
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 1.2,
+    borderRadius: 16,
+    borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -162,13 +182,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontWeight: THEME.typography.fontWeight.semibold,
-    letterSpacing: 0.4,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   subtitleText: {
     fontSize: 9,
-    opacity: 0.8,
+    opacity: 0.85,
     marginTop: 1,
+    fontWeight: '600',
   },
   icon: {
     fontSize: 16,

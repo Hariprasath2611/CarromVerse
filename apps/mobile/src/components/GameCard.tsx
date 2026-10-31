@@ -48,25 +48,27 @@ export const GameCard: React.FC<GameCardProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.lg,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
+    backgroundColor: '#0E4A33',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#1B7050',
     overflow: 'hidden',
   },
   elevated: {
     ...THEME.shadows.card,
-    backgroundColor: THEME.colors.surfaceElevated,
-    borderColor: THEME.colors.borderHighlight,
+    backgroundColor: '#105239',
+    borderColor: '#248660',
   },
   highlighted: {
-    borderColor: THEME.colors.accent,
-    borderWidth: 1.5,
+    borderColor: THEME.colors.neonEmerald,
+    borderWidth: 2,
+    backgroundColor: '#125A3F',
   },
   glow: {
-    ...THEME.shadows.emeraldGlow,
+    ...THEME.shadows.glowEmerald,
   },
   pressed: {
     opacity: 0.92,
+    transform: [{ scale: 0.99 }],
   },
 });

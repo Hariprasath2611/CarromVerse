@@ -60,13 +60,14 @@ const styles = StyleSheet.create({
     marginRight: THEME.spacing.md,
   },
   label: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.body,
-    fontWeight: THEME.typography.fontWeight.medium,
+    color: '#F5ECD2',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
   description: {
-    color: THEME.colors.textMuted,
-    fontSize: THEME.typography.fontSize.caption,
+    color: '#9FD8B8',
+    fontSize: 12,
     marginTop: 2,
     lineHeight: 16,
   },
@@ -78,12 +79,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackActive: {
-    backgroundColor: THEME.colors.secondary,
-    borderColor: THEME.colors.accent,
+    backgroundColor: '#0E4A33',
+    borderColor: '#2BD67B',
   },
   trackInactive: {
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
   },
   thumb: {
     width: 20,
@@ -91,11 +92,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   thumbActive: {
-    backgroundColor: THEME.colors.accent,
-    ...THEME.shadows.emeraldGlow,
+    backgroundColor: '#2BD67B',
+    shadowColor: '#2BD67B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
+    elevation: 4,
   },
   thumbInactive: {
-    backgroundColor: THEME.colors.textMuted,
+    backgroundColor: '#9FD8B8',
   },
   disabled: {
     opacity: 0.5,

@@ -72,19 +72,20 @@ export const DailyRewardsModal: React.FC<DailyRewardsModalProps> = ({
 
         {claimedAmount !== null ? (
           <View style={styles.celebrationBox}>
-            <Text style={styles.celebrationTitle}>🎉 Rewards Claimed!</Text>
+            <Text style={styles.celebrationTitle}>REWARDS CLAIMED!</Text>
             <Text style={styles.celebrationText}>
-              +{claimedAmount.toLocaleString()} Virtual Coins have been added to your balance.
+              +{claimedAmount.toLocaleString()} Coins added to your vault balance.
             </Text>
             <PrimaryButton
-              title="Awesome!"
+              title="COLLECT & PLAY"
               onPress={onClose}
+              variant="emerald"
               style={styles.actionBtn}
             />
           </View>
         ) : (
           <PrimaryButton
-            title={dailyRewardClaimed ? 'Claimed Today (Come back tomorrow!)' : 'Claim Daily Reward'}
+            title={dailyRewardClaimed ? 'CLAIMED TODAY' : 'CLAIM REWARD'}
             disabled={dailyRewardClaimed}
             onPress={handleClaim}
             variant="gold"
@@ -109,51 +110,52 @@ const styles = StyleSheet.create({
   },
   dayCard: {
     width: '30%',
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 1.2,
-    borderColor: THEME.colors.border,
+    backgroundColor: '#07261C',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#1B7050',
     paddingVertical: 10,
     alignItems: 'center',
     position: 'relative',
   },
   todayCard: {
-    borderColor: THEME.colors.goldBright,
-    backgroundColor: THEME.colors.surfaceHighlight,
-    ...THEME.shadows.goldGlow,
+    borderColor: THEME.colors.brass,
+    backgroundColor: '#124330',
+    ...THEME.shadows.glowBrass,
   },
   pastCard: {
     opacity: 0.6,
-    borderColor: THEME.colors.success,
+    borderColor: THEME.colors.neonEmerald,
   },
   jackpotCard: {
-    width: '94%',
-    borderColor: THEME.colors.goldPrimary,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    width: '95%',
+    borderColor: THEME.colors.brass,
+    backgroundColor: 'rgba(233, 185, 73, 0.12)',
   },
   dayLabel: {
-    color: THEME.colors.textMuted,
+    color: THEME.colors.mutedMint,
     fontSize: 10,
-    fontWeight: THEME.typography.fontWeight.heavy,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   todayText: {
-    color: THEME.colors.goldBright,
+    color: THEME.colors.brass,
   },
   coinIcon: {
     fontSize: 22,
     marginVertical: 4,
   },
   rewardAmount: {
-    color: THEME.colors.textPrimary,
-    fontSize: 12,
-    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.cream,
+    fontSize: 13,
+    fontWeight: 'bold',
   },
   checkMark: {
     position: 'absolute',
     top: 4,
     right: 6,
-    color: THEME.colors.success,
-    fontSize: 12,
+    color: THEME.colors.neonEmerald,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   actionBtn: {
@@ -164,16 +166,16 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
   },
   celebrationTitle: {
-    color: THEME.colors.goldBright,
-    fontSize: THEME.typography.fontSize.subtitle,
-    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.brass,
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
     marginBottom: 4,
   },
   celebrationText: {
-    color: THEME.colors.textSecondary,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: THEME.colors.mutedMint,
+    fontSize: 13,
     textAlign: 'center',
     marginBottom: THEME.spacing.md,
   },
 });
-

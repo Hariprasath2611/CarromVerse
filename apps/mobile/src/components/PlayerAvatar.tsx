@@ -28,10 +28,10 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   const radius = size / 2;
 
   const getBorderColor = () => {
-    if (isGlowing) return THEME.colors.accent;
-    if (teamColor === 'team_a') return THEME.colors.primary;
-    if (teamColor === 'team_b') return THEME.colors.goldPrimary;
-    return THEME.colors.borderHighlight;
+    if (isGlowing) return '#2BD67B'; // Neon Emerald active ring
+    if (teamColor === 'team_a') return '#2BD67B';
+    if (teamColor === 'team_b') return '#E9B949'; // Brass ring
+    return '#1B7050'; // Panel edge default
   };
 
   return (
@@ -69,31 +69,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circle: {
-    backgroundColor: THEME.colors.surfaceElevated,
-    borderWidth: 2,
+    backgroundColor: '#07261C', // Forest ground dark
+    borderWidth: 3,             // 3px colored ring
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeHalo: {
-    borderColor: THEME.colors.accent,
-    shadowColor: THEME.colors.accent,
+    borderColor: '#2BD67B',
+    shadowColor: '#2BD67B',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.75,
+    shadowRadius: 10,
+    elevation: 8,
   },
   initial: {
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontWeight: 'bold',
+    color: '#F5ECD2',
   },
   levelBadge: {
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: THEME.colors.secondary,
-    borderColor: THEME.colors.accent,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.full,
+    backgroundColor: '#2BD67B',
+    borderColor: '#07261C',
+    borderWidth: 1.5,
+    borderRadius: 999,
     paddingHorizontal: 4,
     paddingVertical: 1,
     minWidth: 16,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   levelText: {
     fontSize: 9,
-    fontWeight: THEME.typography.fontWeight.heavy,
-    color: THEME.colors.accent,
+    fontWeight: '900',
+    color: '#07261C',
   },
 });

@@ -24,7 +24,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   currentExp,
   maxExp = 1000,
   nextLevelExp,
-  rankTitle = 'BOARD GRANDMASTER',
+  rankTitle = 'CLUB MASTER',
   avatarEmoji,
   avatarUrl,
   style,
@@ -37,13 +37,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <PlayerAvatar
           name={username}
           avatarUrl={avatarEmoji || avatarUrl}
-          size={68}
+          size={70}
           level={level}
           isActive
         />
         <View style={styles.info}>
           <Text style={styles.username}>{username}</Text>
-          <Text style={styles.email}>{email || 'Offline Guest Account'}</Text>
+          <Text style={styles.email}>{email || 'Club Member'}</Text>
           <View style={styles.badgeRow}>
             <View style={styles.tierPill}>
               <Text style={styles.tierText}>🏆 {rankTitle}</Text>
@@ -64,31 +64,32 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.xl,
-    borderColor: THEME.colors.border,
-    borderWidth: 1.5,
-    padding: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
+    backgroundColor: '#0E4A33',
+    borderRadius: 22,
+    borderColor: '#1B7050',
+    borderWidth: 2,
+    padding: 18,
+    marginBottom: 16,
     ...THEME.shadows.card,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: 14,
   },
   info: {
-    marginLeft: THEME.spacing.md,
+    marginLeft: 14,
     flex: 1,
   },
   username: {
-    fontSize: THEME.typography.fontSize.title,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
   email: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     marginTop: 2,
   },
   badgeRow: {
@@ -97,20 +98,20 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   tierPill: {
-    backgroundColor: 'rgba(22, 163, 74, 0.2)',
-    borderColor: THEME.colors.primary,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    backgroundColor: '#07261C',
+    borderColor: THEME.colors.brass,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   tierText: {
-    fontSize: 10,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.accent,
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: THEME.colors.brass,
+    letterSpacing: 0.6,
   },
   progress: {
-    marginTop: THEME.spacing.xs,
+    marginTop: 4,
   },
 });

@@ -75,19 +75,19 @@ export const CustomizationCard: React.FC<CustomizationCardProps> = ({
             </View>
           ) : (
             <SecondaryButton
-              title="Equip"
+              title="EQUIP"
+              variant="forest"
               onPress={handleEquip}
               style={styles.actionBtn}
             />
           )
         ) : (
           <PrimaryButton
-            title={`Unlock ${item.price.toLocaleString()} 🪙`}
+            title={`UNLOCK ${item.price.toLocaleString()} 🪙`}
             variant="gold"
             disabled={!canAfford}
             onPress={handleUnlock}
             style={styles.actionBtn}
-            textStyle={styles.unlockText}
           />
         )}
       </View>
@@ -97,30 +97,31 @@ export const CustomizationCard: React.FC<CustomizationCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: THEME.colors.border,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    backgroundColor: '#0E4A33',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#1B7050',
+    padding: 16,
+    marginBottom: 14,
     ...THEME.shadows.card,
   },
   equippedCard: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: 'rgba(22, 163, 74, 0.12)',
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125239',
+    ...THEME.shadows.glowEmerald,
   },
   previewContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 10,
   },
   colorPreview: {
     width: 48,
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: THEME.colors.borderHighlight,
+    borderColor: '#1B7050',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -132,39 +133,39 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   details: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: 14,
   },
   name: {
-    fontSize: THEME.typography.fontSize.bodyLg,
-    fontWeight: THEME.typography.fontWeight.bold,
-    color: THEME.colors.textPrimary,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
     marginBottom: 4,
+    letterSpacing: 0.4,
   },
   desc: {
-    fontSize: THEME.typography.fontSize.caption,
-    color: THEME.colors.textSecondary,
+    fontSize: 12,
+    color: THEME.colors.mutedMint,
     lineHeight: 18,
   },
   footer: {
-    marginTop: THEME.spacing.xs,
+    marginTop: 4,
   },
   actionBtn: {
     width: '100%',
   },
   equippedBadge: {
-    backgroundColor: THEME.colors.primary,
-    paddingVertical: 10,
-    borderRadius: THEME.borderRadius.md,
+    backgroundColor: THEME.colors.neonEmerald,
+    paddingVertical: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderBottomWidth: 4,
+    borderBottomColor: '#169352',
   },
   equippedText: {
-    color: THEME.colors.textPrimary,
-    fontWeight: THEME.typography.fontWeight.bold,
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  unlockText: {
+    color: '#07261C',
+    fontWeight: 'bold',
     fontSize: 13,
+    letterSpacing: 0.8,
   },
 });

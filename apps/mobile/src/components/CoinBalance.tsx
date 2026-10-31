@@ -22,12 +22,12 @@ export const CoinBalance: React.FC<CoinBalanceProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.coinIcon}>
+      <View style={styles.coinBadge}>
         <Text style={styles.coinSymbol}>🪙</Text>
       </View>
       <Text style={styles.amountText}>{displayAmount.toLocaleString()}</Text>
       {handlePlus && (
-        <Pressable onPress={handlePlus} style={styles.plusBtn}>
+        <Pressable onPress={handlePlus} hitSlop={8} style={styles.plusBtn}>
           <Text style={styles.plusText}>+</Text>
         </Pressable>
       )}
@@ -39,38 +39,39 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.goldPrimary,
-    borderWidth: 1,
-    borderRadius: THEME.borderRadius.full,
-    paddingLeft: 6,
-    paddingRight: 6,
+    backgroundColor: '#07261C',
+    borderColor: '#E9B949',
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingLeft: 8,
+    paddingRight: 8,
     paddingVertical: 4,
   },
-  coinIcon: {
-    marginRight: 4,
+  coinBadge: {
+    marginRight: 6,
   },
   coinSymbol: {
     fontSize: 14,
   },
   amountText: {
-    color: THEME.colors.goldBright,
-    fontWeight: THEME.typography.fontWeight.bold,
-    fontSize: THEME.typography.fontSize.bodySm,
+    color: '#E9B949',
+    fontWeight: 'bold',
+    fontSize: 13,
+    letterSpacing: 0.4,
     marginRight: 6,
   },
   plusBtn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: THEME.colors.goldPrimary,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#E9B949',
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusText: {
-    color: THEME.colors.textInverse,
-    fontSize: 14,
+    color: '#261B04',
+    fontSize: 15,
     fontWeight: 'bold',
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });

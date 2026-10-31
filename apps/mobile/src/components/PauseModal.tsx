@@ -27,7 +27,7 @@ export const PauseModal: React.FC<PauseModalProps> = ({
       visible={visible}
       onClose={onResume}
       title="Match Paused"
-      subtitle="Take a breather or adjust game settings"
+      subtitle="Take a breather or adjust game audio"
     >
       <View style={styles.container}>
         <View style={styles.settingsSection}>
@@ -45,22 +45,22 @@ export const PauseModal: React.FC<PauseModalProps> = ({
 
         <View style={styles.buttonGroup}>
           <PrimaryButton
-            title="Resume Match"
+            title="RESUME MATCH"
+            variant="emerald"
             onPress={onResume}
             style={styles.actionBtn}
           />
           <SecondaryButton
-            title="Restart Match"
-            variant="surface"
+            title="RESTART MATCH"
+            variant="brass"
             onPress={onRestart}
             style={styles.actionBtn}
           />
-          <SecondaryButton
-            title="Exit to Main Menu"
-            variant="outline"
+          <PrimaryButton
+            title="EXIT TO MENU"
+            variant="danger"
             onPress={onExit}
             style={styles.actionBtn}
-            textStyle={{ color: THEME.colors.error }}
           />
         </View>
       </View>
@@ -73,18 +73,17 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.xs,
   },
   settingsSection: {
-    backgroundColor: THEME.colors.surface,
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    marginBottom: THEME.spacing.lg,
+    backgroundColor: '#07261C',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#1B7050',
+    marginBottom: 16,
   },
   buttonGroup: {
-    gap: 10,
+    gap: 12,
   },
   actionBtn: {
     width: '100%',
   },
 });
-

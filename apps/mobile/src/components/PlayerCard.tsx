@@ -49,8 +49,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       <View style={styles.right}>
         {player.teamId && (
           <Badge
-            label={player.teamId === 'team_a' ? 'Team A' : 'Team B'}
-            variant={player.teamId === 'team_a' ? 'gold' : 'wood'}
+            label={player.teamId === 'team_a' ? 'TEAM A' : 'TEAM B'}
+            variant={player.teamId === 'team_a' ? 'success' : 'gold'}
             style={styles.teamBadge}
           />
         )}
@@ -66,29 +66,29 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.md,
-    borderWidth: 1.2,
-    borderColor: THEME.colors.border,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.sm,
+    backgroundColor: '#0E4A33',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#1B7050',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 10,
   },
   activeCard: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: THEME.colors.surfaceHighlight,
-    ...THEME.shadows.emeraldGlow,
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#125239',
+    ...THEME.shadows.glowEmerald,
   },
   teamACard: {
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.colors.primary,
+    borderLeftWidth: 5,
+    borderLeftColor: THEME.colors.neonEmerald,
   },
   teamBCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.colors.goldPrimary,
+    borderLeftWidth: 5,
+    borderLeftColor: THEME.colors.brass,
   },
   left: {
     flexDirection: 'row',
@@ -96,38 +96,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   info: {
-    marginLeft: THEME.spacing.md,
+    marginLeft: 12,
     flex: 1,
   },
   name: {
-    color: THEME.colors.textPrimary,
-    fontSize: THEME.typography.fontSize.body,
-    fontWeight: THEME.typography.fontWeight.bold,
+    color: THEME.colors.cream,
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
   position: {
-    color: THEME.colors.textMuted,
-    fontSize: THEME.typography.fontSize.caption,
+    color: THEME.colors.mutedMint,
+    fontSize: 11,
+    fontWeight: '600',
     marginTop: 2,
   },
   right: {
     alignItems: 'flex-end',
-    marginLeft: THEME.spacing.sm,
+    marginLeft: 10,
   },
   teamBadge: {
     marginBottom: 4,
   },
   scoreBox: {
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: '#07261C',
     paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.borderHighlight,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#1B7050',
   },
   scoreText: {
-    color: THEME.colors.accent,
-    fontSize: THEME.typography.fontSize.body,
-    fontWeight: THEME.typography.fontWeight.heavy,
+    color: THEME.colors.brass,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
-

@@ -10,14 +10,14 @@ export interface StickerItem {
 }
 
 export const CARROM_STICKERS: StickerItem[] = [
-  { id: 'stk_1', emoji: '🎯', text: 'Nice Shot!' },
-  { id: 'stk_2', emoji: '👑', text: 'Queen Secured!' },
-  { id: 'stk_3', emoji: '🔥', text: 'On Fire!' },
-  { id: 'stk_4', emoji: '😱', text: 'So Close!' },
-  { id: 'stk_5', emoji: '💥', text: 'Power Break!' },
-  { id: 'stk_6', emoji: '🤝', text: 'Good Game!' },
-  { id: 'stk_7', emoji: '⚡', text: 'Laser Aim!' },
-  { id: 'stk_8', emoji: '😎', text: 'Easy Peasy!' },
+  { id: 'stk_1', emoji: '🎯', text: 'NICE SHOT!' },
+  { id: 'stk_2', emoji: '👑', text: 'QUEEN SECURED!' },
+  { id: 'stk_3', emoji: '🔥', text: 'ON FIRE!' },
+  { id: 'stk_4', emoji: '⚡', text: 'LASER AIM!' },
+  { id: 'stk_5', emoji: '💥', text: 'POWER BREAK!' },
+  { id: 'stk_6', emoji: '🤝', text: 'GOOD GAME!' },
+  { id: 'stk_7', emoji: '🛡️', text: 'CLEVER COVER!' },
+  { id: 'stk_8', emoji: '🏆', text: 'MATCH POINT!' },
 ];
 
 export interface StickersModalProps {
@@ -40,7 +40,7 @@ export const StickersModal: React.FC<StickersModalProps> = ({
       visible={visible}
       onClose={onClose}
       title="Table Reactions"
-      subtitle="Send animated sticker reactions across the board"
+      subtitle="Send tactical reactions across the table"
     >
       <View style={styles.grid}>
         {CARROM_STICKERS.map((item) => (
@@ -70,26 +70,27 @@ const styles = StyleSheet.create({
   },
   stickerBtn: {
     width: '48%',
-    backgroundColor: THEME.colors.surface,
-    borderColor: THEME.colors.border,
+    backgroundColor: '#07261C',
+    borderColor: '#1B7050',
     borderWidth: 1.5,
-    borderRadius: THEME.borderRadius.md,
+    borderRadius: 16,
     alignItems: 'center',
-    paddingVertical: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
+    paddingVertical: 14,
+    marginBottom: 10,
   },
   pressed: {
-    borderColor: THEME.colors.accent,
-    backgroundColor: THEME.colors.surfaceHighlight,
+    borderColor: THEME.colors.neonEmerald,
+    backgroundColor: '#104430',
     transform: [{ scale: 0.97 }],
   },
   emoji: {
-    fontSize: 28,
+    fontSize: 26,
     marginBottom: 4,
   },
   text: {
-    fontSize: THEME.typography.fontSize.caption,
-    fontWeight: THEME.typography.fontWeight.semibold,
-    color: THEME.colors.textPrimary,
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: THEME.colors.cream,
+    letterSpacing: 0.5,
   },
 });
