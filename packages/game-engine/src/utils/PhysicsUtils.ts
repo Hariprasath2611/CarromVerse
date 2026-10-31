@@ -96,16 +96,13 @@ export class PhysicsUtils {
   }
 
   /**
-   * Calculates relative impact speed in cm/s between two moving bodies.
+   * Calculates relative impact speed between two moving bodies.
    */
   public static calculateImpactSpeed(
     v1: { x: number; y: number },
-    v2: { x: number; y: number },
-    dtSeconds: number = SIMULATION.baseDtSeconds,
-    pxPerCm: number = PX_PER_CM
+    v2: { x: number; y: number }
   ): number {
-    const relStepSpeed = Math.hypot(v1.x - v2.x, v1.y - v2.y);
-    return PhysicsUtils.stepVelocityToSpeedCmS(relStepSpeed, dtSeconds, pxPerCm);
+    return Math.hypot(v1.x - v2.x, v1.y - v2.y);
   }
 
   /**

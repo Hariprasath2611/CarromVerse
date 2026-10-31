@@ -517,10 +517,10 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           // 4 Static Wall Rectangles placed OUTSIDE the 740px playable surface:
           // Inner edges: Left x=fw, Right x=s-fw, Top y=fw, Bottom y=s-fw
           var wallDefs = [
-            { x: center, y: fw - thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'wall_top' },
-            { x: center, y: s - fw + thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'wall_bottom' },
-            { x: fw - thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'wall_left' },
-            { x: s - fw + thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'wall_right' }
+            { x: center, y: fw - thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'cushion_top' },
+            { x: center, y: s - fw + thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'cushion_bottom' },
+            { x: fw - thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'cushion_left' },
+            { x: s - fw + thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'cushion_right' }
           ];
 
           wallDefs.forEach(function(def) {
@@ -1112,6 +1112,12 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
                   scene.strikerSprite.setVisible(false);
                   scene.strikerShadow.setVisible(false);
                 }
+              });
+
+              sendToReactNative({
+                type: 'STRIKER_POCKETED',
+                payload: { pocketIndex: pIdx },
+                timestamp: Date.now()
               });
 
               sendToReactNative({

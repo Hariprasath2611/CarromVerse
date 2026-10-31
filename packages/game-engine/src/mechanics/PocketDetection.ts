@@ -58,7 +58,25 @@ export class PocketDetection {
       return;
     }
 
-    if (!pocketSensorBody) return;
+    if (!pocketSensorBody) {
+      (body as any).isPocketed = true;
+      this.pocketedIds.add(bodyId);
+      if (entity) {
+        this.queuedRemovals.push({ body, entity, pocketIdx: pocketIndex });
+      } else {
+        const type = (body as any).entityType || (body.label === 'striker' ? 'striker' : 'white');
+        const eventData: PocketEventData = {
+          id: bodyId,
+          type: type as CoinType | 'striker',
+          pocketIndex,
+          timestamp: Date.now(),
+        };
+        this.pocketedInCurrentShot.push(eventData);
+        this.scene.matter?.world?.remove?.(body);
+        this.onPocketedCallback?.(eventData);
+      }
+      return;
+    }
 
     // Calculate exact Euclidean distance from piece center to pocket hole center
     const dx = pocketSensorBody.position.x - body.position.x;

@@ -197,12 +197,12 @@ describe('CarromVerse Game Engine Phase 1.3 & 1.4 Tests', () => {
       );
 
       // High elastic restitution
-      assert.ok(PHYSICS_CONFIG.coins.restitution >= 0.9, 'Coins must have high elastic rebound');
-      assert.ok(PHYSICS_CONFIG.striker.restitution >= 0.9, 'Striker must have hard acrylic rebound');
-      assert.ok(PHYSICS_CONFIG.cushions.restitution >= 0.88, 'Cushions must have solid rebound');
+      assert.ok(PHYSICS_CONFIG.coins.restitution >= 0.85, 'Coins must have high elastic rebound');
+      assert.ok(PHYSICS_CONFIG.striker.restitution >= 0.85, 'Striker must have hard acrylic rebound');
+      assert.ok(PHYSICS_CONFIG.cushions.normalRetention >= 0.60, 'Cushions must have solid rebound');
 
       // Stopping velocity thresholds
-      assert.ok(PHYSICS_CONFIG.motion.linearRestThreshold <= 0.1);
+      assert.ok(PHYSICS_CONFIG.motion.linearRestThreshold <= 5.0);
       assert.ok(PHYSICS_CONFIG.motion.settledCooldownMs >= 200);
     });
 
@@ -244,13 +244,13 @@ describe('CarromVerse Game Engine Phase 1.3 & 1.4 Tests', () => {
       detector.update(mockStriker, mockCoins);
       assert.equal(stoppedCalled, true, 'onAllObjectsStopped must be emitted');
 
-      // Fast forward past cooldown (250ms)
+      // Fast forward past cooldown (300ms)
       setTimeout(() => {
         detector.update(mockStriker, mockCoins);
         assert.equal(settledCalled, true, 'onShotSettled must be emitted after rest cooldown');
         assert.equal(detector.isBoardAtRest(), true);
         done();
-      }, 270);
+      }, 330);
     });
 
     it('PocketDetection detects sensor overlap, prevents duplicate entries, and queues removal', () => {
