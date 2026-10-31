@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 236" width="220" height="236">
+  <defs>
+    <!-- Face Radial Gradient -->
+    <radialGradient id="blackCoinFaceGrad" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#4A524E" />
+      <stop offset="40%" stop-color="#2D3330" />
+      <stop offset="75%" stop-color="#181C1A" />
+      <stop offset="100%" stop-color="#0B0F0D" />
+    </radialGradient>
+
+    <!-- Ground Shadow Blur Gradient -->
+    <radialGradient id="shadowGradBlack" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.40" />
+      <stop offset="70%" stop-color="#000000" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- 1. Ground Shadow (84x10, 30-40% black) -->
+  <ellipse cx="110" cy="224" rx="84" ry="10" fill="url(#shadowGradBlack)" />
+
+  <!-- 2. Edge-Thickness Disc (r100, 12 units lower) in #030504 -->
+  <circle cx="110" cy="122" r="100" fill="#030504" />
+
+  <!-- 3. Face Disc (r100) with Radial Gradient #4A524E -> #0B0F0D -->
+  <circle cx="110" cy="110" r="100" fill="url(#blackCoinFaceGrad)" stroke="#2E3833" stroke-width="1.5" />
+
+  <!-- 4. Groove Ring r84 (3 units, #2E3833) -->
+  <circle cx="110" cy="110" r="84" fill="none" stroke="#2E3833" stroke-width="3" />
+
+  <!-- 5. Inner Ring r66 (2 units, #2E3833) -->
+  <circle cx="110" cy="110" r="66" fill="none" stroke="#2E3833" stroke-width="2" />
+
+  <!-- 6. Tick Ring (r48, 10-unit stroke dashed 3 / 15.85) in #2E3833 -->
+  <circle cx="110" cy="110" r="48" fill="none" stroke="#2E3833" stroke-width="10" stroke-dasharray="3 15.85" />
+
+  <!-- 7. Center Emblem: r30 Disc #141A17 with emerald dot r8 #2BD67B -->
+  <circle cx="110" cy="110" r="30" fill="#141A17" stroke="#2E3833" stroke-width="1.5" />
+  <circle cx="110" cy="110" r="8" fill="#2BD67B" />
+
+  <!-- 8. Highlight Ellipse (center 74, 62; 40x16; rotated -35°; white 22%) -->
+  <ellipse cx="74" cy="62" rx="20" ry="8" transform="rotate(-35 74 62)" fill="#FFFFFF" opacity="0.22" />
+</svg>
