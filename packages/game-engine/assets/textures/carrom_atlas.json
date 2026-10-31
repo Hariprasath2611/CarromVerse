@@ -1,0 +1,135 @@
+{
+  "frames": {
+    "coin_white": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 62,
+        "h": 67
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 62,
+        "h": 67
+      },
+      "sourceSize": {
+        "w": 62,
+        "h": 67
+      }
+    },
+    "coin_black": {
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 62,
+        "h": 67
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 62,
+        "h": 67
+      },
+      "sourceSize": {
+        "w": 62,
+        "h": 67
+      }
+    },
+    "coin_queen": {
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 62,
+        "h": 67
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 62,
+        "h": 67
+      },
+      "sourceSize": {
+        "w": 62,
+        "h": 67
+      }
+    },
+    "striker_default": {
+      "frame": {
+        "x": 192,
+        "y": 0,
+        "w": 82,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 82,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 82,
+        "h": 87
+      }
+    },
+    "shadow_coin": {
+      "frame": {
+        "x": 276,
+        "y": 0,
+        "w": 62,
+        "h": 25
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 62,
+        "h": 25
+      },
+      "sourceSize": {
+        "w": 62,
+        "h": 25
+      }
+    },
+    "shadow_striker": {
+      "frame": {
+        "x": 340,
+        "y": 0,
+        "w": 82,
+        "h": 33
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 82,
+        "h": 33
+      },
+      "sourceSize": {
+        "w": 82,
+        "h": 33
+      }
+    }
+  },
+  "meta": {
+    "app": "CarromVerse Texture Packer",
+    "version": "1.0",
+    "image": "carrom_atlas.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 512,
+      "h": 512
+    },
+    "scale": "1"
+  }
+}
