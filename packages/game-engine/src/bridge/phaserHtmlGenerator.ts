@@ -199,137 +199,277 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         return dtSec > 0 ? (stepVel / dtSec) / PX_PER_CM : 0;
       }
 
-      // TEXTURE GENERATOR
+      // TEXTURE GENERATOR (DPR-RESPONSIVE, HIGH-FIDELITY VECTOR CANVASES)
       function generateTextures(scene, theme) {
-        createCanvasTexture(scene, 'tex_coin_shadow', 96, 96, function(ctx) {
-          var grad = ctx.createRadialGradient(48, 48, 14, 48, 48, 46);
-          grad.addColorStop(0, 'rgba(0,0,0,0.6)');
-          grad.addColorStop(0.6, 'rgba(0,0,0,0.25)');
-          grad.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.arc(48, 48, 46, 0, Math.PI * 2);
-          ctx.fill();
-        });
+        var dpr = typeof window !== 'undefined' && window.devicePixelRatio ? Math.min(3, Math.max(1, Math.round(window.devicePixelRatio))) : 2;
 
-        createCanvasTexture(scene, 'tex_striker_shadow', 128, 128, function(ctx) {
-          var grad = ctx.createRadialGradient(64, 64, 18, 64, 64, 62);
-          grad.addColorStop(0, 'rgba(0,0,0,0.65)');
-          grad.addColorStop(0.6, 'rgba(0,0,0,0.3)');
-          grad.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.arc(64, 64, 62, 0, Math.PI * 2);
-          ctx.fill();
-        });
+        // 1. Coins Helper
+        function drawCoinCanvas(ctx, w, h, s, type) {
+          var cx = w / 2;
+          var faceCy = 110 * s;
+          var thickCy = 122 * s;
+          var rFace = 100 * s;
 
-        createCanvasTexture(scene, 'tex_coin_white', 96, 96, function(ctx) {
-          var r = 44;
-          var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
-          g.addColorStop(0, '#FFFFFF');
-          g.addColorStop(0.4, '#F7F3E9');
-          g.addColorStop(0.85, '#D5CBB5');
-          g.addColorStop(1, '#B8AB91');
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(48, 48, r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#B3A892';
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
-          ctx.strokeStyle = 'rgba(179, 168, 146, 0.55)';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(48, 48, r * 0.72, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(48, 48, r * 0.44, 0, Math.PI * 2);
-          ctx.stroke();
-        });
+          var isWhite = type === 'white';
+          var isBlack = type === 'black';
 
-        createCanvasTexture(scene, 'tex_coin_black', 96, 96, function(ctx) {
-          var r = 44;
-          var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
-          g.addColorStop(0, '#3A3E45');
-          g.addColorStop(0.3, '#22252A');
-          g.addColorStop(0.85, '#121417');
-          g.addColorStop(1, '#08090A');
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(48, 48, r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#4B5563';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.strokeStyle = 'rgba(156, 163, 175, 0.35)';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(48, 48, r * 0.72, 0, Math.PI * 2);
-          ctx.stroke();
-        });
+          var colThickness = isWhite ? '#A89868' : (isBlack ? '#030504' : '#7A1020');
+          var colFaceInner = isWhite ? '#FFFFFF' : (isBlack ? '#4A524E' : '#FF5C78');
+          var colFaceOuter = isWhite ? '#E2D6B4' : (isBlack ? '#0B0F0D' : '#B82545');
+          var colGrooves = isWhite ? '#CDBF9A' : (isBlack ? '#2E3833' : '#FFD0D8');
+          var colEmblemDot = isWhite ? '#CDBF9A' : (isBlack ? '#2BD67B' : '#FFD0D8');
+          var colEmblemDisc = isBlack ? '#141A17' : null;
+          var highlightAlpha = isWhite ? 0.55 : (isBlack ? 0.22 : 0.50);
 
-        createCanvasTexture(scene, 'tex_coin_queen', 96, 96, function(ctx) {
-          var r = 44;
-          var g = ctx.createRadialGradient(38, 38, 4, 48, 48, r);
-          g.addColorStop(0, '#FF4D4D');
-          g.addColorStop(0.35, '#DC2626');
-          g.addColorStop(0.85, '#991B1B');
-          g.addColorStop(1, '#660F0F');
-          ctx.fillStyle = g;
+          // 1. Edge-thickness disc (r100, 12 units lower)
+          ctx.fillStyle = colThickness;
           ctx.beginPath();
-          ctx.arc(48, 48, r, 0, Math.PI * 2);
+          ctx.arc(cx, thickCy, rFace, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#FBBF24';
-          ctx.lineWidth = 2.5;
+
+          // 2. Face disc with radial gradient
+          var faceGrad = ctx.createRadialGradient(cx - 10 * s, faceCy - 15 * s, 10 * s, cx, faceCy, rFace);
+          faceGrad.addColorStop(0, colFaceInner);
+          if (isBlack) faceGrad.addColorStop(0.4, '#2D3330');
+          faceGrad.addColorStop(1, colFaceOuter);
+          ctx.fillStyle = faceGrad;
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, rFace, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Outer face border
+          ctx.strokeStyle = colGrooves;
+          ctx.lineWidth = 1.5 * s;
           ctx.stroke();
-          ctx.fillStyle = '#EF4444';
+
+          // 3. Groove ring r84 (3 units)
+          ctx.lineWidth = 3 * s;
           ctx.beginPath();
-          ctx.arc(48, 48, r * 0.22, 0, Math.PI * 2);
-          ctx.fill();
-        });
+          ctx.arc(cx, faceCy, 84 * s, 0, Math.PI * 2);
+          ctx.stroke();
 
-        var strikerSkins = {
-          emerald: { colors: ['#34D399', '#059669', '#044E3B'], rim: '#6EE7B7', inner: '#065F46' },
-          classic: { colors: ['#FFFFFF', '#E2E8F0', '#94A3B8'], rim: '#CBD5E1', inner: '#64748B' },
-          royal: { colors: ['#60A5FA', '#2563EB', '#1E3A8A'], rim: '#93C5FD', inner: '#1D4ED8' },
-          gold: { colors: ['#FDE047', '#EAB308', '#854D0E'], rim: '#FEF08A', inner: '#A16207' }
-        };
+          // 4. Inner ring r66 (2 units)
+          ctx.lineWidth = 2 * s;
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 66 * s, 0, Math.PI * 2);
+          ctx.stroke();
 
-        Object.keys(strikerSkins).forEach(function(sKey) {
-          var cfg = strikerSkins[sKey];
-          createCanvasTexture(scene, 'tex_striker_' + sKey, 128, 128, function(ctx) {
-            var r = 59;
-            var g = ctx.createRadialGradient(50, 50, 6, 64, 64, r);
-            g.addColorStop(0, cfg.colors[0]);
-            g.addColorStop(0.5, cfg.colors[1]);
-            g.addColorStop(1, cfg.colors[2]);
-            ctx.fillStyle = g;
+          // 5. Tick ring (r48, 10-unit stroke dashed [3*s, 15.85*s])
+          ctx.lineWidth = 10 * s;
+          if (ctx.setLineDash) ctx.setLineDash([3 * s, 15.85 * s]);
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 48 * s, 0, Math.PI * 2);
+          ctx.stroke();
+          if (ctx.setLineDash) ctx.setLineDash([]);
+
+          // 6. Center emblem (r30 disc, r8 dot)
+          if (colEmblemDisc) {
+            ctx.fillStyle = colEmblemDisc;
             ctx.beginPath();
-            ctx.arc(64, 64, r, 0, Math.PI * 2);
+            ctx.arc(cx, faceCy, 30 * s, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = cfg.rim;
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = colGrooves;
+            ctx.lineWidth = 1.5 * s;
             ctx.stroke();
-            ctx.fillStyle = cfg.inner;
+          } else {
+            ctx.strokeStyle = colGrooves;
+            ctx.lineWidth = 2 * s;
             ctx.beginPath();
-            ctx.arc(64, 64, r * 0.38, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.arc(cx, faceCy, 30 * s, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          ctx.fillStyle = colEmblemDot;
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 8 * s, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 7. Top highlight ellipse (center 74, 62; 40x16; rotated -35°; white)
+          ctx.save();
+          ctx.translate(74 * s, 62 * s);
+          ctx.rotate(-35 * Math.PI / 180);
+          ctx.fillStyle = 'rgba(255, 255, 255, ' + highlightAlpha + ')';
+          ctx.beginPath();
+          if (ctx.ellipse) {
+            ctx.ellipse(0, 0, 20 * s, 8 * s, 0, 0, Math.PI * 2);
+          } else {
+            ctx.arc(0, 0, 15 * s, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+
+        var coinW = Math.round(62 * dpr);
+        var coinH = Math.round(62 * (236 / 220) * dpr);
+        var coinS = coinW / 220;
+
+        createCanvasTexture(scene, 'tex_coin_white', coinW, coinH, function(ctx) {
+          drawCoinCanvas(ctx, coinW, coinH, coinS, 'white');
+        });
+
+        createCanvasTexture(scene, 'tex_coin_black', coinW, coinH, function(ctx) {
+          drawCoinCanvas(ctx, coinW, coinH, coinS, 'black');
+        });
+
+        createCanvasTexture(scene, 'tex_coin_queen', coinW, coinH, function(ctx) {
+          drawCoinCanvas(ctx, coinW, coinH, coinS, 'queen');
+        });
+
+        // Standalone Non-Rotating Coin Shadow
+        createCanvasTexture(scene, 'tex_coin_shadow', coinW, Math.round(coinW * 0.45), function(ctx) {
+          var sw = coinW;
+          var sh = Math.round(coinW * 0.45);
+          var grad = ctx.createRadialGradient(sw / 2, sh / 2, 2 * dpr, sw / 2, sh / 2, 0.45 * sw);
+          grad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
+          grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.20)');
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          if (ctx.ellipse) {
+            ctx.ellipse(sw / 2, sh / 2, 0.42 * sw, 0.22 * sh, 0, 0, Math.PI * 2);
+          } else {
+            ctx.arc(sw / 2, sh / 2, 0.35 * sw, 0, Math.PI * 2);
+          }
+          ctx.fill();
+        });
+
+        // 2. Striker Textures
+        var strikerW = Math.round(82 * dpr);
+        var strikerH = Math.round(82 * (276 / 260) * dpr);
+        var strikerS = strikerW / 260;
+
+        function drawStrikerCanvas(ctx, w, h, s, skinKey) {
+          var cx = w / 2;
+          var faceCy = 130 * s;
+          var thickCy = 144 * s;
+          var rFace = 120 * s;
+
+          // 1. Thickness disc (#0B6F3C lower by 14)
+          ctx.fillStyle = '#0B6F3C';
+          ctx.beginPath();
+          ctx.arc(cx, thickCy, rFace, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 2. Rim r120 gradient (#5BF0A0 -> #138A4C)
+          var rimGrad = ctx.createRadialGradient(cx - 15 * s, faceCy - 20 * s, 15 * s, cx, faceCy, rFace);
+          rimGrad.addColorStop(0, '#5BF0A0');
+          rimGrad.addColorStop(0.5, '#2BD67B');
+          rimGrad.addColorStop(0.85, '#19A35C');
+          rimGrad.addColorStop(1, '#138A4C');
+          ctx.fillStyle = rimGrad;
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, rFace, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#0B6F3C';
+          ctx.lineWidth = 2 * s;
+          ctx.stroke();
+
+          // 3. Cream disc r100 (#F5ECD2)
+          ctx.fillStyle = '#F5ECD2';
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 100 * s, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#E0D2AF';
+          ctx.lineWidth = 2 * s;
+          ctx.stroke();
+
+          // 4. Ring r84 emerald 6 units (#2BD67B)
+          ctx.strokeStyle = '#2BD67B';
+          ctx.lineWidth = 6 * s;
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 84 * s, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 5. Ring r62 brass 3 units (#E9B949)
+          ctx.strokeStyle = '#E9B949';
+          ctx.lineWidth = 3 * s;
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 62 * s, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 6. Dashed ring r40 emerald (stroke 2, dashed [4*s, 4*s])
+          ctx.strokeStyle = '#2BD67B';
+          ctx.lineWidth = 2 * s;
+          if (ctx.setLineDash) ctx.setLineDash([4 * s, 4 * s]);
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 40 * s, 0, Math.PI * 2);
+          ctx.stroke();
+          if (ctx.setLineDash) ctx.setLineDash([]);
+
+          // 7. Center brass dot r12 (#E9B949, stroke #A47A16)
+          ctx.fillStyle = '#E9B949';
+          ctx.beginPath();
+          ctx.arc(cx, faceCy, 12 * s, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#A47A16';
+          ctx.lineWidth = 1.5 * s;
+          ctx.stroke();
+
+          // 8. Aim notch: triangle at top (130, 30) in #06210F at 60% opacity
+          ctx.fillStyle = 'rgba(6, 33, 15, 0.60)';
+          ctx.beginPath();
+          ctx.moveTo(130 * s, 16 * s);
+          ctx.lineTo(122 * s, 34 * s);
+          ctx.lineTo(138 * s, 34 * s);
+          ctx.closePath();
+          ctx.fill();
+
+          // 9. Highlight: ellipse (86, 74; 46x18; -35°; white 50%)
+          ctx.save();
+          ctx.translate(86 * s, 74 * s);
+          ctx.rotate(-35 * Math.PI / 180);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.50)';
+          ctx.beginPath();
+          if (ctx.ellipse) {
+            ctx.ellipse(0, 0, 23 * s, 9 * s, 0, 0, Math.PI * 2);
+          } else {
+            ctx.arc(0, 0, 18 * s, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+
+        var strikerKeys = ['emerald', 'classic', 'royal', 'gold', 'default'];
+        strikerKeys.forEach(function(sKey) {
+          createCanvasTexture(scene, 'tex_striker_' + sKey, strikerW, strikerH, function(ctx) {
+            drawStrikerCanvas(ctx, strikerW, strikerH, strikerS, sKey);
           });
         });
 
-        createCanvasTexture(scene, 'tex_pocket', 96, 96, function(ctx) {
-          var r = 44;
-          var g = ctx.createRadialGradient(48, 48, 4, 48, 48, r);
-          g.addColorStop(0, '#000000');
-          g.addColorStop(0.7, '#07090C');
-          g.addColorStop(0.92, '#1E232B');
-          g.addColorStop(1, '#2D3440');
-          ctx.fillStyle = g;
+        // Standalone Non-Rotating Striker Shadow
+        createCanvasTexture(scene, 'tex_striker_shadow', strikerW, Math.round(strikerW * 0.45), function(ctx) {
+          var sw = strikerW;
+          var sh = Math.round(strikerW * 0.45);
+          var grad = ctx.createRadialGradient(sw / 2, sh / 2, 4 * dpr, sw / 2, sh / 2, 0.45 * sw);
+          grad.addColorStop(0, 'rgba(0, 0, 0, 0.48)');
+          grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.22)');
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = grad;
           ctx.beginPath();
-          ctx.arc(48, 48, r, 0, Math.PI * 2);
+          if (ctx.ellipse) {
+            ctx.ellipse(sw / 2, sh / 2, 0.45 * sw, 0.24 * sh, 0, 0, Math.PI * 2);
+          } else {
+            ctx.arc(sw / 2, sh / 2, 0.40 * sw, 0, Math.PI * 2);
+          }
           ctx.fill();
-          ctx.strokeStyle = theme.pocketRimColor;
-          ctx.lineWidth = 3;
+        });
+
+        // 3. Pocket Texture
+        var pSize = Math.round(96 * dpr);
+        createCanvasTexture(scene, 'tex_pocket', pSize, pSize, function(ctx) {
+          var pcx = pSize / 2;
+          var pr = (pSize / 2) - 4 * dpr;
+          var grad = ctx.createRadialGradient(pcx, pcx, 4 * dpr, pcx, pcx, pr);
+          grad.addColorStop(0, '#000000');
+          grad.addColorStop(0.70, '#140D0A');
+          grad.addColorStop(0.92, '#241711');
+          grad.addColorStop(1, '#2A1B14');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(pcx, pcx, pr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#C9A24B';
+          ctx.lineWidth = 4 * dpr;
           ctx.stroke();
         });
       }
@@ -344,7 +484,10 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         var ctx = canvas.getContext('2d');
         if (ctx) {
           drawFn(ctx);
-          scene.textures.addCanvas(key, canvas);
+          var tex = scene.textures.addCanvas(key, canvas);
+          if (tex) {
+            tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+          }
         }
       }
 
