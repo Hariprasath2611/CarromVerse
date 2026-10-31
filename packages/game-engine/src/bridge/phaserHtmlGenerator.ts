@@ -364,6 +364,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
           this.matter.world.setBounds(0, 0, 0, 0, 0, false, false, false, false);
 
           this.physicsAccumulator = 0;
+          this.bouncedWalls = [];
           this.queuedPocketRemovals = [];
           this.pocketedInCurrentShot = [];
           this.isShotActive = false;
@@ -923,19 +924,8 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
                 var movingBody = isWallA ? bodyB : bodyA;
                 var wallBody = isWallA ? bodyA : bodyB;
 
-                // Adjust tangential component to maintain incidence angle
                 var isHorizontal = wallBody.label.indexOf('top') >= 0 || wallBody.label.indexOf('bottom') >= 0;
-                if (isHorizontal) {
-                  scene.matter.body.setVelocity(movingBody, {
-                    x: movingBody.velocity.x * WALL_BOUNCE_DAMPING,
-                    y: movingBody.velocity.y
-                  });
-                } else {
-                  scene.matter.body.setVelocity(movingBody, {
-                    x: movingBody.velocity.x,
-                    y: movingBody.velocity.y * WALL_BOUNCE_DAMPING
-                  });
-                }
+                scene.bouncedWalls.push({ moving: movingBody, isHorizontal: isHorizontal });
                 return;
               }
 
@@ -968,6 +958,17 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
                 }
               }
             });
+          });
+
+          this.matter.world.on('afterupdate', function() {
+            while (scene.bouncedWalls.length > 0) {
+              var item = scene.bouncedWalls.pop();
+              if (item.isHorizontal) {
+                item.moving.velocity.x *= WALL_BOUNCE_DAMPING;
+              } else {
+                item.moving.velocity.y *= WALL_BOUNCE_DAMPING;
+              }
+            }
           });
         },
 

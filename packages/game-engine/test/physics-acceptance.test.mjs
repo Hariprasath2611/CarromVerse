@@ -66,6 +66,7 @@ describe('CarromVerse Phase 1.4 Physics Acceptance Tests (Headless Verification)
     Composite.add(engine.world, [topWall, botWall, leftWall, rightWall]);
 
     // Cushion bounce normal retention & specular reflection handler
+    const bouncedList = [];
     Events.on(engine, 'collisionStart', (e) => {
       e.pairs.forEach((pair) => {
         const isWallA = pair.bodyA.label && pair.bodyA.label.startsWith('wall');
@@ -74,21 +75,20 @@ describe('CarromVerse Phase 1.4 Physics Acceptance Tests (Headless Verification)
           pair.restitution = RESTITUTION.wallBounceDamping; // 0.65
           const moving = isWallA ? pair.bodyB : pair.bodyA;
           const wall = isWallA ? pair.bodyA : pair.bodyB;
-
-          const isHorizontal = wall.label.includes('top') || wall.label.includes('bottom');
-          if (isHorizontal) {
-            Body.setVelocity(moving, {
-              x: moving.velocity.x * RESTITUTION.wallBounceDamping,
-              y: moving.velocity.y,
-            });
-          } else {
-            Body.setVelocity(moving, {
-              x: moving.velocity.x,
-              y: moving.velocity.y * RESTITUTION.wallBounceDamping,
-            });
-          }
+          bouncedList.push({ moving, isHorizontal: wall.label.includes('top') || wall.label.includes('bottom') });
         }
       });
+    });
+
+    Events.on(engine, 'afterUpdate', () => {
+      while (bouncedList.length > 0) {
+        const item = bouncedList.pop();
+        if (item.isHorizontal) {
+          item.moving.velocity.x *= RESTITUTION.wallBounceDamping;
+        } else {
+          item.moving.velocity.y *= RESTITUTION.wallBounceDamping;
+        }
+      }
     });
 
     // 4 Corner Pocket sensors

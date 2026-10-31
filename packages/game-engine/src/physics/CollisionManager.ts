@@ -11,6 +11,7 @@ export class CollisionManager {
   private pocketDetection: PocketDetection;
   private eventManager: GameEventManager;
   private processedPairsInStep: Set<string> = new Set();
+  private bouncedWalls: Array<{ movingBody: MatterJS.BodyType; isHorizontalWall: boolean }> = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -34,6 +35,14 @@ export class CollisionManager {
     });
 
     this.scene.matter.world.on('afterupdate', () => {
+      while (this.bouncedWalls.length > 0) {
+        const item = this.bouncedWalls.pop()!;
+        if (item.isHorizontalWall) {
+          item.movingBody.velocity.x *= RESTITUTION.wallBounceDamping;
+        } else {
+          item.movingBody.velocity.y *= RESTITUTION.wallBounceDamping;
+        }
+      }
       this.processedPairsInStep.clear();
       this.pocketDetection.processQueuedRemovals();
     });
@@ -73,27 +82,11 @@ export class CollisionManager {
         const movingBody = isWallA ? bodyB : bodyA;
         const wallBody = isWallA ? bodyA : bodyB;
 
-        // Tangential friction damping so reflection angle equals incidence angle
-        const preVx = movingBody.velocity.x;
-        const preVy = movingBody.velocity.y;
-        const speedStep = Math.hypot(preVx, preVy);
-        const speedCmS = PhysicsUtils.stepVelocityToSpeedCmS(speedStep);
-
-        // Adjust tangential velocity to preserve incidence angle upon cushion rebound
         const isHorizontalWall = wallBody.label?.includes('top') || wallBody.label?.includes('bottom');
-        if (isHorizontalWall) {
-          // Normal is along Y, tangential is along X
-          this.scene.matter.body.setVelocity(movingBody, {
-            x: preVx * RESTITUTION.wallBounceDamping,
-            y: movingBody.velocity.y,
-          });
-        } else {
-          // Normal is along X, tangential is along Y
-          this.scene.matter.body.setVelocity(movingBody, {
-            x: movingBody.velocity.x,
-            y: preVy * RESTITUTION.wallBounceDamping,
-          });
-        }
+        this.bouncedWalls.push({ movingBody, isHorizontalWall });
+
+        const speedStep = Math.hypot(movingBody.velocity.x, movingBody.velocity.y);
+        const speedCmS = PhysicsUtils.stepVelocityToSpeedCmS(speedStep);
 
         if ((movingBody as any).entity) {
           this.eventManager.emit(PHYSICS_EVENTS.CUSHION_COLLISION, {
