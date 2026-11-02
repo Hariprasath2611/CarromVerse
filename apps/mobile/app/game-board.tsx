@@ -123,8 +123,13 @@ export default function GameBoardScreen() {
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
-          // Time expired foul
+          // Time expired foul -> Advance turn to next player
           showToast('Time expired! Turn passed');
+          processSettledShot({
+            pocketedCoins: [],
+            strikerPocketed: false,
+            durationMs: (turnTimeLimitSec || 25) * 1000,
+          });
           return turnTimeLimitSec;
         }
         return prev - 1;

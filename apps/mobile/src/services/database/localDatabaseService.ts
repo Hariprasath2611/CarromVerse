@@ -161,7 +161,7 @@ export class LocalDatabaseService {
     const totalDraws = drawRow?.count || 0;
 
     const winRow = await db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM local_matches WHERE winner_id IS NOT NULL AND is_draw = 0`
+      `SELECT COUNT(*) as count FROM local_matches WHERE (winner_id IS NOT NULL OR winning_team_id IS NOT NULL) AND is_draw = 0`
     );
     const totalWins = winRow?.count || 0;
 

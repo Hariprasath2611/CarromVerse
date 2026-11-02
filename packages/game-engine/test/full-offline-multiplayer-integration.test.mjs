@@ -87,11 +87,12 @@ function createRealPhysicsBoard() {
   });
 
   // Pockets
+  const pr = SIZES.pocketRadiusPx;
   const pocketCenters = [
-    { x: SIZES.pocketOffsetPx, y: SIZES.pocketOffsetPx, id: 'top_left' },
-    { x: s - SIZES.pocketOffsetPx, y: SIZES.pocketOffsetPx, id: 'top_right' },
-    { x: SIZES.pocketOffsetPx, y: s - SIZES.pocketOffsetPx, id: 'bottom_left' },
-    { x: s - SIZES.pocketOffsetPx, y: s - SIZES.pocketOffsetPx, id: 'bottom_right' },
+    { x: pr, y: pr, id: 'top_left' },
+    { x: s - pr, y: pr, id: 'top_right' },
+    { x: pr, y: s - pr, id: 'bottom_left' },
+    { x: s - pr, y: s - pr, id: 'bottom_right' },
   ];
 
   const pockets = pocketCenters.map((p) =>
@@ -217,27 +218,44 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
     });
 
     it('detects coin entering pocket sensor and flags capture without duplicate events', () => {
-      const { engine, pocketCenters } = createRealPhysicsBoard();
-      const pocketTL = pocketCenters[0]; // (39, 39)
-      const coin = Bodies.circle(pocketTL.x, pocketTL.y, SIZES.coinRadiusPx);
-      Composite.add(engine.world, coin);
+      let pocketEventReceived = null;
+      let eventCount = 0;
+      const mockScene = {
+        matter: {
+          world: {
+            remove: () => {},
+          },
+        },
+      };
 
-      const pocketDetector = new PocketDetection({
-        pocketRadius: SIZES.pocketRadiusPx,
-        captureThreshold: SIZES.pocketCaptureRadiusPx,
+      const pocketDetector = new PocketDetection(mockScene, (event) => {
+        pocketEventReceived = event;
+        eventCount++;
       });
 
-      // Coin at exact pocket center
-      const dist = Math.hypot(coin.position.x - pocketTL.x, coin.position.y - pocketTL.y);
-      assert.ok(dist <= SIZES.pocketCaptureRadiusPx);
+      const mockEntity = {
+        id: 'coin_white_1',
+        playPocketAnimation: (cb) => cb?.(),
+      };
 
-      const capturedFirst = pocketDetector.checkPocketCapture(coin, pocketCenters);
-      assert.ok(capturedFirst);
+      const mockBody = {
+        entity: mockEntity,
+        entityType: 'white',
+      };
 
-      // Verify deduplication: second check ignores already pocketed coin
-      pocketDetector.markAsPocketed('coin_test_1');
-      const isAlreadyPocketed = pocketDetector.isPocketed('coin_test_1');
-      assert.strictEqual(isAlreadyPocketed, true);
+      // 1. Initial sensor overlap captures the coin
+      pocketDetector.handleSensorOverlap(mockBody, 0);
+      pocketDetector.processQueuedRemovals();
+
+      assert.ok(pocketEventReceived !== null);
+      assert.strictEqual(pocketEventReceived.id, 'coin_white_1');
+      assert.strictEqual(pocketEventReceived.type, 'white');
+      assert.strictEqual(eventCount, 1);
+
+      // 2. Duplicate overlap attempt with the same body is safely ignored
+      pocketDetector.handleSensorOverlap(mockBody, 0);
+      pocketDetector.processQueuedRemovals();
+      assert.strictEqual(eventCount, 1, 'Duplicate pocket event must not be emitted');
     });
   });
 
@@ -490,9 +508,9 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       const cx = s / 2;
       const cy = s / 2;
 
-      const coinBodies = spawnPhysicsCoins(engine, cx, cy);
+      const coinBodies = spawnPhysicsCoins(engine);
       const striker = Bodies.circle(cx, s - 100, SIZES.strikerRadiusPx);
-      Body.setMass(striker, MASSES.strikerMass);
+      Body.setMass(striker, MASSES.striker);
       Composite.add(engine.world, striker);
 
       const initialBodyCount = Composite.allBodies(engine.world).length;
