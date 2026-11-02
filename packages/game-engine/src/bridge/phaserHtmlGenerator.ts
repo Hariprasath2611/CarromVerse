@@ -222,38 +222,54 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       function playWoodClick(speedCmS) {
         if (!sfxAudioEnabled || sfxAudioVolume <= 0) return;
         var nowMs = Date.now();
-        if (nowMs - lastClickSoundTime < 28) return;
+        if (nowMs - lastClickSoundTime < 22) return;
         lastClickSoundTime = nowMs;
 
         var ctx = getSfxAudio();
         if (!ctx) return;
         try {
           var now = ctx.currentTime;
-          var normSpeed = Math.min(1.0, Math.max(0.12, speedCmS / 150));
-          var vol = normSpeed * sfxAudioVolume * 0.75;
+          var normSpeed = Math.min(1.0, Math.max(0.15, speedCmS / 160));
+          var vol = normSpeed * sfxAudioVolume * 0.9;
 
-          var osc = ctx.createOscillator();
-          var gain = ctx.createGain();
-          var filter = ctx.createBiquadFilter();
+          // Layer 1: High crisp contact click ("clack" transient)
+          var oscClick = ctx.createOscillator();
+          var gainClick = ctx.createGain();
+          var clickFreq = 2300 + Math.random() * 400; // 2300-2700 Hz
+          oscClick.type = 'triangle';
+          oscClick.frequency.setValueAtTime(clickFreq, now);
+          oscClick.frequency.exponentialRampToValueAtTime(750, now + 0.012);
 
-          var freq = 780 + Math.random() * 240;
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now);
-          osc.frequency.exponentialRampToValueAtTime(freq * 0.35, now + 0.045);
+          gainClick.gain.setValueAtTime(vol * 0.75, now);
+          gainClick.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
 
-          filter.type = 'bandpass';
-          filter.frequency.setValueAtTime(950, now);
-          filter.Q.setValueAtTime(3.0, now);
+          oscClick.connect(gainClick);
+          gainClick.connect(ctx.destination);
+          oscClick.start(now);
+          oscClick.stop(now + 0.015);
 
-          gain.gain.setValueAtTime(vol, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+          // Layer 2: Deep organic wooden body resonance ("tok" wooden tone)
+          var oscBody = ctx.createOscillator();
+          var gainBody = ctx.createGain();
+          var filterBody = ctx.createBiquadFilter();
 
-          osc.connect(filter);
-          filter.connect(gain);
-          gain.connect(ctx.destination);
+          var bodyFreq = 560 + Math.random() * 120; // 560-680 Hz authentic wooden timbre
+          oscBody.type = 'sine';
+          oscBody.frequency.setValueAtTime(bodyFreq, now);
+          oscBody.frequency.exponentialRampToValueAtTime(bodyFreq * 0.7, now + 0.038);
 
-          osc.start(now);
-          osc.stop(now + 0.045);
+          filterBody.type = 'lowpass';
+          filterBody.frequency.setValueAtTime(1500, now);
+
+          gainBody.gain.setValueAtTime(vol * 0.85, now);
+          gainBody.gain.exponentialRampToValueAtTime(0.001, now + 0.040);
+
+          oscBody.connect(filterBody);
+          filterBody.connect(gainBody);
+          gainBody.connect(ctx.destination);
+
+          oscBody.start(now);
+          oscBody.stop(now + 0.042);
         } catch(e){}
       }
 
@@ -325,13 +341,13 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             var gain = ctx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(320, now);
-            osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
-            gain.gain.setValueAtTime(sfxAudioVolume * 0.65, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.frequency.exponentialRampToValueAtTime(85, now + 0.08);
+            gain.gain.setValueAtTime(sfxAudioVolume * 0.85, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start(now);
-            osc.stop(now + 0.12);
+            osc.stop(now + 0.095);
           }
         } catch(e){}
       }

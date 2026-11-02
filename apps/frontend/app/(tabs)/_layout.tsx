@@ -1,16 +1,29 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TabBarIcon } from '../../src/components';
 import { THEME } from '../../src/constants/theme';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  // Safe bottom padding ensures tab labels/icons never collide with Android system buttons (||| O <)
+  const bottomInset = insets.bottom > 0 ? insets.bottom : Platform.OS === 'android' ? 16 : 10;
+  const tabBarHeight = 58 + bottomInset;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: THEME.colors.neonEmerald,
-        tabBarInactiveTintColor: THEME.colors.mutedMint,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: tabBarHeight,
+            paddingBottom: bottomInset + 4,
+          },
+        ],
+        tabBarActiveTintColor: '#2BD67B',
+        tabBarInactiveTintColor: '#648A79',
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}
@@ -19,35 +32,45 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'HOME',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="home" focused={focused} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="friends"
         options={{
           title: 'FRIENDS',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="friends" focused={focused} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="customize"
         options={{
           title: 'CUSTOMIZE',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="customize" focused={focused} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
           title: 'RANKINGS',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="rankings" focused={focused} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'PROFILE',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="profile" focused={focused} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -62,21 +85,26 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#07261C',
-    borderTopColor: '#1B7050',
-    borderTopWidth: 2,
-    height: Platform.OS === 'ios' ? 74 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    paddingTop: 8,
+    backgroundColor: '#061D15',
+    borderTopColor: 'rgba(43, 214, 123, 0.3)',
+    borderTopWidth: 1.5,
+    paddingTop: 6,
+    elevation: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
   },
   tabItem: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 2,
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '800',
     letterSpacing: 0.6,
+    marginTop: 2,
     textTransform: 'uppercase',
   },
 });

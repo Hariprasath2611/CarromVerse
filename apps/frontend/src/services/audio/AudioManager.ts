@@ -31,8 +31,8 @@ export class AudioManager {
   private static instance: AudioManager | null = null;
   private soundEnabled = true;
   private soundVolume = 0.8;
-  private musicEnabled = true;
-  private musicVolume = 0.5;
+  private musicEnabled = false;
+  private musicVolume = 0.0;
   private currentMusicTrack: MusicTrackType = 'none';
   private audioContext: any = null;
   private musicInterval: any = null;
@@ -167,37 +167,12 @@ export class AudioManager {
     }
   }
 
-  // --- Background Music ---
+  // --- Background Music (Disabled for pure tactical board acoustics) ---
 
-  public playMusic(track: MusicTrackType): void {
-    if (this.currentMusicTrack === track) return;
+  public playMusic(_track: MusicTrackType): void {
+    // Music completely disabled for authentic, tactile board gameplay
     this.stopMusic();
-
-    this.currentMusicTrack = track;
-    if (!this.musicEnabled || this.musicVolume <= 0 || track === 'none') return;
-    this.ensureUnlocked();
-
-    if (!this.audioContext) return;
-
-    // Ambient procedural harmonic background loop
-    const chords: Record<string, number[]> = {
-      home: [261.63, 329.63, 392.0, 523.25], // C Major
-      lobby: [293.66, 349.23, 440.0, 523.25], // D Minor
-      gameplay: [220.0, 261.63, 329.63, 440.0], // A Minor Ambient
-      victory: [329.63, 392.0, 493.88, 659.25], // E Minor / G Major
-    };
-
-    const notes = chords[track] || chords.home;
-    let step = 0;
-
-    this.musicInterval = setInterval(() => {
-      if (!this.musicEnabled || this.musicVolume <= 0) return;
-      try {
-        const note = notes[step % notes.length];
-        this.synthPad(note, 2.2, this.musicVolume * 0.18);
-        step++;
-      } catch {}
-    }, 2400);
+    this.currentMusicTrack = 'none';
   }
 
   public stopMusic(): void {
@@ -324,28 +299,47 @@ export class AudioManager {
     osc.stop(now + duration);
   }
 
-  private synthWoodImpact(baseFreq: number, duration: number, volume: number): void {
-    const osc = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
-    const filter = this.audioContext.createBiquadFilter();
+  private synthWoodImpact(_baseFreq: number, _duration: number, volume: number): void {
     const now = this.audioContext.currentTime;
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(baseFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, now + duration);
+    // Layer 1: High crisp contact click ("clack" transient)
+    const oscClick = this.audioContext.createOscillator();
+    const gainClick = this.audioContext.createGain();
+    const clickFreq = 2300 + Math.random() * 400; // 2300-2700 Hz
+    oscClick.type = 'triangle';
+    oscClick.frequency.setValueAtTime(clickFreq, now);
+    oscClick.frequency.exponentialRampToValueAtTime(750, now + 0.012);
 
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1400, now);
+    gainClick.gain.setValueAtTime(volume * 0.75, now);
+    gainClick.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
 
-    gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    oscClick.connect(gainClick);
+    gainClick.connect(this.audioContext.destination);
+    oscClick.start(now);
+    oscClick.stop(now + 0.015);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.audioContext.destination);
+    // Layer 2: Deep organic wooden body resonance ("tok" wooden tone)
+    const oscBody = this.audioContext.createOscillator();
+    const gainBody = this.audioContext.createGain();
+    const filterBody = this.audioContext.createBiquadFilter();
 
-    osc.start(now);
-    osc.stop(now + duration);
+    const bodyFreq = 560 + Math.random() * 120; // 560-680 Hz authentic wooden timbre
+    oscBody.type = 'sine';
+    oscBody.frequency.setValueAtTime(bodyFreq, now);
+    oscBody.frequency.exponentialRampToValueAtTime(bodyFreq * 0.7, now + 0.038);
+
+    filterBody.type = 'lowpass';
+    filterBody.frequency.setValueAtTime(1500, now);
+
+    gainBody.gain.setValueAtTime(volume * 0.9, now);
+    gainBody.gain.exponentialRampToValueAtTime(0.001, now + 0.040);
+
+    oscBody.connect(filterBody);
+    filterBody.connect(gainBody);
+    gainBody.connect(this.audioContext.destination);
+
+    oscBody.start(now);
+    oscBody.stop(now + 0.042);
   }
 
   private synthThud(freq: number, duration: number, volume: number): void {
@@ -367,23 +361,24 @@ export class AudioManager {
     osc.stop(now + duration);
   }
 
-  private synthPocket(startFreq: number, endFreq: number, duration: number, volume: number): void {
-    const osc = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
+  private synthPocket(_startFreq: number, _endFreq: number, _duration: number, volume: number): void {
     const now = this.audioContext.currentTime;
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+    // Organic Carrom pocket slide and soft net drop ("plop-thud")
+    const oscDrop = this.audioContext.createOscillator();
+    const gainDrop = this.audioContext.createGain();
+    oscDrop.type = 'sine';
+    oscDrop.frequency.setValueAtTime(320, now);
+    oscDrop.frequency.exponentialRampToValueAtTime(85, now + 0.08);
 
-    gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    gainDrop.gain.setValueAtTime(volume * 0.85, now);
+    gainDrop.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
-    osc.connect(gain);
-    gain.connect(this.audioContext.destination);
+    oscDrop.connect(gainDrop);
+    gainDrop.connect(this.audioContext.destination);
 
-    osc.start(now);
-    osc.stop(now + duration);
+    oscDrop.start(now);
+    oscDrop.stop(now + 0.095);
   }
 
   private synthQueenChime(volume: number): void {
