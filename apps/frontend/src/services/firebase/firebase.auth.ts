@@ -149,3 +149,12 @@ export function getCurrentUser(): AuthSessionUser | null {
   return transformFirebaseUser(auth.currentUser);
 }
 
+export async function getCurrentUserIdToken(forceRefresh = false): Promise<string | null> {
+  if (!auth?.currentUser) return null;
+  try {
+    return await auth.currentUser.getIdToken(forceRefresh);
+  } catch (err) {
+    return null;
+  }
+}
+
