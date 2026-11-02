@@ -16,7 +16,7 @@ import {
 import { PhysicsUtils } from '../dist/utils/PhysicsUtils.js';
 import { MotionDetector } from '../dist/mechanics/MotionDetector.js';
 import { PocketDetection } from '../dist/mechanics/PocketDetection.js';
-import { generateOpeningCoinCluster } from '../dist/board/CarromBoard.js';
+import { generateOpeningCoinCluster } from '../dist/board/BoardConfig.js';
 
 import {
   CarromStateMachine,
