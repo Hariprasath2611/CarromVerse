@@ -9,20 +9,24 @@ export function useActiveMatch() {
   const setup = useGameSetupStore();
 
   return {
-    mode: setup.gameMode,
-    variant: setup.gameVariant,
-    targetScore: setup.targetScore,
+    mode: setup.selectedMode,
+    targetPoints: setup.targetPoints,
     players: setup.players,
-    activePlayerIndex: session.activePlayerIndex,
+    currentTurn: session.currentTurn,
     scores: session.scores,
-    isMatchOver: session.isMatchOver,
-    winner: session.winner,
+    matchStatus: session.matchStatus,
+    isMatchOver: session.matchStatus === 'COMPLETED',
+    gameResult: session.gameResult,
+    isHandoverPending: session.isHandoverPending,
+    nextPlayerToHandover: session.nextPlayerToHandover,
   };
 }
 
 export function useCurrentPlayer() {
-  const { players, activePlayerIndex } = useActiveMatch();
-  return players[activePlayerIndex] || players[0];
+  const session = useGameSessionStore();
+  const setup = useGameSetupStore();
+  const activePlayerId = session.currentTurn?.activePlayerId;
+  return setup.players.find((p) => p.id === activePlayerId) || setup.players[0];
 }
 
 export { useAuthStore, useGameSetupStore, useGameSessionStore, useEconomyStore, useSettingsStore };

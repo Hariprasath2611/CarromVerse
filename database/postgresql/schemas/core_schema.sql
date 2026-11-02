@@ -1,0 +1,41 @@
+-- PostgreSQL Relational Schema for CarromVerse Future Cloud Database
+
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(64) PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  username VARCHAR(64) UNIQUE NOT NULL,
+  avatar_url TEXT,
+  level INTEGER NOT NULL DEFAULT 1,
+  xp INTEGER NOT NULL DEFAULT 0,
+  coins INTEGER NOT NULL DEFAULT 1000,
+  gems INTEGER NOT NULL DEFAULT 10,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS matches (
+  id VARCHAR(64) PRIMARY KEY,
+  session_id VARCHAR(64) NOT NULL,
+  mode VARCHAR(32) NOT NULL,
+  variant VARCHAR(32) NOT NULL,
+  winner_id VARCHAR(64) REFERENCES users(id),
+  winning_team_id VARCHAR(32),
+  is_draw BOOLEAN NOT NULL DEFAULT FALSE,
+  duration_seconds INTEGER NOT NULL DEFAULT 0,
+  total_turns INTEGER NOT NULL DEFAULT 0,
+  final_scores JSONB NOT NULL,
+  started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  completed_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS leaderboards (
+  user_id VARCHAR(64) PRIMARY KEY REFERENCES users(id),
+  rank INTEGER NOT NULL,
+  tier VARCHAR(32) NOT NULL DEFAULT 'Bronze',
+  rating_points INTEGER NOT NULL DEFAULT 1000,
+  season VARCHAR(32) NOT NULL DEFAULT 'Season 1',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_matches_completed_at ON matches(completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leaderboards_rating ON leaderboards(rating_points DESC);

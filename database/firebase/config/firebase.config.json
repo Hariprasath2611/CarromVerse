@@ -1,0 +1,9 @@
+{
+  "projectId": "carromverse-prod",
+  "authDomain": "carromverse-prod.firebaseapp.com",
+  "storageBucket": "carromverse-prod.appspot.com",
+  "firestore": {
+    "host": "firestore.googleapis.com",
+    "ssl": true
+  }
+}
