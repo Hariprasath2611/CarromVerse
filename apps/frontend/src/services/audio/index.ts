@@ -1,2 +1,2 @@
-export * from './AudioManager.js';
+export * from './AudioManager';
 

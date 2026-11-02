@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { ConnectionStatus, NetworkErrorEvent } from '../services/network/network.types.js';
-import { MultiplayerNetworkService } from '../services/network/NetworkService.js';
+import { ConnectionStatus, NetworkErrorEvent } from '../services/network/network.types';
+import { MultiplayerNetworkService } from '../services/network/NetworkService';
 
 interface NetworkState {
   status: ConnectionStatus;

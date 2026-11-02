@@ -1,6 +1,6 @@
 import { Client, Room } from 'colyseus.js';
-import { ConnectionStatus, JoinRoomOptions, NetworkConfig, NetworkErrorEvent } from './network.types.js';
-import { getCurrentUserIdToken } from '../firebase/firebase.auth.js';
+import { ConnectionStatus, JoinRoomOptions, NetworkConfig, NetworkErrorEvent } from './network.types';
+import { getCurrentUserIdToken } from '../firebase/firebase.auth';
 
 export class MultiplayerNetworkService {
   private static instance: MultiplayerNetworkService;

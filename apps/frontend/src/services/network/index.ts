@@ -1,3 +1,3 @@
-export * from './network.types.js';
-export * from './NetworkService.js';
+export * from './network.types';
+export * from './NetworkService';
 

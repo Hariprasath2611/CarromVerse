@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { THEME } from '../constants/theme.js';
+import { THEME } from '../constants/theme';
 
 export interface ThemeContextValue {
   theme: typeof THEME;

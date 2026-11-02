@@ -1,8 +1,8 @@
-import { useAuthStore } from '../store/authStore.js';
-import { useGameSetupStore } from '../store/gameSetupStore.js';
-import { useGameSessionStore } from '../store/gameSessionStore.js';
-import { useEconomyStore } from '../store/economyStore.js';
-import { useSettingsStore } from '../store/settingsStore.js';
+import { useAuthStore } from '../store/authStore';
+import { useGameSetupStore } from '../store/gameSetupStore';
+import { useGameSessionStore } from '../store/gameSessionStore';
+import { useEconomyStore } from '../store/economyStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 export function useActiveMatch() {
   const session = useGameSessionStore();

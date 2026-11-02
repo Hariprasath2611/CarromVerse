@@ -1,7 +1,7 @@
-export * from './audio/AudioManager.js';
-export * from './database/localDatabaseService.js';
-export * from './storage/localStorageService.js';
-export * from './sync/syncService.js';
-export * from './sync/networkService.js';
-export * from './network/index.js';
+export * from './audio/AudioManager';
+export * from './database/localDatabaseService';
+export * from './storage/localStorageService';
+export * from './sync/syncService';
+export * from './sync/networkService';
+export * from './network/index';
 

@@ -1,2 +1,2 @@
-export * from '../constants/theme.js';
+export * from '../constants/theme';
 

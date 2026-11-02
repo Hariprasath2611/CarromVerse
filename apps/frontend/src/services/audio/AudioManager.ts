@@ -1,4 +1,4 @@
-import { LocalStorageService } from '../storage/localStorageService.js';
+import { LocalStorageService } from '../storage/localStorageService';
 import { GameSettings, DEFAULT_GAME_SETTINGS } from '@carromverse/shared-types';
 
 export type SoundEffectType =

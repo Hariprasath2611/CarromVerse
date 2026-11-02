@@ -1,8 +1,8 @@
-export * from '../store/index.js';
-export * from '../store/authStore.js';
-export * from '../store/economyStore.js';
-export * from '../store/gameSessionStore.js';
-export * from '../store/gameSetupStore.js';
-export * from '../store/settingsStore.js';
-export * from '../store/userStore.js';
+export * from '../store/index';
+export * from '../store/authStore';
+export * from '../store/economyStore';
+export * from '../store/gameSessionStore';
+export * from '../store/gameSetupStore';
+export * from '../store/settingsStore';
+export * from '../store/userStore';
 
