@@ -8,3 +8,4 @@ export interface LeaderboardEntryDto {
 }
 
 export type LeaderboardScope = 'daily' | 'weekly' | 'all_time';
+

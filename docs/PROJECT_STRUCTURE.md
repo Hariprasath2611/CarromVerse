@@ -59,3 +59,4 @@ CarromVerse/
 3. `packages/game-logic` is completely decoupled from rendering frameworks (no Phaser or React Native imports).
 4. `packages/multiplayer` handles seating, handover, and team rules independently of rendering.
 5. `packages/game-engine` communicates with `apps/frontend` through the serialized JSON WebView Bridge.
+

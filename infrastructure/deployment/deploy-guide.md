@@ -24,3 +24,4 @@ Using Firebase CLI:
 ```bash
 firebase deploy --only firestore:rules,storage
 ```
+

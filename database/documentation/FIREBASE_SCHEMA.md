@@ -31,3 +31,4 @@
 - `totalTurns`: number
 - `finalScores`: map of player scores
 - `completedAt`: ISO 8601 string
+

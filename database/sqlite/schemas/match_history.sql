@@ -32,3 +32,4 @@ CREATE TABLE IF NOT EXISTS pending_sync_queue (
 
 CREATE INDEX IF NOT EXISTS idx_local_matches_completed ON local_matches(completed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pending_sync_created ON pending_sync_queue(created_at ASC);
+

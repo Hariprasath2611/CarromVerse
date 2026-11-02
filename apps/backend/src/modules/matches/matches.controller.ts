@@ -30,3 +30,4 @@ export class MatchesController {
     res.status(200).json(ResponseFormatter.success(list));
   };
 }
+

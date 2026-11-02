@@ -10,3 +10,4 @@ export interface UserDto {
   matchesPlayed: number;
   matchesWon: number;
 }
+

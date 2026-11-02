@@ -27,3 +27,4 @@ npm run test --workspace=@carromverse/game-engine
 - Substepping: Multi-step physics integration prevents tunneling even at 350+ cm/s break shots.
 - Stop Distance: High-velocity shots must settle within ~45–55 cm.
 - Zero Leaks: Bodies must be properly pooled or disposed upon pocketing.
+

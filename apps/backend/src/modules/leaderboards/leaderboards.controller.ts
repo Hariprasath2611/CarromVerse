@@ -16,3 +16,4 @@ export class LeaderboardsController {
     res.status(200).json(ResponseFormatter.success({ scope, entries }));
   };
 }
+

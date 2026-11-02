@@ -27,3 +27,4 @@ export function authMiddleware(req: HttpRequest, res: HttpResponse, next: NextFu
     res.status(401).json(ResponseFormatter.error('Token verification failed', 'UNAUTHORIZED', err));
   }
 }
+

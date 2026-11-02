@@ -19,3 +19,4 @@ export function createMultiplayerRouter(controller = new MultiplayerController()
     return false;
   };
 }
+

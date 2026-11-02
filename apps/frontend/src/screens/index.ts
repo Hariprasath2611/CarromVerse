@@ -12,3 +12,4 @@ export const SCREEN_NAMES = {
   GAME_RESULT: 'Match Results & Victory',
   MATCH_HISTORY: 'Local & Online Match History',
 } as const;
+

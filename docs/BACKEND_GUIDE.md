@@ -34,3 +34,4 @@ npm run backend
 3. Add request/response handler in `src/modules/<module>/<module>.controller.ts`.
 4. Register the sub-path in `src/modules/<module>/<module>.routes.ts`.
 5. Add automated tests in `apps/backend/tests/backend.test.mjs`.
+

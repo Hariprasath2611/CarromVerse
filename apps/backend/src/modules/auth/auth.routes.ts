@@ -24,3 +24,4 @@ export function createAuthRouter(controller = new AuthController()) {
     return false;
   };
 }
+

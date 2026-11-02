@@ -38,3 +38,4 @@ npm run start --workspace=@carromverse/backend
 - `GET /api/v1/leaderboards`: Top ranking players
 - `POST /api/v1/multiplayer/rooms`: Create multiplayer room
 - `GET /api/v1/multiplayer/rooms`: List public multiplayer rooms
+

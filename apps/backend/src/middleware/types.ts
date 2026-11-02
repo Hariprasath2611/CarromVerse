@@ -16,3 +16,4 @@ export interface HttpResponse extends ServerResponse {
 
 export type NextFunction = (err?: unknown) => void;
 export type Middleware = (req: HttpRequest, res: HttpResponse, next: NextFunction) => void | Promise<void>;
+

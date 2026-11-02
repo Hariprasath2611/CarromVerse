@@ -7,3 +7,4 @@ Configuration, orchestration, containerization, and automation scripts for Carro
 - `deployment/`: Cloud deployment guides and operational procedures
 - `environments/`: Environment variable templates (.env.development, .env.staging, .env.production)
 - `scripts/`: Cross-platform build, setup, and test automation scripts (PowerShell & Bash)
+

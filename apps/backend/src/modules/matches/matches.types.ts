@@ -8,3 +8,4 @@ export interface MatchFilterQueryDto {
   mode?: GameMode;
   limit?: number;
 }
+

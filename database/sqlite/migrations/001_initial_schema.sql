@@ -29,3 +29,4 @@ CREATE TABLE IF NOT EXISTS pending_sync_queue (
   error_message TEXT,
   created_at TEXT NOT NULL
 );
+

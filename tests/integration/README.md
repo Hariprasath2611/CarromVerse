@@ -5,3 +5,4 @@ Tests interactions across:
 - Frontend Stores <-> Local SQLite Database
 - Backend REST API <-> Match Sync Queue
 - Game Logic State Machine <-> Turn Rotation Rules
+

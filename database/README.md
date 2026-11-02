@@ -17,3 +17,4 @@ Central repository for all database definitions, migrations, rules, and seed fil
   - `migrations/`: Versioned migrations
   - `seeds/`: Initial test and development data
 - `documentation/`: Detailed architectural documentation for each database engine
+

@@ -14,3 +14,4 @@ export function createLeaderboardsRouter(controller = new LeaderboardsController
     return false;
   };
 }
+

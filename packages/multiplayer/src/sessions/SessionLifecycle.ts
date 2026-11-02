@@ -33,3 +33,4 @@ export class SessionLifecycle {
     return this.state === 'completed' || this.state === 'aborted';
   }
 }
+

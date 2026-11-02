@@ -29,3 +29,4 @@ Completed match records with foreign key referencing `users(id)`.
 - `final_scores` (JSONB)
 - `started_at` (TIMESTAMPTZ)
 - `completed_at` (TIMESTAMPTZ)
+

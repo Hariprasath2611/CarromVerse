@@ -30,3 +30,4 @@ Manages offline operations pending online synchronization when connectivity is r
 - `last_attempt_at`: TEXT
 - `error_message`: TEXT
 - `created_at`: TEXT
+

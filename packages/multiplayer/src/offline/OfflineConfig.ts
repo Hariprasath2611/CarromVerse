@@ -21,3 +21,4 @@ export const DEFAULT_OFFLINE_SETTINGS: OfflineMatchSettings = {
   pointsPerQueen: 25,
   foulPenaltyPoints: 5,
 };
+

@@ -8,3 +8,4 @@ export const SERVER_CONFIG = {
   rateLimitWindowMs: 60 * 1000,
   shutdownTimeoutMs: 5000,
 };
+

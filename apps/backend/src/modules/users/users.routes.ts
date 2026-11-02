@@ -14,3 +14,4 @@ export function createUsersRouter(controller = new UsersController()) {
     return false;
   };
 }
+

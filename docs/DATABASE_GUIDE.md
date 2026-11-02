@@ -33,3 +33,4 @@ cat database/postgresql/schemas/core_schema.sql
 1. Name migrations sequentially (`001_initial_schema.sql`, `002_add_field.sql`).
 2. Make migrations idempotent (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`).
 3. Maintain synchronization between SQLite definitions and `LocalDatabaseService.ts` in `apps/frontend`.
+

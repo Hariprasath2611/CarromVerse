@@ -18,3 +18,4 @@ INSERT OR IGNORE INTO local_matches (
   1,
   1
 );
+

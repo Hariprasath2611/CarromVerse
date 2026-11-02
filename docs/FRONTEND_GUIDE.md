@@ -28,3 +28,4 @@ npm run web --workspace=@carromverse/frontend
 2. **State Management**: Use Zustand stores for global match status and pass-and-play handovers.
 3. **Bridge Communication**: When interacting with the game canvas, send structured JSON events (`SET_STRIKER_POSITION`, `EXECUTE_SHOT`, `PAUSE_GAME`) through `PhaserCarromView`.
 4. **Offline Resilience**: Matches must play smoothly offline without an active internet connection. Offline match outcomes are saved to SQLite via `LocalDatabaseService`.
+

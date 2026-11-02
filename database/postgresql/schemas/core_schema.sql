@@ -39,3 +39,4 @@ CREATE TABLE IF NOT EXISTS leaderboards (
 
 CREATE INDEX IF NOT EXISTS idx_matches_completed_at ON matches(completed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_leaderboards_rating ON leaderboards(rating_points DESC);
+

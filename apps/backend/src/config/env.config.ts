@@ -17,3 +17,4 @@ export const ENV: EnvConfig = {
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || 'carromverse-dev',
   databaseUrl: process.env.DATABASE_URL,
 };
+

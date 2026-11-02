@@ -28,3 +28,4 @@ npm run test --workspace=@carromverse/game-logic
 1. **Queen Cover**: Pocketing the Queen transitions state to `pending_cover`. The player must pocket an assigned coin on the subsequent shot (or in the same shot) to cover. If cover fails, Queen returns to center.
 2. **Fouls**: Pocketing the striker incurs a penalty coin and passes the turn. If player has 0 banked coins, penalty is recorded as due.
 3. **Turn Bonus**: Pocketing at least 1 legal coin without a foul awards an extra shot.
+

@@ -11,3 +11,4 @@ Centralized TypeScript interfaces, types, and enums shared across Frontend, Back
 - `score.ts`: Score tracking, Queen cover rules, and point breakdowns
 - `game-result.ts`: Match outcomes, winner determinations, and stats
 - `events.ts`: Cross-layer bridge events (Phaser <-> React Native / Backend)
+

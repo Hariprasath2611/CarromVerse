@@ -23,3 +23,4 @@ Thank you for contributing to CarromVerse! To maintain architecture integrity an
 - [ ] `npm run typecheck` passes with 0 errors across all workspaces.
 - [ ] `npm run test` passes with 100% success across all packages and apps.
 - [ ] Documentation updated in `docs/` if modifying public contracts or architectures.
+

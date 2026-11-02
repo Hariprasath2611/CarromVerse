@@ -15,3 +15,4 @@ export abstract class BaseService {
     Logger.error(`[${this.serviceName}] ${message}`, error);
   }
 }
+

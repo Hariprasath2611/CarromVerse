@@ -19,3 +19,4 @@ export interface CreateRoomRequestDto {
   hostName: string;
   isPrivate?: boolean;
 }
+

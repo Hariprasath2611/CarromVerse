@@ -11,3 +11,4 @@ export const DATABASE_CONFIG: DatabaseConfig = {
   firestoreCollectionPrefix: 'carromverse_',
   sqlitePath: './carromverse.sqlite',
 };
+

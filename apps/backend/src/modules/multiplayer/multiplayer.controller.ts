@@ -30,3 +30,4 @@ export class MultiplayerController {
     res.status(200).json(ResponseFormatter.success(rooms));
   };
 }
+

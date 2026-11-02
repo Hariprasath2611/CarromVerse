@@ -38,3 +38,4 @@ export class TeamSetup {
     return allPlayers.find((p) => p.teamId === player.teamId && p.id !== player.id);
   }
 }
+

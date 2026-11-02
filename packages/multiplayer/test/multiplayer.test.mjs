@@ -59,3 +59,4 @@ test('Multiplayer Package - SessionLifecycle', () => {
   lifecycle.transitionTo('completed');
   assert.equal(lifecycle.isFinished(), true);
 });
+
