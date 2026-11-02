@@ -108,6 +108,10 @@ Access `http://localhost:4000/health` to confirm the backend is online.
 
 - [Project Structure & Workspace Boundaries](docs/PROJECT_STRUCTURE.md)
 - [System Architecture Specification](docs/ARCHITECTURE.md)
+- [Gameplay & Mode Rules Guide](docs/GAMEPLAY_GUIDE.md)
+- [Audio & VFX Architecture Guide](docs/AUDIO_GUIDE.md)
+- [Testing & Physics Verification Guide](docs/TESTING_GUIDE.md)
+- [Production Build & Release Guide](docs/BUILD_AND_RELEASE_GUIDE.md)
 - [Frontend Developer Guide](docs/FRONTEND_GUIDE.md)
 - [Backend Developer Guide](docs/BACKEND_GUIDE.md)
 - [Game Engine Developer Guide](docs/GAME_ENGINE_GUIDE.md)

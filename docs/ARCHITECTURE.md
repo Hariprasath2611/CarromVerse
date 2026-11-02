@@ -53,3 +53,16 @@ CarromVerse is engineered as a high-performance, modular carrom gaming ecosystem
 - **Cloud Firestore**: Real-time cloud documents with granular role-based security rules.
 - **Firebase Storage**: Profile pictures and customizable board cosmetic assets.
 - **PostgreSQL**: Scalable relational schema for high-throughput match queries and competitive seasons.
+
+---
+
+## 5. Audio & Visual Effects Architecture
+- **Dual-Tier Audio**:
+  - React Native `AudioManager`: UI feedback, ambient background music, and handover alerts.
+  - In-Engine Web Audio: Zero-latency collision wood clicks, frame cushion thuds, and pocketing chimes directly inside Phaser.
+- **Visual Feedback**:
+  - Striker blast wave ring upon release.
+  - Kinetic spark particle bursts on high-speed coin collisions.
+  - Golden starburst flare upon Queen pocketing.
+  - Warning red pulse and floating score toast upon fouls.
+- **Bridge Throttling**: Micro-collisions below velocity thresholds are handled purely in-engine to guarantee 60 FPS performance without React Native thread congestion.

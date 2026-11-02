@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/game-engine.test.mjs test/physics-acceptance.test.mjs test/full-offline-multiplayer-integration.test.mjs"
+    "test": "node --test test/game-engine.test.mjs test/physics-acceptance.test.mjs test/full-offline-multiplayer-integration.test.mjs test/audio-and-animations.test.mjs"
   },
   "dependencies": {
     "@carromverse/shared-types": "*",

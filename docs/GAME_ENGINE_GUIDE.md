@@ -28,3 +28,12 @@ npm run test --workspace=@carromverse/game-engine
 - Stop Distance: High-velocity shots must settle within ~45–55 cm.
 - Zero Leaks: Bodies must be properly pooled or disposed upon pocketing.
 
+## Audio & Visual Effects Pipeline
+- Web Audio Synthesizer: `playWoodClick`, `playCushionThud`, `playPocketSound`, `playShootSound`.
+- Visual Animations:
+  - Shockwave release ring (`createShotBlastRing`).
+  - Kinetic spark particle bursts on coin contacts (`createCollisionSpark`).
+  - Queen starburst golden explosion (`createQueenStarburst`).
+  - Foul red ripple warning ring (`createFoulRipple`).
+- Bridge Throttling: High-frequency collision postMessages are throttled (cooldown 75 ms, threshold > 40 cm/s) to maintain a smooth 60 FPS.
+
