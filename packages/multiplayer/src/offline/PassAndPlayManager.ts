@@ -33,7 +33,7 @@ export class PassAndPlayManager {
       fromSeat: fromPlayer.seat,
       toSeat: toPlayer.seat,
       nextPlayerName: toPlayer.name,
-      nextPlayerAvatar: toPlayer.avatarUrl,
+      nextPlayerAvatar: toPlayer.avatarUrl || '👑',
       seatDirection: SeatManager.getSeatDirectionLabel(toPlayer.seat),
       isConfirmed: !this.confirmationRequired,
     };

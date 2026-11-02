@@ -1,4 +1,4 @@
-import { MatchResult, Player, PlayerSeat } from '@carromverse/shared-types';
+import { GameResult, Player, PlayerSeat } from '@carromverse/shared-types';
 
 export interface MatchLiveSummary {
   activeSeat: PlayerSeat;
@@ -6,7 +6,7 @@ export interface MatchLiveSummary {
   isGameOver: boolean;
   scores: Record<string, number>;
   winner?: Player;
-  result?: MatchResult;
+  result?: GameResult;
 }
 
 export class MatchStatusTracker {
