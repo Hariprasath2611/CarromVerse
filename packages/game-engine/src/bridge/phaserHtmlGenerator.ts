@@ -65,18 +65,18 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       var BOARD_CM = 74;
       var PX_PER_CM = BOARD_PX / BOARD_CM; // 10.0 px per cm
 
-      var COIN_RADIUS_CM = 1.85; // Increased coin size for rich mobile visibility
-      var COIN_RADIUS_PX = COIN_RADIUS_CM * PX_PER_CM; // 18.5 px
+      var COIN_RADIUS_CM = 2.10; // Increased coin size for rich mobile visibility
+      var COIN_RADIUS_PX = COIN_RADIUS_CM * PX_PER_CM; // 21.0 px
       var COIN_MASS = 5.0;
 
-      var STRIKER_RADIUS_CM = 2.45; // Increased striker size
-      var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 24.5 px
+      var STRIKER_RADIUS_CM = 2.75; // Increased striker size
+      var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 27.5 px
       var STRIKER_MASS = 15.0; // 3:1 mass ratio
 
-      var POCKET_RADIUS_CM = 4.2;
-      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 42.0 px (visible hole radius)
-      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 35.7 px capture radius
-      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20; // 50.4 px suction zone
+      var POCKET_RADIUS_CM = 4.5;
+      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 45.0 px (visible hole radius)
+      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 38.25 px capture radius
+      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.22; // 54.9 px suction zone
 
       var WALL_THICKNESS_CM = 5.0;
       var WALL_THICKNESS_PX = WALL_THICKNESS_CM * PX_PER_CM; // 50.0 px

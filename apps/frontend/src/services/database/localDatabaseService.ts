@@ -1,21 +1,35 @@
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SQLite from 'expo-sqlite';
 import { GameResult, SyncRecord } from '@carromverse/shared-types';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 export class LocalDatabaseService {
   private static dbInstance: SQLite.SQLiteDatabase | null = null;
-  private static initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+  private static initPromise: Promise<SQLite.SQLiteDatabase | null> | null = null;
+  private static isWebOrFallback: boolean = Platform.OS === 'web';
 
-  public static async getDb(): Promise<SQLite.SQLiteDatabase> {
+  public static async getDb(): Promise<SQLite.SQLiteDatabase | null> {
+    if (this.isWebOrFallback) {
+      return null;
+    }
+
     if (this.dbInstance) {
       return this.dbInstance;
     }
 
     if (!this.initPromise) {
       this.initPromise = (async () => {
-        const db = await SQLite.openDatabaseAsync('carromverse.db');
-        await this.runMigrations(db);
-        this.dbInstance = db;
-        return db;
+        try {
+          const db = await SQLite.openDatabaseAsync('carromverse.db');
+          await this.runMigrations(db);
+          this.dbInstance = db;
+          return db;
+        } catch (err) {
+          console.warn('[LocalDatabaseService] SQLite open failed, switching to AsyncStorage fallback:', err);
+          this.isWebOrFallback = true;
+          return null;
+        }
       })();
     }
 
@@ -61,8 +75,23 @@ export class LocalDatabaseService {
     `);
   }
 
+  // --- Matches Persistence ---
+
   public static async saveMatch(match: GameResult): Promise<void> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY);
+        const list: GameResult[] = raw ? JSON.parse(raw) : [];
+        const filtered = list.filter((m) => m.id !== match.id);
+        filtered.unshift(match);
+        await AsyncStorage.setItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY, JSON.stringify(filtered.slice(0, 100)));
+      } catch (e) {
+        console.warn('[LocalDatabaseService] AsyncStorage saveMatch error:', e);
+      }
+      return;
+    }
+
     await db.runAsync(
       `INSERT OR REPLACE INTO local_matches (
         id, session_id, mode, variant, winner_id, winner_name, winning_team_id,
@@ -91,6 +120,16 @@ export class LocalDatabaseService {
 
   public static async getMatchHistory(limit: number = 50): Promise<GameResult[]> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY);
+        const list: GameResult[] = raw ? JSON.parse(raw) : [];
+        return list.slice(0, limit);
+      } catch {
+        return [];
+      }
+    }
+
     const rows = await db.getAllAsync<any>(
       `SELECT * FROM local_matches ORDER BY completed_at DESC LIMIT ?`,
       [limit]
@@ -117,6 +156,16 @@ export class LocalDatabaseService {
 
   public static async getMatchById(id: string): Promise<GameResult | null> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY);
+        const list: GameResult[] = raw ? JSON.parse(raw) : [];
+        return list.find((m) => m.id === id) || null;
+      } catch {
+        return null;
+      }
+    }
+
     const r = await db.getFirstAsync<any>(
       `SELECT * FROM local_matches WHERE id = ?`,
       [id]
@@ -150,6 +199,20 @@ export class LocalDatabaseService {
     totalDraws: number;
   }> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY);
+        const list: GameResult[] = raw ? JSON.parse(raw) : [];
+        const totalMatches = list.length;
+        const totalWins = list.filter((m) => (m.winnerId || m.winningTeamId) && !m.isDraw).length;
+        const totalDraws = list.filter((m) => m.isDraw).length;
+        const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+        return { totalMatches, totalWins, winRate, totalDraws };
+      } catch {
+        return { totalMatches: 0, totalWins: 0, winRate: 0, totalDraws: 0 };
+      }
+    }
+
     const countRow = await db.getFirstAsync<{ count: number }>(
       `SELECT COUNT(*) as count FROM local_matches`
     );
@@ -177,12 +240,33 @@ export class LocalDatabaseService {
 
   public static async clearMatchHistory(): Promise<void> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      await AsyncStorage.removeItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY);
+      await AsyncStorage.removeItem(STORAGE_KEYS.PENDING_SYNC_QUEUE);
+      return;
+    }
+
     await db.runAsync(`DELETE FROM local_matches`);
     await db.runAsync(`DELETE FROM pending_sync_queue`);
   }
 
+  // --- Offline Sync Queue ---
+
   public static async enqueueSyncItem(record: SyncRecord): Promise<void> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_SYNC_QUEUE);
+        const list: SyncRecord[] = raw ? JSON.parse(raw) : [];
+        const filtered = list.filter((i) => i.id !== record.id);
+        filtered.push(record);
+        await AsyncStorage.setItem(STORAGE_KEYS.PENDING_SYNC_QUEUE, JSON.stringify(filtered));
+      } catch (e) {
+        console.warn('[LocalDatabaseService] AsyncStorage enqueue error:', e);
+      }
+      return;
+    }
+
     await db.runAsync(
       `INSERT OR REPLACE INTO pending_sync_queue (
         id, entity_type, entity_id, payload_json, status, retry_count,
@@ -204,6 +288,16 @@ export class LocalDatabaseService {
 
   public static async getPendingSyncQueue(): Promise<SyncRecord[]> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_SYNC_QUEUE);
+        const list: SyncRecord[] = raw ? JSON.parse(raw) : [];
+        return list.filter((i) => (i.status === 'pending' || i.status === 'failed') && i.retryCount < 5);
+      } catch {
+        return [];
+      }
+    }
+
     const rows = await db.getAllAsync<any>(
       `SELECT * FROM pending_sync_queue WHERE status IN ('pending', 'failed') AND retry_count < 5 ORDER BY created_at ASC`
     );
@@ -223,6 +317,30 @@ export class LocalDatabaseService {
 
   public static async markSyncComplete(syncId: string, matchId?: string): Promise<void> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_SYNC_QUEUE);
+        if (raw) {
+          const list: SyncRecord[] = JSON.parse(raw);
+          await AsyncStorage.setItem(
+            STORAGE_KEYS.PENDING_SYNC_QUEUE,
+            JSON.stringify(list.filter((i) => i.id !== syncId))
+          );
+        }
+        if (matchId) {
+          const rawMatches = await AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY);
+          if (rawMatches) {
+            const matches: GameResult[] = JSON.parse(rawMatches);
+            const updated = matches.map((m) => (m.id === matchId ? { ...m, isSynced: true } : m));
+            await AsyncStorage.setItem(STORAGE_KEYS.OFFLINE_MATCH_HISTORY, JSON.stringify(updated));
+          }
+        }
+      } catch (e) {
+        console.warn('[LocalDatabaseService] AsyncStorage markSyncComplete error:', e);
+      }
+      return;
+    }
+
     await db.runAsync(`DELETE FROM pending_sync_queue WHERE id = ?`, [syncId]);
 
     if (matchId) {
@@ -235,6 +353,30 @@ export class LocalDatabaseService {
 
   public static async markSyncFailed(syncId: string, error: string): Promise<void> {
     const db = await this.getDb();
+    if (!db || this.isWebOrFallback) {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_SYNC_QUEUE);
+        if (raw) {
+          const list: SyncRecord[] = JSON.parse(raw);
+          const updated = list.map((i) =>
+            i.id === syncId
+              ? {
+                  ...i,
+                  status: 'failed' as const,
+                  retryCount: i.retryCount + 1,
+                  errorMessage: error,
+                  lastAttemptAt: new Date().toISOString(),
+                }
+              : i
+          );
+          await AsyncStorage.setItem(STORAGE_KEYS.PENDING_SYNC_QUEUE, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.warn('[LocalDatabaseService] AsyncStorage markSyncFailed error:', e);
+      }
+      return;
+    }
+
     await db.runAsync(
       `UPDATE pending_sync_queue SET
         status = 'failed',
@@ -246,4 +388,3 @@ export class LocalDatabaseService {
     );
   }
 }
-

@@ -53,9 +53,9 @@ export default function GameBoardScreen() {
   } = useGameSessionStore();
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  // Safe responsive board size preserving strict 1:1 aspect ratio
-  const availableBoardHeight = screenHeight - 210;
-  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 16, availableBoardHeight, 460));
+  // Maximized board size preserving strict 1:1 aspect ratio with compact footer controls
+  const availableBoardHeight = screenHeight - 130;
+  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 8, availableBoardHeight, 520));
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
@@ -79,12 +79,6 @@ export default function GameBoardScreen() {
   const triggerFloatingScore = (text: string, color: string) => {
     setFloatingScore({ text, color });
     setTimeout(() => setFloatingScore(null), 1800);
-  };
-
-  const getPowerColor = (ratio: number) => {
-    if (ratio < 0.45) return '#2BD67B'; // Emerald Green
-    if (ratio < 0.80) return '#E9B949'; // Amber Gold
-    return '#EF4444';                   // Crimson Red
   };
 
   // Initialize rules engine session if not active
@@ -459,101 +453,78 @@ export default function GameBoardScreen() {
         />
       </View>
 
-      {/* POWER INDICATOR BAR */}
-      <View style={styles.powerBarContainer}>
-        <View style={styles.powerLabelRow}>
-          <Text style={styles.powerLabelText}>POWER</Text>
-          <Text style={[styles.powerValueText, { color: getPowerColor(powerRatio) }]}>
-            {Math.round(powerRatio * 100)}%
-          </Text>
-        </View>
-        <View style={styles.powerTrack}>
-          <View
-            style={[
-              styles.powerFill,
-              {
-                width: `${Math.max(4, Math.round(powerRatio * 100))}%`,
-                backgroundColor: getPowerColor(powerRatio),
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.powerKnob,
-              {
-                left: `${Math.max(0, Math.min(94, Math.round(powerRatio * 100) - 3))}%`,
-              },
-            ]}
-          />
-        </View>
-      </View>
+      {/* BOTTOM CONTROLS FOOTER: BASELINE POSITIONER & COMPACT ACTIONS */}
+      <View style={styles.bottomFooterWrap}>
+        {/* TACTILE BASELINE POSITIONER */}
+        <View style={styles.baselineControllerRow}>
+          <TouchableOpacity
+            style={styles.nudgeBtn}
+            onPress={() => handleNudgeStriker(-0.12)}
+            disabled={isShotActive || isHandoverPending}
+            hitSlop={8}
+          >
+            <Text style={styles.nudgeBtnText}>◀</Text>
+          </TouchableOpacity>
 
-      {/* TACTILE BASELINE POSITIONER */}
-      <View style={styles.baselineControllerRow}>
-        <TouchableOpacity
-          style={styles.nudgeBtn}
-          onPress={() => handleNudgeStriker(-0.12)}
-          disabled={isShotActive || isHandoverPending}
-          hitSlop={8}
-        >
-          <Text style={styles.nudgeBtnText}>◀</Text>
-        </TouchableOpacity>
+          <View style={styles.baselineTrack}>
+            <View
+              style={[
+                styles.baselineMarker,
+                {
+                  left: `${((strikerOffsetRatio + 1) / 2) * 88 + 6}%`,
+                },
+              ]}
+            />
+          </View>
 
-        <View style={styles.baselineTrack}>
-          <View
-            style={[
-              styles.baselineMarker,
-              {
-                left: `${((strikerOffsetRatio + 1) / 2) * 88 + 6}%`,
-              },
-            ]}
-          />
+          <TouchableOpacity
+            style={styles.nudgeBtn}
+            onPress={() => handleNudgeStriker(0.12)}
+            disabled={isShotActive || isHandoverPending}
+            hitSlop={8}
+          >
+            <Text style={styles.nudgeBtnText}>▶</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.nudgeBtn}
-          onPress={() => handleNudgeStriker(0.12)}
-          disabled={isShotActive || isHandoverPending}
-          hitSlop={8}
-        >
-          <Text style={styles.nudgeBtnText}>▶</Text>
-        </TouchableOpacity>
-      </View>
+        {/* COMPACT BOTTOM CONTROLS: EMOTE | SHOOT | PAUSE */}
+        <View style={styles.bottomControlsRow}>
+          <Button
+            title="EMOTE"
+            variant="secondary"
+            size="sm"
+            onPress={() => {
+              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+              setShowStickersModal(true);
+            }}
+            style={styles.controlBtnSide}
+            textStyle={styles.controlBtnText}
+          />
 
-      {/* COMPACT BOTTOM CONTROLS: EMOTE | SHOOT | PAUSE */}
-      <View style={styles.bottomControlsRow}>
-        <Button
-          title="EMOTE"
-          variant="secondary"
-          size="sm"
-          onPress={() => {
-            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-            setShowStickersModal(true);
-          }}
-          style={styles.controlBtnSide}
-        />
+          <Button
+            title={isShotActive ? 'MOVING...' : 'SHOOT'}
+            variant="primary"
+            size="sm"
+            disabled={isShotActive || isHandoverPending}
+            onPress={handleShoot}
+            style={styles.shootBtn}
+            textStyle={styles.shootBtnText}
+          />
 
-        <Button
-          title={isShotActive ? 'MOVING...' : 'SHOOT'}
-          variant="primary"
-          size="sm"
-          disabled={isShotActive || isHandoverPending}
-          onPress={handleShoot}
-          style={styles.shootBtn}
-        />
-
-        <Button
-          title="PAUSE"
-          variant="secondary"
-          size="sm"
-          onPress={() => {
-            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-            pauseSession();
-            carromRef.current?.pauseGame();
-            setShowPauseModal(true);
-          }}
-          style={styles.controlBtnSide}
-        />
+          <Button
+            title="PAUSE"
+            variant="secondary"
+            size="sm"
+            onPress={() => {
+              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+              pauseSession();
+              carromRef.current?.pauseGame();
+              setShowPauseModal(true);
+            }}
+            style={styles.controlBtnSide}
+            textStyle={styles.controlBtnText}
+          />
+        </View>
       </View>
 
       {/* PASS-AND-PLAY TURN HANDOVER MODAL */}
@@ -840,19 +811,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 13,
   },
+  bottomFooterWrap: {
+    width: '100%',
+    gap: 4,
+    paddingHorizontal: 4,
+    paddingBottom: 2,
+  },
   baselineControllerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginVertical: 4,
+    gap: 8,
+    paddingHorizontal: 8,
   },
   nudgeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(15, 90, 62, 0.6)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15, 90, 62, 0.7)',
     borderWidth: 1.5,
     borderColor: '#2BD67B',
     alignItems: 'center',
@@ -860,84 +836,49 @@ const styles = StyleSheet.create({
   },
   nudgeBtnText: {
     color: '#2BD67B',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
   },
   baselineTrack: {
     flex: 1,
-    height: 12,
-    backgroundColor: 'rgba(7, 38, 28, 0.8)',
-    borderRadius: 6,
+    height: 10,
+    backgroundColor: 'rgba(7, 38, 28, 0.85)',
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: 'rgba(43, 214, 123, 0.4)',
     justifyContent: 'center',
   },
   baselineMarker: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#2BD67B',
     borderWidth: 2,
     borderColor: '#FFFFFF',
     position: 'absolute',
-    top: -5,
+    top: -4,
   },
   bottomControlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    paddingHorizontal: 6,
   },
   controlBtnSide: {
     flex: 1,
+    height: 36,
   },
   shootBtn: {
-    flex: 1.6,
+    flex: 1.5,
+    height: 36,
   },
-  powerBarContainer: {
-    paddingHorizontal: 16,
-    marginVertical: 4,
-  },
-  powerLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  powerLabelText: {
-    color: '#F5ECD2',
+  controlBtnText: {
     fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
-  powerValueText: {
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  powerTrack: {
-    height: 12,
-    backgroundColor: 'rgba(7, 38, 28, 0.9)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(43, 214, 123, 0.3)',
-    position: 'relative',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  powerFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  powerKnob: {
-    position: 'absolute',
-    top: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#F5ECD2',
-    borderWidth: 2,
-    borderColor: '#EF4444',
+  shootBtnText: {
+    fontSize: 13,
+    letterSpacing: 0.8,
   },
   floatingScoreBadge: {
     position: 'absolute',
