@@ -16,6 +16,7 @@ import {
 } from '../../src/components';
 import { useSettingsStore } from '../../src/store/settingsStore';
 import { useAuthStore } from '../../src/store/authStore';
+import { AudioManager } from '../../src/services/audio/AudioManager';
 import { THEME } from '../../src/constants/theme';
 
 export default function SettingsScreen() {
@@ -24,6 +25,8 @@ export default function SettingsScreen() {
     settings,
     toggleSound,
     toggleMusic,
+    setSoundVolume,
+    setMusicVolume,
     toggleHaptics,
     toggleAimAssist,
   } = useSettingsStore();
@@ -32,6 +35,19 @@ export default function SettingsScreen() {
   const [showNotifications, setShowNotifications] = useState(true);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
+  const handleSoundVolumeChange = (delta: number) => {
+    const current = settings.soundVolume ?? 0.8;
+    const next = Math.max(0, Math.min(1, Math.round((current + delta) * 10) / 10));
+    setSoundVolume(next);
+    AudioManager.getInstance().playSound('BUTTON_CLICK', next);
+  };
+
+  const handleMusicVolumeChange = (delta: number) => {
+    const current = settings.musicVolume ?? 0.5;
+    const next = Math.max(0, Math.min(1, Math.round((current + delta) * 10) / 10));
+    setMusicVolume(next);
+  };
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -47,6 +63,9 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const soundPercent = Math.round((settings.soundVolume ?? 0.8) * 100);
+  const musicPercent = Math.round((settings.musicVolume ?? 0.5) * 100);
+
   return (
     <ScreenContainer scrollable contentContainerStyle={styles.container}>
       {/* Decorative background shapes */}
@@ -58,30 +77,73 @@ export default function SettingsScreen() {
         <Text style={styles.title}>SETTINGS</Text>
       </View>
 
-      {/* 5 Setting Toggles */}
+      {/* Audio & Gameplay Controls */}
       <View style={styles.settingsList}>
+        {/* Music Section */}
         <Card style={styles.settingCard}>
-          <Text style={styles.settingText}>Music</Text>
-          <Toggle value={settings.musicEnabled} onValueChange={toggleMusic} />
+          <View>
+            <Text style={styles.settingText}>Background Music</Text>
+            <Text style={styles.settingSubtext}>Volume: {musicPercent}%</Text>
+          </View>
+          <View style={styles.controlsRow}>
+            <TouchableOpacity
+              style={styles.volumeBtn}
+              onPress={() => handleMusicVolumeChange(-0.1)}
+              disabled={!settings.musicEnabled}
+            >
+              <Text style={styles.volumeBtnText}>-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.volumeBtn}
+              onPress={() => handleMusicVolumeChange(0.1)}
+              disabled={!settings.musicEnabled}
+            >
+              <Text style={styles.volumeBtnText}>+</Text>
+            </TouchableOpacity>
+            <Toggle value={settings.musicEnabled} onValueChange={toggleMusic} />
+          </View>
         </Card>
 
+        {/* Sound Effects Section */}
         <Card style={styles.settingCard}>
-          <Text style={styles.settingText}>Sound effects</Text>
-          <Toggle value={settings.soundEnabled} onValueChange={toggleSound} />
+          <View>
+            <Text style={styles.settingText}>Sound Effects</Text>
+            <Text style={styles.settingSubtext}>Volume: {soundPercent}%</Text>
+          </View>
+          <View style={styles.controlsRow}>
+            <TouchableOpacity
+              style={styles.volumeBtn}
+              onPress={() => handleSoundVolumeChange(-0.1)}
+              disabled={!settings.soundEnabled}
+            >
+              <Text style={styles.volumeBtnText}>-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.volumeBtn}
+              onPress={() => handleSoundVolumeChange(0.1)}
+              disabled={!settings.soundEnabled}
+            >
+              <Text style={styles.volumeBtnText}>+</Text>
+            </TouchableOpacity>
+            <Toggle value={settings.soundEnabled} onValueChange={toggleSound} />
+          </View>
         </Card>
 
+        {/* Vibration / Haptics */}
         <Card style={styles.settingCard}>
-          <Text style={styles.settingText}>Vibration</Text>
+          <Text style={styles.settingText}>Vibration Feedback</Text>
           <Toggle value={settings.hapticEnabled} onValueChange={toggleHaptics} />
         </Card>
 
+        {/* Aim Assist */}
         <Card style={styles.settingCard}>
-          <Text style={styles.settingText}>Aim assist line</Text>
+          <Text style={styles.settingText}>Aim Assist Guideline</Text>
           <Toggle value={settings.aimAssistEnabled} onValueChange={toggleAimAssist} />
         </Card>
 
+        {/* Notifications */}
         <Card style={styles.settingCard}>
-          <Text style={styles.settingText}>Show notifications</Text>
+          <Text style={styles.settingText}>Show Notifications</Text>
           <Toggle
             value={showNotifications}
             onValueChange={setShowNotifications}
@@ -219,6 +281,32 @@ const styles = StyleSheet.create({
     color: '#F5ECD2',
     fontSize: 16,
     fontWeight: '700',
+  },
+  settingSubtext: {
+    color: '#9FD8B8',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  volumeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(43, 214, 123, 0.2)',
+    borderWidth: 1,
+    borderColor: '#2BD67B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  volumeBtnText: {
+    color: '#F5ECD2',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   actionsList: {
     gap: 12,

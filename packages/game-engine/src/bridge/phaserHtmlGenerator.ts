@@ -199,6 +199,234 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
         return dtSec > 0 ? (stepVel / dtSec) / PX_PER_CM : 0;
       }
 
+      // IN-ENGINE ACOUSTIC SYNTHESIZER (WEB AUDIO API)
+      var sfxAudioCtx = null;
+      var sfxAudioEnabled = true;
+      var sfxAudioVolume = 0.8;
+      var lastClickSoundTime = 0;
+      var lastThudSoundTime = 0;
+
+      function getSfxAudio() {
+        if (!sfxAudioCtx && typeof window !== 'undefined') {
+          var Ctx = window.AudioContext || window.webkitAudioContext;
+          if (Ctx) {
+            try { sfxAudioCtx = new Ctx(); } catch(e){}
+          }
+        }
+        if (sfxAudioCtx && sfxAudioCtx.state === 'suspended') {
+          sfxAudioCtx.resume().catch(function(){});
+        }
+        return sfxAudioCtx;
+      }
+
+      function playWoodClick(speedCmS) {
+        if (!sfxAudioEnabled || sfxAudioVolume <= 0) return;
+        var nowMs = Date.now();
+        if (nowMs - lastClickSoundTime < 28) return;
+        lastClickSoundTime = nowMs;
+
+        var ctx = getSfxAudio();
+        if (!ctx) return;
+        try {
+          var now = ctx.currentTime;
+          var normSpeed = Math.min(1.0, Math.max(0.12, speedCmS / 150));
+          var vol = normSpeed * sfxAudioVolume * 0.75;
+
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          var filter = ctx.createBiquadFilter();
+
+          var freq = 780 + Math.random() * 240;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.35, now + 0.045);
+
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(950, now);
+          filter.Q.setValueAtTime(3.0, now);
+
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.045);
+        } catch(e){}
+      }
+
+      function playCushionThud(speedCmS) {
+        if (!sfxAudioEnabled || sfxAudioVolume <= 0) return;
+        var nowMs = Date.now();
+        if (nowMs - lastThudSoundTime < 45) return;
+        lastThudSoundTime = nowMs;
+
+        var ctx = getSfxAudio();
+        if (!ctx) return;
+        try {
+          var now = ctx.currentTime;
+          var normSpeed = Math.min(1.0, Math.max(0.15, speedCmS / 130));
+          var vol = normSpeed * sfxAudioVolume * 0.6;
+
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(45, now + 0.06);
+
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } catch(e){}
+      }
+
+      function playPocketSound(isQueen, isStriker) {
+        if (!sfxAudioEnabled || sfxAudioVolume <= 0) return;
+        var ctx = getSfxAudio();
+        if (!ctx) return;
+        try {
+          var now = ctx.currentTime;
+          if (isQueen) {
+            [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i) {
+              var osc = ctx.createOscillator();
+              var gain = ctx.createGain();
+              var t = now + i * 0.06;
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(f, t);
+              gain.gain.setValueAtTime(sfxAudioVolume * 0.45, t);
+              gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(t);
+              osc.stop(t + 0.4);
+            });
+          } else if (isStriker) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(130, now);
+            osc.frequency.setValueAtTime(95, now + 0.08);
+            gain.gain.setValueAtTime(sfxAudioVolume * 0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.2);
+          } else {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, now);
+            osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
+            gain.gain.setValueAtTime(sfxAudioVolume * 0.65, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          }
+        } catch(e){}
+      }
+
+      function playShootSound(powerRatio) {
+        if (!sfxAudioEnabled || sfxAudioVolume <= 0) return;
+        var ctx = getSfxAudio();
+        if (!ctx) return;
+        try {
+          var now = ctx.currentTime;
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          var vol = (0.3 + powerRatio * 0.5) * sfxAudioVolume;
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(480, now + 0.04);
+          osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } catch(e){}
+      }
+
+      // VISUAL ANIMATION EFFECT HELPERS
+      function createShotBlastRing(scene, x, y) {
+        if (!scene || !scene.add) return;
+        var ring = scene.add.circle(x, y, 18);
+        ring.setStrokeStyle(3, 0x2BD67B, 0.9);
+        ring.setDepth(20);
+        scene.tweens.add({
+          targets: ring,
+          radius: 56,
+          alpha: 0,
+          duration: 250,
+          ease: 'Quad.easeOut',
+          onComplete: function() { ring.destroy(); }
+        });
+      }
+
+      function createCollisionSpark(scene, x, y) {
+        if (!scene || !scene.add) return;
+        var spark = scene.add.circle(x, y, 5, 0xF5ECD2, 0.9);
+        spark.setDepth(22);
+        scene.tweens.add({
+          targets: spark,
+          scale: 2.2,
+          alpha: 0,
+          duration: 140,
+          ease: 'Quad.easeOut',
+          onComplete: function() { spark.destroy(); }
+        });
+      }
+
+      function createQueenStarburst(scene, px, py) {
+        if (!scene || !scene.add) return;
+        for (var i = 0; i < 10; i++) {
+          var angle = (Math.PI * 2 / 10) * i;
+          var dist = 32 + Math.random() * 24;
+          var star = scene.add.circle(px, py, 4, 0xE9B949, 1);
+          star.setDepth(30);
+          scene.tweens.add({
+            targets: star,
+            x: px + Math.cos(angle) * dist,
+            y: py + Math.sin(angle) * dist,
+            alpha: 0,
+            scale: 0.2,
+            duration: 480,
+            ease: 'Quad.easeOut',
+            onComplete: function() { star.destroy(); }
+          });
+        }
+      }
+
+      function createFoulRipple(scene, px, py) {
+        if (!scene || !scene.add) return;
+        var foulRing = scene.add.circle(px, py, 20);
+        foulRing.setStrokeStyle(4, 0xEF4444, 0.95);
+        foulRing.setDepth(30);
+        scene.tweens.add({
+          targets: foulRing,
+          radius: 65,
+          alpha: 0,
+          duration: 340,
+          ease: 'Quad.easeOut',
+          onComplete: function() { foulRing.destroy(); }
+        });
+      }
+
       // TEXTURE GENERATOR (DPR-RESPONSIVE, HIGH-FIDELITY VECTOR CANVASES)
       function generateTextures(scene, theme) {
         var dpr = typeof window !== 'undefined' && window.devicePixelRatio ? Math.min(3, Math.max(1, Math.round(window.devicePixelRatio))) : 2;
@@ -1130,6 +1358,10 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
           // Direct physical velocity setting (no raw impulses)
           this.matter.body.setVelocity(this.strikerBody, { x: vxStep, y: vyStep });
+
+          // Audio & Animation Feedback
+          playShootSound(powerRatio);
+          createShotBlastRing(this, this.strikerBody.position.x, this.strikerBody.position.y);
 
           sendToReactNative({
             type: 'SHOT_STARTED',
