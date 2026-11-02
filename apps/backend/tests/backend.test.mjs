@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Readable, EventEmitter } from 'node:stream';
+import { Readable } from 'node:stream';
+import { EventEmitter } from 'node:events';
 import { createApp } from '../dist/app.js';
 import { AuthService } from '../dist/modules/auth/auth.service.js';
 import { AuthValidator } from '../dist/modules/auth/auth.validator.js';
