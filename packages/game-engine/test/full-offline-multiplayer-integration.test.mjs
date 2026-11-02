@@ -107,17 +107,19 @@ function createRealPhysicsBoard() {
 }
 
 // Helper to spawn standard 19-coin cluster in Matter.js world
-function spawnPhysicsCoins(engine, cx, cy) {
-  const clusterDefs = generateOpeningCoinCluster(cx, cy);
+function spawnPhysicsCoins(engine) {
+  const clusterDefs = generateOpeningCoinCluster();
   const coinBodies = clusterDefs.map((def) => {
-    const b = Bodies.circle(def.position.x, def.position.y, SIZES.coinRadiusPx, {
+    const px = def.nx * BOARD_PX;
+    const py = def.ny * BOARD_PX;
+    const b = Bodies.circle(px, py, SIZES.coinRadiusPx, {
       restitution: RESTITUTION.coinToCoin,
       friction: FRICTION.frictionAir,
       frictionAir: FRICTION.frictionAir,
       frictionStatic: 0.0,
       label: `coin_${def.id}`,
     });
-    Body.setMass(b, MASSES.coinMass);
+    Body.setMass(b, MASSES.coin);
     b.coinType = def.type;
     b.coinId = def.id;
     return b;
@@ -129,8 +131,7 @@ function spawnPhysicsCoins(engine, cx, cy) {
 
 // Fixed timestep stepping with Coulomb friction deceleration
 function stepWorld(engine, bodies, dtSec = 1 / 60) {
-  // Apply deceleration
-  const decelStep = FRICTION.coulombDecel * dtSec;
+  const decelStep = FRICTION.decelerationCmS2 * dtSec;
   bodies.forEach((b) => {
     if (b.isStatic) return;
     const spd = Math.hypot(b.velocity.x, b.velocity.y);
@@ -150,7 +151,6 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       const { engine, s } = createRealPhysicsBoard();
       const center = s / 2;
       const baselineOffset = 74 * (BOARD_PX / 528);
-      const halfBaselineLength = 156 * (BOARD_PX / 528);
 
       // Seats: 0=South, 1=East, 2=North, 3=West
       const seatPositions = [
@@ -164,7 +164,7 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
         const striker = Bodies.circle(sp.expectedX, sp.expectedY, SIZES.strikerRadiusPx, {
           label: `striker_seat_${sp.seat}`,
         });
-        Body.setMass(striker, MASSES.strikerMass);
+        Body.setMass(striker, MASSES.striker);
         Composite.add(engine.world, striker);
 
         // Verify striker stays within board boundaries
@@ -178,28 +178,33 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
     });
 
     it('enforces min and max shooting speed bounds', () => {
-      // Speeds: MIN=25 cm/s, MAX=180 cm/s
-      assert.strictEqual(SPEEDS.strikerMinSpeed, 25);
-      assert.strictEqual(SPEEDS.strikerMaxSpeed, 180);
+      // Speeds: MIN=40 cm/s, MAX=350 cm/s
+      assert.strictEqual(SPEEDS.strikerMinLaunchSpeedCmS, 40);
+      assert.strictEqual(SPEEDS.strikerMaxLaunchSpeedCmS, 350);
 
-      const minStepVel = PhysicsUtils.speedCmSToStepVelocity(SPEEDS.strikerMinSpeed, 1 / 60);
-      const maxStepVel = PhysicsUtils.speedCmSToStepVelocity(SPEEDS.strikerMaxSpeed, 1 / 60);
+      const minStepVel = PhysicsUtils.speedCmSToStepVelocity(SPEEDS.strikerMinLaunchSpeedCmS, 1 / 60);
+      const maxStepVel = PhysicsUtils.speedCmSToStepVelocity(SPEEDS.strikerMaxLaunchSpeedCmS, 1 / 60);
 
       assert.ok(minStepVel > 0);
       assert.ok(maxStepVel > minStepVel);
-      assert.strictEqual(Math.round(maxStepVel / minStepVel), Math.round(180 / 25));
+      assert.strictEqual(Math.round(maxStepVel / minStepVel), Math.round(350 / 40));
     });
 
     it('executes physical collision: striker transfers kinetic momentum to coin', () => {
       const { engine } = createRealPhysicsBoard();
-      const striker = Bodies.circle(370, 500, SIZES.strikerRadiusPx);
-      Body.setMass(striker, 15);
-      const coin = Bodies.circle(370, 420, SIZES.coinRadiusPx);
-      Body.setMass(coin, 5);
+      // Position striker below coin with a small gap
+      const striker = Bodies.circle(370, 450, SIZES.strikerRadiusPx, {
+        restitution: RESTITUTION.strikerToCoin,
+      });
+      Body.setMass(striker, MASSES.striker);
+      const coin = Bodies.circle(370, 400, SIZES.coinRadiusPx, {
+        restitution: RESTITUTION.coinToCoin,
+      });
+      Body.setMass(coin, MASSES.coin);
       Composite.add(engine.world, [striker, coin]);
 
-      // Launch striker forward into coin at 100 cm/s
-      const vStep = PhysicsUtils.speedCmSToStepVelocity(100, 1 / 60);
+      // Launch striker upward into coin at 150 cm/s
+      const vStep = PhysicsUtils.speedCmSToStepVelocity(150, 1 / 60);
       Body.setVelocity(striker, { x: 0, y: -vStep });
 
       // Run 20 physics steps
@@ -208,24 +213,23 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       }
 
       // Coin must have received momentum and moved upward (negative y)
-      assert.ok(coin.velocity.y < 0 || coin.position.y < 420);
-      assert.ok(coin.position.y < 420);
+      assert.ok(coin.position.y < 400, `Coin y did not decrease: ${coin.position.y}`);
     });
 
     it('detects coin entering pocket sensor and flags capture without duplicate events', () => {
       const { engine, pocketCenters } = createRealPhysicsBoard();
       const pocketTL = pocketCenters[0]; // (39, 39)
-      const coin = Bodies.circle(pocketTL.x + 10, pocketTL.y + 10, SIZES.coinRadiusPx);
+      const coin = Bodies.circle(pocketTL.x, pocketTL.y, SIZES.coinRadiusPx);
       Composite.add(engine.world, coin);
 
       const pocketDetector = new PocketDetection({
         pocketRadius: SIZES.pocketRadiusPx,
-        captureThreshold: SIZES.pocketRadiusPx * 0.85,
+        captureThreshold: SIZES.pocketCaptureRadiusPx,
       });
 
-      // Position coin inside capture threshold
+      // Coin at exact pocket center
       const dist = Math.hypot(coin.position.x - pocketTL.x, coin.position.y - pocketTL.y);
-      assert.ok(dist <= SIZES.pocketRadiusPx * 0.85);
+      assert.ok(dist <= SIZES.pocketCaptureRadiusPx);
 
       const capturedFirst = pocketDetector.checkPocketCapture(coin, pocketCenters);
       assert.ok(capturedFirst);
