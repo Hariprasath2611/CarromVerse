@@ -72,9 +72,9 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
         themeId,
         strikerSkin,
         activeSeat,
-        canvasSize: 800,
+        canvasSize: 840,
       });
-    }, []);
+    }, [themeId, strikerSkin, activeSeat]);
 
     const sendToPhaser = (type: string, payload?: any) => {
       if (!isReady) return;
@@ -185,6 +185,9 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
         case 'SHOT_SETTLED':
           onShotSettled?.(data.payload);
           break;
+        case 'ENGINE_ERROR':
+          console.error('[PhaserCarromView] In-engine runtime error:', data.payload);
+          break;
       }
     };
 
@@ -235,7 +238,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           <RNWebView
             ref={webViewRef}
             originWhitelist={['*']}
-            source={{ html: htmlContent }}
+            source={{ html: htmlContent, baseUrl: 'https://localhost' }}
             onMessage={handleMessage}
             javaScriptEnabled={true}
             domStorageEnabled={true}
@@ -243,6 +246,21 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
             bounces={false}
             overScrollMode="never"
             scalesPageToFit={false}
+            androidLayerType="hardware"
+            androidHardwareAccelerationDisabled={false}
+            mixedContentMode="always"
+            allowFileAccess={true}
+            allowFileAccessFromFileURLs={true}
+            allowUniversalAccessFromFileURLs={true}
+            onError={(e: any) => {
+              console.warn('[PhaserCarromView] WebView onError:', e.nativeEvent);
+            }}
+            onHttpError={(e: any) => {
+              console.warn('[PhaserCarromView] WebView onHttpError:', e.nativeEvent);
+            }}
+            onRenderProcessGone={(e: any) => {
+              console.warn('[PhaserCarromView] WebView render process gone:', e.nativeEvent);
+            }}
             style={styles.webView}
             containerStyle={styles.webViewContainer}
           />

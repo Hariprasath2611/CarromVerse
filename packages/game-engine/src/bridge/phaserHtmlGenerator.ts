@@ -1,4 +1,5 @@
 import { BoardThemeId, StrikerSkin } from '../types/GameTypes.js';
+import { PHASER_MIN_JS } from './phaserBundle.js';
 
 export interface PhaserHtmlOptions {
   themeId?: BoardThemeId | string;
@@ -49,11 +50,34 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
     }
     canvas {
       display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
       box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9);
       border-radius: 8px;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  <script>
+    window.onerror = function(msg, url, line, col, err) {
+      var payload = {
+        message: msg ? String(msg) : 'Unknown script error',
+        url: url,
+        line: line,
+        col: col,
+        error: err ? String(err) : ''
+      };
+      try {
+        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ENGINE_ERROR', payload: payload }));
+        } else if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage(JSON.stringify({ type: 'ENGINE_ERROR', payload: payload }), '*');
+        }
+      } catch (e) {}
+    };
+  </script>
+  <script>
+${PHASER_MIN_JS}
+  </script>
 </head>
 <body>
   <div id="carrom-game-container"></div>
