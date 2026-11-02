@@ -14,6 +14,9 @@ import { THEME } from '../constants/theme';
 export interface PhaserCarromViewRef {
   shoot: (power: number, angle?: number) => void;
   resetBoard: () => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
+  setAudioConfig: (soundEnabled: boolean, soundVolume: number) => void;
 }
 
 export interface PhaserCarromViewProps {
@@ -22,6 +25,8 @@ export interface PhaserCarromViewProps {
   strikerSkin?: string;
   activeSeat?: number;
   strikerOffset?: number;
+  soundEnabled?: boolean;
+  soundVolume?: number;
   onEngineReady?: () => void;
   onBoardRendered?: (details: any) => void;
   onStrikerDragged?: (offset: number) => void;
@@ -43,6 +48,8 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       strikerSkin = 'emerald',
       activeSeat = 0,
       strikerOffset = 0,
+      soundEnabled = true,
+      soundVolume = 0.8,
       onEngineReady,
       onBoardRendered,
       onStrikerDragged,
@@ -99,7 +106,24 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       resetBoard: () => {
         sendToPhaser('RESET_BOARD');
       },
+      pauseGame: () => {
+        sendToPhaser('PAUSE_GAME');
+      },
+      resumeGame: () => {
+        sendToPhaser('RESUME_GAME');
+      },
+      setAudioConfig: (soundEnabled: boolean, soundVolume: number) => {
+        sendToPhaser('SET_AUDIO_CONFIG', { soundEnabled, soundVolume });
+      },
     }));
+
+    // Sync audio settings
+    useEffect(() => {
+      sendToPhaser('SET_AUDIO_CONFIG', {
+        soundEnabled: props.soundEnabled ?? true,
+        soundVolume: props.soundVolume ?? 0.8,
+      });
+    }, [props.soundEnabled, props.soundVolume, isReady]);
 
     // Sync theme changes
     useEffect(() => {
