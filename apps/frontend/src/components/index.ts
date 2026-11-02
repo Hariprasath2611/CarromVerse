@@ -23,3 +23,4 @@ export * from './PauseModal';
 export * from './ProfileHeader';
 export * from './PhaserCarromView';
 export * from './PlayerHandoverModal';
+export * from './navigation/TabBarIcon';
