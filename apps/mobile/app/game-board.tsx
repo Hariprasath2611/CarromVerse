@@ -145,6 +145,7 @@ export default function GameBoardScreen() {
     setShowPauseModal(false);
     restartSession();
     setStrikerOffsetRatio(0);
+    carromRef.current?.resetBoard();
     showToast('Match restarted!');
   };
 

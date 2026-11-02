@@ -62,7 +62,14 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
   nextPlayerToHandover: null,
 
   startSession: (config, players) => {
-    const sm = new CarromStateMachine(config, players);
+    // Ensure clean state for all players
+    const cleanPlayers = players.map((p) => ({
+      ...p,
+      score: 0,
+      fouls: 0,
+      isReady: true,
+    }));
+    const sm = new CarromStateMachine(config, cleanPlayers);
     const session = sm.getSessionState();
 
     sm.on('TURN_CHANGED', ({ activePlayerId, turnNumber }) => {
