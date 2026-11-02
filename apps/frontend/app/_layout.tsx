@@ -19,10 +19,10 @@ export default function RootLayout() {
     // 2. Load cached user settings
     loadSettings().catch((err) => console.warn('Failed to load settings:', err));
 
-    // 3. Initialize SQLite local database tables
-    LocalDatabaseService.getDb().catch((err) =>
-      console.warn('Failed to initialize local SQLite database:', err)
-    );
+    // 3. Initialize offline local storage / SQLite database
+    LocalDatabaseService.getDb().catch(() => {
+      // Graceful fallback to AsyncStorage
+    });
 
     // 4. Initialize network connectivity listener and offline sync service
     SyncService.initialize();

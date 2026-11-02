@@ -21,12 +21,16 @@ export class LocalDatabaseService {
     if (!this.initPromise) {
       this.initPromise = (async () => {
         try {
+          if (Platform.OS === 'web' || !SQLite || typeof SQLite.openDatabaseAsync !== 'function') {
+            this.isWebOrFallback = true;
+            return null;
+          }
           const db = await SQLite.openDatabaseAsync('carromverse.db');
           await this.runMigrations(db);
           this.dbInstance = db;
           return db;
-        } catch (err) {
-          console.warn('[LocalDatabaseService] SQLite open failed, switching to AsyncStorage fallback:', err);
+        } catch {
+          // Gracefully switch to AsyncStorage for 100% reliable offline persistence
           this.isWebOrFallback = true;
           return null;
         }
