@@ -3,13 +3,13 @@ import { StyleSheet, View } from 'react-native';
 
 export type TabName = 'home' | 'friends' | 'customize' | 'rankings' | 'profile';
 
-interface TabBarIconProps {
+export interface TabBarIconProps {
   name: TabName;
   focused: boolean;
-  color: string;
+  color?: any;
 }
 
-export const TabBarIcon: React.FC<TabBarIconProps> = ({ name, focused, color }) => {
+export const TabBarIcon: React.FC<TabBarIconProps> = ({ name, focused, color = '#2BD67B' }) => {
   const renderIcon = () => {
     switch (name) {
       case 'home':
