@@ -41,3 +41,4 @@ export class PlayerSchema extends Schema {
     }
   }
 }
+

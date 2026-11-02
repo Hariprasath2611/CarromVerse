@@ -96,3 +96,4 @@ CarromVerse packages are designed with modular separation:
 
 - **Local Driver (`LocalDriver`)**: Used for single-instance development and integration testing.
 - **Redis Driver (`RedisDriver` & `RedisPresence`)**: Ready for multi-process or clustered container deployments on Kubernetes or Railway, enabling horizontal scaling across multiple instances without room cross-talk.
+

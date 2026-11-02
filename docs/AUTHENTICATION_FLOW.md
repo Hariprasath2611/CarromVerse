@@ -51,3 +51,4 @@ Detailed specification of the Firebase Authentication handshake, token validatio
 4. **Token Expiration Handling**:
    - Firebase ID tokens expire after 1 hour.
    - `getCurrentUserIdToken(true)` forces a token refresh before joining multiplayer rooms.
+

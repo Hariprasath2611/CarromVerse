@@ -132,3 +132,4 @@ export class FirebaseAuthService {
     return `${header}.${payload}.${signature}`;
   }
 }
+

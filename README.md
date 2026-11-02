@@ -108,6 +108,12 @@ Access `http://localhost:4000/health` to confirm the backend is online.
 
 - [Project Structure & Workspace Boundaries](docs/PROJECT_STRUCTURE.md)
 - [System Architecture Specification](docs/ARCHITECTURE.md)
+- [Online Multiplayer Architecture](docs/ONLINE_ARCHITECTURE.md)
+- [Multiplayer Server & Colyseus Guide](docs/MULTIPLAYER_SERVER_GUIDE.md)
+- [Authentication Flow & Token Security](docs/AUTHENTICATION_FLOW.md)
+- [WebSocket Protocol Specification](docs/WEBSOCKET_PROTOCOL.md)
+- [Database Persistence Architecture](docs/DATABASE_ARCHITECTURE.md)
+- [Backend Setup & Operational Guide](docs/BACKEND_SETUP.md)
 - [Gameplay & Mode Rules Guide](docs/GAMEPLAY_GUIDE.md)
 - [Audio & VFX Architecture Guide](docs/AUDIO_GUIDE.md)
 - [Testing & Physics Verification Guide](docs/TESTING_GUIDE.md)

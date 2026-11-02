@@ -98,3 +98,4 @@ CREATE INDEX IF NOT EXISTS idx_online_matches_winner ON online_matches(winner_us
 1. **Client Ownership**: The mobile client owns local SQLite offline cache only. The client cannot write directly to PostgreSQL.
 2. **Server Ownership**: The Node.js backend server is the **only entity** with credentials to write match outcomes to PostgreSQL.
 3. **Firestore Security Rules**: Role-based access ensures users can only mutate their own profile documents (`request.auth.uid == userId`). Match documents can only be written by the server backend.
+

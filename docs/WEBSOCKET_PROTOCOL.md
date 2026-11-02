@@ -58,3 +58,4 @@ class CarromRoomState extends Schema {
 | `MATCH_PAUSE_TOGGLED` | `{ status: string }` | Pause / resume alert |
 | `PLAYER_DISCONNECTED` | `{ seat: number, displayName: string }` | Notice that player connection dropped |
 | `ERROR` | `{ code: string, message: string }` | Action rejection notice (e.g. `NOT_YOUR_TURN`) |
+

@@ -26,3 +26,4 @@ export interface NetworkErrorEvent {
   message: string;
   timestamp: number;
 }
+

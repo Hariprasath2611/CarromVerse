@@ -95,3 +95,4 @@ CarromVerse maintains strict separation between offline pass-and-play and online
 - **Offline Store (`gameSessionStore.ts`)**: Runs entirely on the device with zero network dependencies. Uses in-memory state machine.
 - **Online Store (`networkStore.ts`)**: Manages remote Colyseus room connections, network statuses (`DISCONNECTED`, `CONNECTING`, `CONNECTED`), and synchronizes authoritative server state.
 - Offline features continue to function seamlessly even when the backend is offline or the mobile device has no internet connection.
+
