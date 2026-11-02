@@ -1394,6 +1394,10 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
 
                 var isHorizontal = wallBody.label.indexOf('top') >= 0 || wallBody.label.indexOf('bottom') >= 0;
                 scene.bouncedWalls.push({ moving: movingBody, isHorizontal: isHorizontal });
+
+                var wallStep = Math.hypot(movingBody.velocity.x, movingBody.velocity.y);
+                var wallSpeedCmS = stepVelocityToSpeedCmS(wallStep, BASE_DT_SEC);
+                playCushionThud(wallSpeedCmS);
                 return;
               }
 
@@ -1408,21 +1412,33 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
                 var speedCmS = stepVelocityToSpeedCmS(relStep, BASE_DT_SEC);
 
                 if (speedCmS > 2.0) {
-                  var dx = bodyB.position.x - bodyA.position.x;
-                  var dy = bodyB.position.y - bodyA.position.y;
-                  var d = Math.hypot(dx, dy) || 1;
-                  var normal = { x: dx / d, y: dy / d };
+                  playWoodClick(speedCmS);
 
-                  sendToReactNative({
-                    type: 'COIN_COLLISION',
-                    payload: {
-                      bodyA: bodyA.label,
-                      bodyB: bodyB.label,
-                      speed_cm_s: speedCmS,
-                      normal: normal
-                    },
-                    timestamp: Date.now()
-                  });
+                  var contactX = (bodyA.position.x + bodyB.position.x) / 2;
+                  var contactY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                  if (speedCmS > 30.0) {
+                    createCollisionSpark(scene, contactX, contactY);
+                  }
+
+                  if (speedCmS > 40.0 && (!scene.lastBridgeCollisionTime || Date.now() - scene.lastBridgeCollisionTime > 75)) {
+                    scene.lastBridgeCollisionTime = Date.now();
+                    var dx = bodyB.position.x - bodyA.position.x;
+                    var dy = bodyB.position.y - bodyA.position.y;
+                    var d = Math.hypot(dx, dy) || 1;
+                    var normal = { x: dx / d, y: dy / d };
+
+                    sendToReactNative({
+                      type: 'COIN_COLLISION',
+                      payload: {
+                        bodyA: bodyA.label,
+                        bodyB: bodyB.label,
+                        speed_cm_s: speedCmS,
+                        normal: normal
+                      },
+                      timestamp: Date.now()
+                    });
+                  }
                 }
               }
             });
@@ -1556,6 +1572,9 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
               scene.strikerIsPocketed = true;
               scene.pocketedInCurrentShot.push({ id: 'striker', type: 'striker', pocketIndex: pIdx });
 
+              playPocketSound(false, true);
+              createFoulRipple(scene, body.position.x, body.position.y);
+
               scene.tweens.add({
                 targets: [scene.strikerSprite, scene.strikerShadow],
                 scaleX: 0.1,
@@ -1584,6 +1603,13 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
             } else if (body.coinRef) {
               var c = body.coinRef;
               scene.pocketedInCurrentShot.push({ id: c.id, type: c.type, pocketIndex: pIdx });
+
+              if (c.type === 'queen') {
+                playPocketSound(true, false);
+                createQueenStarburst(scene, body.position.x, body.position.y);
+              } else {
+                playPocketSound(false, false);
+              }
 
               scene.tweens.add({
                 targets: [c.sprite, c.shadow],
@@ -1851,6 +1877,22 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
               break;
             case 'RESET_BOARD':
               activeScene.resetBoard();
+              break;
+            case 'SET_AUDIO_CONFIG':
+              if (msg.payload) {
+                if (typeof msg.payload.soundEnabled === 'boolean') sfxAudioEnabled = msg.payload.soundEnabled;
+                if (typeof msg.payload.soundVolume === 'number') sfxAudioVolume = msg.payload.soundVolume;
+              }
+              break;
+            case 'PAUSE_GAME':
+              if (activeScene && activeScene.matter && activeScene.matter.world) {
+                activeScene.isPaused = true;
+              }
+              break;
+            case 'RESUME_GAME':
+              if (activeScene && activeScene.matter && activeScene.matter.world) {
+                activeScene.isPaused = false;
+              }
               break;
           }
         } catch (e) {
