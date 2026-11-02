@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ConnectionStatus, NetworkErrorEvent } from '../services/network/network.types.js';
-import { NetworkService } from '../services/network/NetworkService.js';
+import { MultiplayerNetworkService } from '../services/network/NetworkService.js';
 
 interface NetworkState {
   status: ConnectionStatus;
@@ -25,13 +25,13 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   isOnlineMode: false,
 
   initialize: () => {
-    const networkService = NetworkService.getInstance();
+    const networkService = MultiplayerNetworkService.getInstance();
 
     const unsubStatus = networkService.onStatusChange((status) => {
       const room = networkService.getCurrentRoom();
       set({
         status,
-        currentRoomId: room?.id || null,
+        currentRoomId: room?.roomId || null,
         latencyMs: networkService.getLatency(),
       });
     });
@@ -52,7 +52,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
 
   connect: (url?: string) => {
     try {
-      NetworkService.getInstance().connect(url);
+      MultiplayerNetworkService.getInstance().connect(url);
     } catch (err: any) {
       set({
         lastError: {
@@ -65,7 +65,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   },
 
   disconnect: () => {
-    NetworkService.getInstance().disconnect();
+    MultiplayerNetworkService.getInstance().disconnect();
     set({
       status: 'DISCONNECTED',
       currentRoomId: null,

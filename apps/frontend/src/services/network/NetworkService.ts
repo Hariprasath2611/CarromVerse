@@ -2,8 +2,8 @@ import { Client, Room } from 'colyseus.js';
 import { ConnectionStatus, JoinRoomOptions, NetworkConfig, NetworkErrorEvent } from './network.types.js';
 import { getCurrentUserIdToken } from '../firebase/firebase.auth.js';
 
-export class NetworkService {
-  private static instance: NetworkService;
+export class MultiplayerNetworkService {
+  private static instance: MultiplayerNetworkService;
   private client: Client | null = null;
   private currentRoom: Room<any> | null = null;
   private status: ConnectionStatus = 'DISCONNECTED';
@@ -22,11 +22,11 @@ export class NetworkService {
     };
   }
 
-  public static getInstance(): NetworkService {
-    if (!NetworkService.instance) {
-      NetworkService.instance = new NetworkService();
+  public static getInstance(): MultiplayerNetworkService {
+    if (!MultiplayerNetworkService.instance) {
+      MultiplayerNetworkService.instance = new MultiplayerNetworkService();
     }
-    return NetworkService.instance;
+    return MultiplayerNetworkService.instance;
   }
 
   public setConfig(customConfig: Partial<NetworkConfig>): void {

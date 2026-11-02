@@ -226,14 +226,14 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
     this.checkRoomFullStatus();
   }
 
-  override async onLeave(client: Client, consented?: boolean): Promise<void> {
+  override async onLeave(client: Client, code?: number): Promise<void> {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
     player.isConnected = false;
     this.sessionManager.markDisconnected(client.sessionId);
 
-    Logger.info(`[CarromRoom] Client ${client.sessionId} left (consented: ${consented})`);
+    Logger.info(`[CarromRoom] Client ${client.sessionId} left (code: ${code})`);
 
     // If game has not started, remove player completely
     if (this.state.status === 'WAITING' || this.state.status === 'READY') {
@@ -242,7 +242,8 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
 
       // Reassign host if host left
       if (this.state.hostUserId === player.userId) {
-        const nextPlayer = Array.from(this.state.players.values())[0];
+        const remainingPlayers = Array.from(this.state.players.values()) as PlayerSchema[];
+        const nextPlayer = remainingPlayers[0];
         this.state.hostUserId = nextPlayer ? nextPlayer.userId : '';
       }
 
@@ -263,7 +264,8 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
   }
 
   private getNextAvailableSeat(): number {
-    const takenSeats = new Set(Array.from(this.state.players.values()).map((p) => p.seat));
+    const allPlayers = Array.from(this.state.players.values()) as PlayerSchema[];
+    const takenSeats = new Set(allPlayers.map((p) => p.seat));
     if (this.state.gameMode === 'two_player_individual') {
       return takenSeats.has(0) ? 2 : 0;
     }
@@ -292,7 +294,8 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
   private checkAllPlayersReady(): void {
     if (this.state.players.size < this.maxClients) return;
 
-    const allReady = Array.from(this.state.players.values()).every((p) => p.isReady);
+    const allPlayers = Array.from(this.state.players.values()) as PlayerSchema[];
+    const allReady = allPlayers.every((p) => p.isReady);
     if (allReady && this.state.status === 'READY') {
       this.state.status = 'IN_PROGRESS';
       this.broadcast('MATCH_STARTED', {
