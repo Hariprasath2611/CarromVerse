@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { DEFAULT_GAME_SETTINGS, GameSettings } from '@carromverse/shared-types';
 import { LocalStorageService } from '../services/storage/localStorageService';
+import { AudioManager } from '../services/audio/AudioManager';
 
 interface SettingsState {
   settings: GameSettings;
@@ -10,6 +11,8 @@ interface SettingsState {
   updateSettings: (partial: Partial<GameSettings>) => Promise<void>;
   toggleSound: () => Promise<void>;
   toggleMusic: () => Promise<void>;
+  setSoundVolume: (volume: number) => Promise<void>;
+  setMusicVolume: (volume: number) => Promise<void>;
   toggleHaptics: () => Promise<void>;
   toggleAimAssist: () => Promise<void>;
   setOnboarded: () => Promise<void>;
@@ -22,10 +25,18 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   loadSettings: async () => {
     const loaded = await LocalStorageService.getSettings();
     const onboarded = await LocalStorageService.hasOnboarded();
+    const settings = { ...loaded, onboarded };
     set({
-      settings: { ...loaded, onboarded },
+      settings,
       isLoading: false,
     });
+
+    // Synchronize audio manager
+    const audio = AudioManager.getInstance();
+    audio.setSoundEnabled(settings.soundEnabled);
+    audio.setSoundVolume(settings.soundVolume);
+    audio.setMusicEnabled(settings.musicEnabled);
+    audio.setMusicVolume(settings.musicVolume);
   },
 
   updateSettings: async (partial) => {
@@ -33,6 +44,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const updated = { ...current, ...partial };
     set({ settings: updated });
     await LocalStorageService.saveSettings(partial);
+
+    const audio = AudioManager.getInstance();
+    if (partial.soundEnabled !== undefined) audio.setSoundEnabled(partial.soundEnabled);
+    if (partial.soundVolume !== undefined) audio.setSoundVolume(partial.soundVolume);
+    if (partial.musicEnabled !== undefined) audio.setMusicEnabled(partial.musicEnabled);
+    if (partial.musicVolume !== undefined) audio.setMusicVolume(partial.musicVolume);
   },
 
   toggleSound: async () => {
@@ -43,6 +60,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   toggleMusic: async () => {
     const current = get().settings.musicEnabled;
     await get().updateSettings({ musicEnabled: !current });
+  },
+
+  setSoundVolume: async (volume: number) => {
+    await get().updateSettings({ soundVolume: Math.max(0, Math.min(1, volume)) });
+  },
+
+  setMusicVolume: async (volume: number) => {
+    await get().updateSettings({ musicVolume: Math.max(0, Math.min(1, volume)) });
   },
 
   toggleHaptics: async () => {
