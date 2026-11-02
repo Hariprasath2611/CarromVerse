@@ -120,10 +120,10 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
     // Sync audio settings
     useEffect(() => {
       sendToPhaser('SET_AUDIO_CONFIG', {
-        soundEnabled: props.soundEnabled ?? true,
-        soundVolume: props.soundVolume ?? 0.8,
+        soundEnabled,
+        soundVolume,
       });
-    }, [props.soundEnabled, props.soundVolume, isReady]);
+    }, [soundEnabled, soundVolume, isReady]);
 
     // Sync theme changes
     useEffect(() => {
