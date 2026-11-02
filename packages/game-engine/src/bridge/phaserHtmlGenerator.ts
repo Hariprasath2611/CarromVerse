@@ -1947,33 +1947,53 @@ ${PHASER_MIN_JS}
         handleHostMessage(ev.data);
       });
 
-      // INITIALIZE PHASER WITH MATTER PHYSICS
-      var config = {
-        type: Phaser.AUTO,
-        parent: 'carrom-game-container',
-        width: ${canvasSize},
-        height: ${canvasSize},
-        backgroundColor: '#07130E',
-        physics: {
-          default: 'matter',
-          matter: {
-            gravity: { x: 0, y: 0 },
-            autoUpdate: false,
-            positionIterations: 8,
-            velocityIterations: 6,
-            debug: false
-          }
-        },
-        scale: {
-          mode: Phaser.Scale.FIT,
-          autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: ${canvasSize},
-          height: ${canvasSize}
-        },
-        scene: [CarromScene]
-      };
+      // INITIALIZE PHASER WITH MATTER PHYSICS (CANVAS RENDERER FOR 100% RELIABLE MOBILE COMPOSITING)
+      function initPhaser() {
+        if (window._phaserGameInstance) return;
+        var container = document.getElementById('carrom-game-container');
+        if (!container) return;
 
-      new Phaser.Game(config);
+        var config = {
+          type: Phaser.CANVAS,
+          parent: 'carrom-game-container',
+          width: ${canvasSize},
+          height: ${canvasSize},
+          backgroundColor: '#07130E',
+          physics: {
+            default: 'matter',
+            matter: {
+              gravity: { x: 0, y: 0 },
+              autoUpdate: false,
+              positionIterations: 8,
+              velocityIterations: 6,
+              debug: false
+            }
+          },
+          scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            width: ${canvasSize},
+            height: ${canvasSize}
+          },
+          scene: [CarromScene]
+        };
+
+        window._phaserGameInstance = new Phaser.Game(config);
+      }
+
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initPhaser, 30);
+      } else {
+        window.addEventListener('DOMContentLoaded', function() {
+          setTimeout(initPhaser, 30);
+        });
+      }
+
+      window.addEventListener('resize', function() {
+        if (window._phaserGameInstance && window._phaserGameInstance.scale) {
+          window._phaserGameInstance.scale.refresh();
+        }
+      });
     })();
   </script>
 </body>

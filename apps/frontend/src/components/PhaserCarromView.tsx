@@ -163,6 +163,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           onEngineReady?.();
           break;
         case 'BOARD_RENDERED':
+          setIsReady(true);
           onBoardRendered?.(data.payload);
           break;
         case 'STRIKER_DRAGGED':
@@ -238,7 +239,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           <RNWebView
             ref={webViewRef}
             originWhitelist={['*']}
-            source={{ html: htmlContent, baseUrl: 'https://localhost' }}
+            source={{ html: htmlContent }}
             onMessage={handleMessage}
             javaScriptEnabled={true}
             domStorageEnabled={true}
@@ -246,7 +247,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
             bounces={false}
             overScrollMode="never"
             scalesPageToFit={false}
-            androidLayerType="hardware"
+            androidLayerType="none"
             androidHardwareAccelerationDisabled={false}
             mixedContentMode="always"
             allowFileAccess={true}
@@ -287,12 +288,18 @@ const styles = StyleSheet.create({
     ...THEME.shadows.card,
   },
   webViewContainer: {
+    width: '100%',
+    height: '100%',
+    flex: 1,
+    alignSelf: 'stretch',
     backgroundColor: '#07130E',
   },
   webView: {
-    backgroundColor: '#07130E',
     width: '100%',
     height: '100%',
+    flex: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#07130E',
   },
   loadingOverlay: {
     position: 'absolute',
