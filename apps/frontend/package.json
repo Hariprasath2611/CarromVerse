@@ -1,5 +1,5 @@
 {
-  "name": "@carromverse/mobile",
+  "name": "@carromverse/frontend",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
@@ -12,6 +12,7 @@
   "dependencies": {
     "@carromverse/game-engine": "*",
     "@carromverse/game-logic": "*",
+    "@carromverse/multiplayer": "*",
     "@carromverse/shared-types": "*",
     "@carromverse/shared-utils": "*",
     "@expo/metro-runtime": "~58.0.0",

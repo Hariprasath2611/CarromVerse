@@ -8,11 +8,12 @@
     "apps/*"
   ],
   "scripts": {
-    "start": "npm --workspace=@carromverse/mobile run start",
-    "android": "npm --workspace=@carromverse/mobile run android",
-    "ios": "npm --workspace=@carromverse/mobile run ios",
-    "web": "npm --workspace=@carromverse/mobile run web",
-    "build": "npm --workspace=@carromverse/shared-types run build && npm --workspace=@carromverse/shared-utils run build && npm --workspace=@carromverse/game-logic run build && npm --workspace=@carromverse/game-engine run build",
+    "start": "npm --workspace=@carromverse/frontend run start",
+    "android": "npm --workspace=@carromverse/frontend run android",
+    "ios": "npm --workspace=@carromverse/frontend run ios",
+    "web": "npm --workspace=@carromverse/frontend run web",
+    "backend": "npm --workspace=@carromverse/backend run dev",
+    "build": "npm --workspace=@carromverse/shared-types run build && npm --workspace=@carromverse/shared-utils run build && npm --workspace=@carromverse/game-logic run build && npm --workspace=@carromverse/multiplayer run build && npm --workspace=@carromverse/game-engine run build && npm --workspace=@carromverse/backend run build",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
