@@ -17,7 +17,6 @@ export default function GameResultScreen() {
   const addCoins = useEconomyStore((state) => state.addCoins);
 
   useEffect(() => {
-    AudioManager.getInstance().playMusic('victory');
     AudioManager.getInstance().playSound('VICTORY', 1.0);
   }, []);
 

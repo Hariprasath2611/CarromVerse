@@ -54,7 +54,7 @@ export const useGameSetupStore = create<GameSetupState>((set, get) => ({
   turnTimeLimitSec: 25,
   handoverConfirmationEnabled: true,
   soundEnabled: true,
-  musicEnabled: true,
+  musicEnabled: false,
   teamAName: 'Team A',
   teamBName: 'Team B',
   recentNames: [],

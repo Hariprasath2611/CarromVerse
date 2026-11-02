@@ -31,10 +31,6 @@ export default function HomeScreen() {
 
   const [showDailyRewards, setShowDailyRewards] = useState(false);
 
-  useEffect(() => {
-    AudioManager.getInstance().playMusic('home');
-  }, []);
-
   const displayName = profile?.username || user?.displayName || 'HARIPRASATH';
   const playerLevel = profile?.level || 7;
 

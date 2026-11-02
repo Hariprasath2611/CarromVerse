@@ -68,14 +68,6 @@ export default function GameBoardScreen() {
   const [pocketToast, setPocketToast] = useState<string | null>(null);
   const [floatingScore, setFloatingScore] = useState<{ text: string; color: string } | null>(null);
 
-  // Background music management
-  useEffect(() => {
-    AudioManager.getInstance().playMusic('gameplay');
-    return () => {
-      AudioManager.getInstance().stopMusic();
-    };
-  }, []);
-
   const triggerFloatingScore = (text: string, color: string) => {
     setFloatingScore({ text, color });
     setTimeout(() => setFloatingScore(null), 1800);

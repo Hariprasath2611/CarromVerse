@@ -17,8 +17,8 @@ export interface GameSettings {
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   soundEnabled: true,
   soundVolume: 0.8,
-  musicEnabled: true,
-  musicVolume: 0.5,
+  musicEnabled: false,
+  musicVolume: 0.0,
   hapticEnabled: true,
   aimAssistEnabled: true,
   strikerSensitivity: 1.0,

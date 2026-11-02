@@ -26,10 +26,6 @@ export default function LobbyScreen() {
 
   const startSession = useGameSessionStore((state) => state.startSession);
 
-  useEffect(() => {
-    AudioManager.getInstance().playMusic('lobby');
-  }, []);
-
   const handleStartMatch = () => {
     AudioManager.getInstance().playSound('MATCH_START', 0.85);
     const baseConfig = createDefaultGameConfig(selectedMode);
