@@ -22,7 +22,7 @@ export interface ClientPlaceStrikerMessage {
   offsetRatio: number;
 }
 
-export class CarromRoom extends Room<CarromRoomState> {
+export class CarromRoom extends Room<{ state: CarromRoomState }> {
   private authService = FirebaseAuthService.getInstance();
   private sessionManager = PlayerSessionManager.getInstance();
 
