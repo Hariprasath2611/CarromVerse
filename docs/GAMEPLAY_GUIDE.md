@@ -59,3 +59,4 @@ When a turn transitions between players on the same device:
 2. The incoming player taps **READY / START TURN** to confirm device handoff.
 3. Audio chime `HANDOVER` plays and the striker resets to the incoming player's legal baseline position.
 4. Optional toggle in Match Settings allows bypassing handover confirmation for rapid speed-play.
+

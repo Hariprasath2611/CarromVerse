@@ -76,3 +76,4 @@ The background music system provides continuous ambient melodic progressions acr
   - `musicEnabled`: Master mute toggle for all BGM.
 - **Settings Store (`settingsStore.ts`)**: Persists volume configurations to local storage (`AsyncStorage`).
 - **Bridge Sync**: Whenever volume is adjusted in the settings screen or pause menu, `SET_AUDIO_CONFIG` is delivered to the Phaser engine.
+

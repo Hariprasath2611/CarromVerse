@@ -88,3 +88,4 @@ To prevent memory leaks across successive matches:
 - **`carromRef.current.pauseGame()` / `resumeGame()`**: Suspends Phaser ticker and Matter physics step when pause menu, stickers modal, or app backgrounding occurs.
 - **Audio Cleanup**: `AudioManager.getInstance().stopMusic()` releases active audio nodes when navigating away from the game screen.
 - **Zustand Reset**: `abandonSession()` and `endSession()` cleanly tear down match state machines and timer intervals.
+

@@ -73,3 +73,4 @@ For manual QA testing on Android/iOS emulators and physical devices:
 - [ ] **Queen Cover Flow**: Pocketing Queen turns HUD status to `👑 COVER QUEEN`. Missing the cover shot returns Queen to the center circle.
 - [ ] **Turn Handover**: Handover modal displays correct incoming player name and avatar; tapping ready resets striker to active player's baseline.
 - [ ] **Offline Execution**: Enable Airplane mode on device; launch app; verify all 4 offline multiplayer modes function flawlessly without network requests.
+
