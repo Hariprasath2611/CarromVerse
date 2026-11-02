@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "650176091937",
+    "project_id": "carromverse-a1642",
+    "storage_bucket": "carromverse-a1642.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650176091937:android:b6b985fe75d76a3f3d9060",
+        "android_client_info": {
+          "package_name": "com.carromverse.game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "650176091937-djp65bosp17mrfdfilo7edj36qihk2m2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_73LXQ8Ffc1pQY6hqFpG_WWGiaO_TRhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "650176091937-djp65bosp17mrfdfilo7edj36qihk2m2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
