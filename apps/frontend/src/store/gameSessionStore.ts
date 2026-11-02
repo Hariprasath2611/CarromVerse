@@ -72,27 +72,7 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
     const sm = new CarromStateMachine(config, cleanPlayers);
     const session = sm.getSessionState();
 
-    sm.on('TURN_CHANGED', ({ activePlayerId, turnNumber }) => {
-      set((s) => ({
-        currentTurn: s.currentTurn
-          ? { ...s.currentTurn, activePlayerId, turnNumber }
-          : null,
-      }));
-    });
-
-    sm.on('QUEEN_STATUS_CHANGED', ({ status }) => {
-      set({ queenStatus: status });
-    });
-
     sm.on('MATCH_COMPLETED', ({ result }) => {
-      set({
-        gameResult: result,
-        isPlaying: false,
-        matchStatus: 'COMPLETED',
-        isHandoverPending: false,
-        nextPlayerToHandover: null,
-      });
-
       SyncService.recordCompletedMatch(result).catch((err) => {
         console.warn('[GameSessionStore] Failed to record completed match:', err);
       });

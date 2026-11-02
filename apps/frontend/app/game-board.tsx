@@ -135,27 +135,33 @@ export default function GameBoardScreen() {
 
   // Turn timer countdown (reset on turn change)
   useEffect(() => {
-    if (turnTimeLimitSec <= 0 || isPaused || isHandoverPending) return;
+    if (turnTimeLimitSec <= 0 || isPaused || isHandoverPending || isShotActive) return;
 
     setSecondsRemaining(turnTimeLimitSec);
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
-          // Time expired foul -> Advance turn to next player
-          showToast('Time expired! Turn passed');
-          processSettledShot({
-            pocketedCoins: [],
-            strikerPocketed: false,
-            durationMs: (turnTimeLimitSec || 25) * 1000,
-          });
-          return turnTimeLimitSec;
+          clearInterval(interval);
+          return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentTurn?.turnNumber, turnTimeLimitSec, isPaused, isHandoverPending]);
+  }, [currentTurn?.turnNumber, turnTimeLimitSec, isPaused, isHandoverPending, isShotActive]);
+
+  // Handle turn timeout foul safely in an effect outside render
+  useEffect(() => {
+    if (turnTimeLimitSec > 0 && secondsRemaining === 0 && !isPaused && !isHandoverPending && !isShotActive) {
+      showToast('Time expired! Turn passed');
+      processSettledShot({
+        pocketedCoins: [],
+        strikerPocketed: false,
+        durationMs: (turnTimeLimitSec || 25) * 1000,
+      });
+    }
+  }, [secondsRemaining, turnTimeLimitSec, isPaused, isHandoverPending, isShotActive]);
 
   const handleShoot = () => {
     if (isShotActive || isHandoverPending || isPaused) return;
