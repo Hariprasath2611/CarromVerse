@@ -20,6 +20,8 @@ import {
 } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
+import { useSettingsStore } from '../src/store/settingsStore';
+import { AudioManager } from '../src/services/audio/AudioManager';
 import { THEME } from '../src/constants/theme';
 import { Player, PlayerSeat } from '@carromverse/shared-types';
 import { createDefaultGameConfig } from '@carromverse/game-logic';
@@ -27,6 +29,7 @@ import { createDefaultGameConfig } from '@carromverse/game-logic';
 export default function GameBoardScreen() {
   const router = useRouter();
   const carromRef = useRef<PhaserCarromViewRef>(null);
+  const { settings } = useSettingsStore();
   const { boardTheme, selectedMode, targetPoints, turnTimeLimitSec, teamAName, teamBName } =
     useGameSetupStore();
   const {
@@ -50,8 +53,9 @@ export default function GameBoardScreen() {
   } = useGameSessionStore();
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const availableBoardHeight = screenHeight - 165;
-  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 10, availableBoardHeight, 460));
+  // Safe responsive board size preserving strict 1:1 aspect ratio
+  const availableBoardHeight = screenHeight - 210;
+  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 16, availableBoardHeight, 460));
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
@@ -62,6 +66,26 @@ export default function GameBoardScreen() {
   const [aimAngle, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
   const [pocketToast, setPocketToast] = useState<string | null>(null);
+  const [floatingScore, setFloatingScore] = useState<{ text: string; color: string } | null>(null);
+
+  // Background music management
+  useEffect(() => {
+    AudioManager.getInstance().playMusic('gameplay');
+    return () => {
+      AudioManager.getInstance().stopMusic();
+    };
+  }, []);
+
+  const triggerFloatingScore = (text: string, color: string) => {
+    setFloatingScore({ text, color });
+    setTimeout(() => setFloatingScore(null), 1800);
+  };
+
+  const getPowerColor = (ratio: number) => {
+    if (ratio < 0.45) return '#2BD67B'; // Emerald Green
+    if (ratio < 0.80) return '#E9B949'; // Amber Gold
+    return '#EF4444';                   // Crimson Red
+  };
 
   // Initialize rules engine session if not active
   useEffect(() => {
@@ -141,6 +165,7 @@ export default function GameBoardScreen() {
 
   const handleShoot = () => {
     if (isShotActive || isHandoverPending || isPaused) return;
+    AudioManager.getInstance().playSound('STRIKER_SHOOT', powerRatio);
     if (carromRef.current) {
       carromRef.current.shoot(powerRatio, aimAngle);
     }
@@ -185,6 +210,7 @@ export default function GameBoardScreen() {
     if (isShotActive || isHandoverPending || isPaused) return;
     const newOffset = Math.max(-0.92, Math.min(0.92, strikerOffsetRatio + delta));
     setStrikerOffsetRatio(newOffset);
+    AudioManager.getInstance().playSound('STRIKER_PLACE', 0.4);
   };
 
   const showToast = (msg: string) => {
@@ -349,6 +375,14 @@ export default function GameBoardScreen() {
           </View>
         )}
 
+        {floatingScore && (
+          <View style={[styles.floatingScoreBadge, { borderColor: floatingScore.color }]}>
+            <Text style={[styles.floatingScoreText, { color: floatingScore.color }]}>
+              {floatingScore.text}
+            </Text>
+          </View>
+        )}
+
         <PhaserCarromView
           ref={carromRef}
           size={BOARD_SIZE}
@@ -356,6 +390,8 @@ export default function GameBoardScreen() {
           strikerSkin="emerald"
           activeSeat={activeSeat}
           strikerOffset={strikerOffsetRatio}
+          soundEnabled={settings.soundEnabled}
+          soundVolume={settings.soundVolume}
           onStrikerDragged={(offset) => setStrikerOffsetRatio(offset)}
           onShotStarted={() => setIsShotActive(true)}
           onAimChanged={(details) => {
@@ -364,14 +400,22 @@ export default function GameBoardScreen() {
           }}
           onObjectPocketed={(details) => {
             if (details.type === 'white') {
+              AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
+              triggerFloatingScore('⚪ +10', '#2BD67B');
               showToast('⚪ White Coin Pocketed!');
             } else if (details.type === 'black') {
+              AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
+              triggerFloatingScore('⚫ +10', '#E9B949');
               showToast('⚫ Black Coin Pocketed!');
             } else if (details.type === 'queen') {
+              AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
+              triggerFloatingScore('👑 QUEEN +25', '#E9B949');
               showToast('👑 QUEEN Pocketed!');
             }
           }}
           onStrikerPocketed={() => {
+            AudioManager.getInstance().playSound('FOUL', 0.9);
+            triggerFloatingScore('⚠️ FOUL', '#EF4444');
             showToast('⚠️ Striker Pocketed (Foul)');
           }}
           onShotSettled={(details: any) => {
@@ -384,20 +428,28 @@ export default function GameBoardScreen() {
 
             if (evalResult) {
               if (evalResult.foulOccurred) {
+                AudioManager.getInstance().playSound('FOUL', 0.9);
                 showToast(`FOUL: ${evalResult.primaryFoulType === 'striker_pocketed' ? 'Striker Scratch' : 'Foul committed'}`);
               } else if (evalResult.queenCoveredThisShot) {
+                AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
+                triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
                 showToast('👑 QUEEN COVERED! +25 Points');
               } else if (evalResult.queenStatusAfter === 'pending_cover') {
+                AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
                 showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
               } else if (evalResult.queenReturnedToCenter) {
+                AudioManager.getInstance().playSound('FOUL', 0.7);
                 showToast('Failed to cover Queen! Returned to center');
               } else if (evalResult.extraTurnEarned) {
+                triggerFloatingScore('🎯 EXTRA TURN', '#2BD67B');
                 showToast('🎯 Coin Pocketed! Extra Turn');
               } else {
+                AudioManager.getInstance().playSound('TURN_CHANGE', 0.6);
                 showToast('Dry shot · Turn passed');
               }
 
               if (evalResult.isMatchOver) {
+                AudioManager.getInstance().playSound('VICTORY', 1.0);
                 setTimeout(() => {
                   router.replace('/game-result');
                 }, 1800);
@@ -405,6 +457,35 @@ export default function GameBoardScreen() {
             }
           }}
         />
+      </View>
+
+      {/* POWER INDICATOR BAR */}
+      <View style={styles.powerBarContainer}>
+        <View style={styles.powerLabelRow}>
+          <Text style={styles.powerLabelText}>POWER</Text>
+          <Text style={[styles.powerValueText, { color: getPowerColor(powerRatio) }]}>
+            {Math.round(powerRatio * 100)}%
+          </Text>
+        </View>
+        <View style={styles.powerTrack}>
+          <View
+            style={[
+              styles.powerFill,
+              {
+                width: `${Math.max(4, Math.round(powerRatio * 100))}%`,
+                backgroundColor: getPowerColor(powerRatio),
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.powerKnob,
+              {
+                left: `${Math.max(0, Math.min(94, Math.round(powerRatio * 100) - 3))}%`,
+              },
+            ]}
+          />
+        </View>
       </View>
 
       {/* TACTILE BASELINE POSITIONER */}
@@ -445,7 +526,10 @@ export default function GameBoardScreen() {
           title="EMOTE"
           variant="secondary"
           size="sm"
-          onPress={() => setShowStickersModal(true)}
+          onPress={() => {
+            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+            setShowStickersModal(true);
+          }}
           style={styles.controlBtnSide}
         />
 
@@ -463,7 +547,9 @@ export default function GameBoardScreen() {
           variant="secondary"
           size="sm"
           onPress={() => {
+            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
             pauseSession();
+            carromRef.current?.pauseGame();
             setShowPauseModal(true);
           }}
           style={styles.controlBtnSide}
@@ -475,6 +561,7 @@ export default function GameBoardScreen() {
         visible={isHandoverPending}
         nextPlayer={nextPlayerToHandover}
         onConfirm={() => {
+          AudioManager.getInstance().playSound('HANDOVER', 0.7);
           confirmHandover();
           setStrikerOffsetRatio(0);
         }}
@@ -485,6 +572,7 @@ export default function GameBoardScreen() {
         visible={showPauseModal}
         onResume={() => {
           resumeSession();
+          carromRef.current?.resumeGame();
           setShowPauseModal(false);
         }}
         onRestart={handleRestartMatch}
@@ -806,5 +894,66 @@ const styles = StyleSheet.create({
   },
   shootBtn: {
     flex: 1.6,
+  },
+  powerBarContainer: {
+    paddingHorizontal: 16,
+    marginVertical: 4,
+  },
+  powerLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  powerLabelText: {
+    color: '#F5ECD2',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  powerValueText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  powerTrack: {
+    height: 12,
+    backgroundColor: 'rgba(7, 38, 28, 0.9)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(43, 214, 123, 0.3)',
+    position: 'relative',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  powerFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  powerKnob: {
+    position: 'absolute',
+    top: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#F5ECD2',
+    borderWidth: 2,
+    borderColor: '#EF4444',
+  },
+  floatingScoreBadge: {
+    position: 'absolute',
+    top: '40%',
+    alignSelf: 'center',
+    zIndex: 35,
+    backgroundColor: 'rgba(7, 38, 28, 0.92)',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 2,
+    elevation: 8,
+  },
+  floatingScoreText: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });

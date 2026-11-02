@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BoardPreview, Button, Card, ScreenContainer } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
+import { AudioManager } from '../src/services/audio/AudioManager';
 import { createDefaultGameConfig, getSeatDirectionLabel } from '@carromverse/game-logic';
 import { GameConfiguration, PlayerSeat } from '@carromverse/shared-types';
 import { THEME } from '../src/constants/theme';
@@ -25,7 +26,12 @@ export default function LobbyScreen() {
 
   const startSession = useGameSessionStore((state) => state.startSession);
 
+  useEffect(() => {
+    AudioManager.getInstance().playMusic('lobby');
+  }, []);
+
   const handleStartMatch = () => {
+    AudioManager.getInstance().playSound('MATCH_START', 0.85);
     const baseConfig = createDefaultGameConfig(selectedMode);
     const config: GameConfiguration = {
       ...baseConfig,

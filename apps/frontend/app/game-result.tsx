@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Card, ScreenContainer } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
 import { useEconomyStore } from '../src/store/economyStore';
+import { AudioManager } from '../src/services/audio/AudioManager';
 import { createDefaultGameConfig } from '@carromverse/game-logic';
 import { THEME } from '../src/constants/theme';
 
@@ -14,6 +15,11 @@ export default function GameResultScreen() {
     useGameSetupStore();
   const { gameResult, scores, startSession } = useGameSessionStore();
   const addCoins = useEconomyStore((state) => state.addCoins);
+
+  useEffect(() => {
+    AudioManager.getInstance().playMusic('victory');
+    AudioManager.getInstance().playSound('VICTORY', 1.0);
+  }, []);
 
   const isTeam = selectedMode === 'four_player_team';
 

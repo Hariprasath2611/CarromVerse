@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -19,6 +19,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useUserStore } from '../../src/store/userStore';
 import { useEconomyStore } from '../../src/store/economyStore';
 import { useGameSetupStore } from '../../src/store/gameSetupStore';
+import { AudioManager } from '../../src/services/audio/AudioManager';
 import { THEME } from '../../src/constants/theme';
 
 export default function HomeScreen() {
@@ -29,6 +30,10 @@ export default function HomeScreen() {
   const { setGameMode } = useGameSetupStore();
 
   const [showDailyRewards, setShowDailyRewards] = useState(false);
+
+  useEffect(() => {
+    AudioManager.getInstance().playMusic('home');
+  }, []);
 
   const displayName = profile?.username || user?.displayName || 'HARIPRASATH';
   const playerLevel = profile?.level || 7;
