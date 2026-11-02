@@ -13,9 +13,14 @@
   },
   "dependencies": {
     "@carromverse/shared-types": "*",
-    "@carromverse/shared-utils": "*"
+    "@carromverse/shared-utils": "*",
+    "@colyseus/schema": "^3.0.0",
+    "@colyseus/ws-transport": "^0.15.0",
+    "colyseus": "^0.15.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.10",
     "typescript": "^5.6.3"
   }
 }
