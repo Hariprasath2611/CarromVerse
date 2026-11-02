@@ -19,11 +19,5 @@
   },
   "devDependencies": {
     "typescript": "^5.6.3"
-  },
-  "dependencies": {
-    "@colyseus/schema": "^5.0.43",
-    "@colyseus/ws-transport": "^0.18.4",
-    "colyseus": "^0.18.10",
-    "colyseus.js": "^0.16.22"
   }
 }
