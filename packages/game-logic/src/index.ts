@@ -11,4 +11,7 @@ export * from './engine/WinConditionManager.js';
 export * from './rules/CarromRulesManager.js';
 export * from './rules/TurnManager.js';
 export * from './rules/ScoreManager.js';
+export * from './turns/TurnManager.js';
+export * from './scoring/ScoringEngine.js';
+export * from './penalties/FoulManager.js';
 export * from './state/CarromStateMachine.js';
