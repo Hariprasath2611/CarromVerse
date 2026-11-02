@@ -2,101 +2,117 @@
 
 > **A Premium Mobile Carrom Game with Authentic Physics & Offline-First Architecture**
 
-CarromVerse brings the classic tabletop board game of Carrom to mobile devices with physics calibrated using Matter.js and Phaser 3, designed with an offline-first architecture supporting 2-player, 3-player, 4-player individual, and 4-player 2v2 team matches.
+CarromVerse brings the classic tabletop board game of Carrom to mobile devices with authentic substepping physics calibrated using Matter.js and Phaser 3, an offline-first architecture supporting 2-player, 3-player, 4-player individual, and 4-player 2v2 team matches, and a scalable cloud backend.
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Four-Tier Architecture
 
-CarromVerse is organized as a scalable monorepo separating mobile presentation, game engine simulation, game logic rules, and shared types:
+CarromVerse is organized into a scalable monorepo separating Frontend, Backend, Game Engine, and Database layers:
 
 ```
 CarromVerse/
+│
 ├── apps/
-│   └── mobile/              # Expo Router mobile app (React Native + TypeScript)
+│   ├── frontend/             # Mobile App (React Native, Expo SDK 58, Expo Router, Zustand, WebView)
+│   └── backend/              # Cloud Backend (Node.js, TypeScript, REST API, WebSocket Room Gateway)
+│
 ├── packages/
-│   ├── shared-types/        # Shared data contracts (Player, Turn, Score, etc.)
-│   ├── shared-utils/        # Vector math, UUID, validation, event emitters
-│   ├── game-logic/          # Pure TypeScript Carrom rules & turn rotation
-│   └── game-engine/         # Phaser 3 + Matter.js physics & bridge protocol
-├── docs/
-│   ├── ARCHITECTURE.md      # Detailed system architecture & WebView analysis
-│   ├── FIREBASE_SETUP.md    # Step-by-step Firebase console guide
-│   └── DEVELOPMENT_ROADMAP.md # Phase 1 & Phase 2 milestones
-├── firestore.rules          # Cloud Firestore production security rules
-├── storage.rules            # Firebase Storage security rules
-└── .env.example             # Client environment template
+│   ├── game-engine/          # Matter.js Physics & Phaser 3 Board Renderer
+│   ├── game-logic/           # Pure Carrom Rules Engine, Scoring, Fouls & State Machine
+│   ├── multiplayer/          # Offline Seating, Pass-and-Play Handover, Team Seating Validation
+│   ├── shared-types/         # Centralized TypeScript interfaces, types, and DTO contracts
+│   └── shared-utils/         # 2D Vector Math, ID Generators, Validators, and Formatters
+│
+├── database/
+│   ├── firebase/             # Cloud Firestore & Storage Security Rules & Indexes
+│   ├── sqlite/               # Local Mobile SQLite Match History Schemas & Migrations
+│   ├── postgresql/           # Cloud Relational Database Schema & Migrations
+│   ├── schemas/              # Unified Schema Documentation
+│   └── documentation/        # Technical Database Engine Reference Guides
+│
+├── infrastructure/
+│   ├── docker/               # Dockerfile.backend & docker-compose.yml (Backend, Postgres, Redis)
+│   ├── deployment/           # Deployment guides for mobile EAS and cloud backends
+│   ├── environments/         # Environment templates (.development, .staging, .production)
+│   └── scripts/              # Cross-platform build and test automation scripts
+│
+├── docs/                     # 10 Architecture and Developer Guides
+├── tests/                    # Top-level E2E, integration, and performance benchmarks
+├── tsconfig.base.json        # Shared TypeScript configuration
+├── package.json              # Monorepo workspaces definition
+└── README.md
 ```
 
 ---
 
 ## ⚡ Technology Stack
 
-- **Mobile Framework:** React Native with Expo SDK 58 & TypeScript
-- **Navigation:** Expo Router (file-based routing)
-- **Game Engine:** Phaser 3 & Matter.js (decoupled WebView bridge architecture)
-- **State Management:** Zustand (isolated orthogonal stores; zero physics in React state)
-- **Local Storage:**
-  - `@react-native-async-storage/async-storage` for fast preferences and session caching
-  - `expo-sqlite` (Write-Ahead Logging) for structured match records and offline sync queues
-- **Backend Services:** Firebase Authentication, Cloud Firestore, Firebase Storage
-- **Styling:** Premium Dark Theme (Obsidian, Mahogany, Imperial Gold) with pure StyleSheet-based CSS-in-JS
+- **Frontend:** React Native 0.88, Expo SDK 58, Expo Router v3, Zustand, WebView
+- **Backend:** Node.js, TypeScript, REST API, WebSocket Gateway
+- **Game Engine:** Phaser 3 & Matter.js with zero-gravity substepping simulation
+- **Rules Engine:** Pure TypeScript deterministic Carrom State Machine
+- **Databases:** Local SQLite (expo-sqlite WAL), Cloud Firestore, Firebase Storage, PostgreSQL
+- **Design Tokens:** Deep Green `#07261C` / `#0E4A33`, Emerald `#2BD67B`, Imperial Gold `#E9B949`
 
 ---
 
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-- Node.js >= 20.x or 22.x / 24.x
-- npm >= 10.x or pnpm >= 9.x
-- Expo Go app on iOS/Android or an emulator/simulator
+- Node.js >= 20.x or 22.x
+- npm >= 10.x
 
-### 2. Installation
-Install all monorepo dependencies from the project root:
+### 2. Installation & Build
 ```bash
+# Install dependencies across all workspaces
 npm install
+
+# Build all packages and backend
+npm run build
 ```
 
-### 3. Environment Variables
-Copy `.env.example` to `.env`:
+### 3. Verify Codebase
 ```bash
-cp .env.example .env
+# Typecheck all workspaces
+npm run typecheck
+
+# Run all automated test suites
+npm run test
 ```
-Follow the [Firebase Setup Guide](docs/FIREBASE_SETUP.md) to generate your client configuration keys and insert them into `.env`.
 
-> [!NOTE]
-> The application will run immediately in **Offline Guest Mode** even without Firebase keys configured.
-
-### 4. Running the Application
-Start the Expo development server:
+### 4. Running the Frontend (Mobile App)
 ```bash
+# Start Expo development server
 npm start
-```
-Run on Android emulator:
-```bash
+
+# Run on Android emulator
 npm run android
-```
-Run on iOS simulator:
-```bash
+
+# Run on iOS simulator
 npm run ios
-```
-Run in Web browser:
-```bash
+
+# Run in Web browser
 npm run web
 ```
 
----
-
-## 📖 Documentation
-
-- [Detailed Architecture & Game Engine Analysis](docs/ARCHITECTURE.md)
-- [Firebase Setup & Security Rules Guide](docs/FIREBASE_SETUP.md)
-- [Full Development Roadmap](docs/DEVELOPMENT_ROADMAP.md)
+### 5. Running the Backend (Server)
+```bash
+npm run backend
+```
+Access `http://localhost:4000/health` to confirm the backend is online.
 
 ---
 
-## 📜 Current Status
+## 📖 Documentation Index
 
-- **Current Milestone:** Phase 1.1 — Project Foundation & Firebase Integration (Completed)
-- **Next Milestone:** Phase 1.2 — UI/UX & Interactive Design System
-
+- [Project Structure & Workspace Boundaries](docs/PROJECT_STRUCTURE.md)
+- [System Architecture Specification](docs/ARCHITECTURE.md)
+- [Frontend Developer Guide](docs/FRONTEND_GUIDE.md)
+- [Backend Developer Guide](docs/BACKEND_GUIDE.md)
+- [Game Engine Developer Guide](docs/GAME_ENGINE_GUIDE.md)
+- [Game Logic Developer Guide](docs/GAME_LOGIC_GUIDE.md)
+- [Database Developer Guide](docs/DATABASE_GUIDE.md)
+- [API Contracts & Envelopes](docs/API_CONTRACTS.md)
+- [Development Setup & Onboarding](docs/DEVELOPMENT_SETUP.md)
+- [Contributing Guidelines](docs/CONTRIBUTING.md)
