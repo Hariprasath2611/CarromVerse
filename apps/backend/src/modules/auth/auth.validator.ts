@@ -7,8 +7,9 @@ export class AuthValidator {
       return { isValid: false, error: 'Invalid request body' };
     }
     const { email } = payload as Record<string, string>;
-    if (!email || !validateEmail(email)) {
-      return { isValid: false, error: 'Valid email address is required' };
+    const emailResult = validateEmail(email || '');
+    if (!emailResult.isValid) {
+      return { isValid: false, error: emailResult.error || 'Valid email address is required' };
     }
     return { isValid: true, data: payload as LoginRequestDto };
   }
@@ -18,14 +19,19 @@ export class AuthValidator {
       return { isValid: false, error: 'Invalid request body' };
     }
     const { email, username, password } = payload as Record<string, string>;
-    if (!email || !validateEmail(email)) {
-      return { isValid: false, error: 'Valid email is required' };
+    const emailResult = validateEmail(email || '');
+    if (!emailResult.isValid) {
+      return { isValid: false, error: emailResult.error || 'Valid email is required' };
     }
-    if (!username || !validateUsername(username)) {
-      return { isValid: false, error: 'Valid username (3-20 alphanumeric characters) is required' };
+    const usernameResult = validateUsername(username || '');
+    if (!usernameResult.isValid) {
+      return { isValid: false, error: usernameResult.error || 'Valid username is required' };
     }
-    if (password && !validatePassword(password)) {
-      return { isValid: false, error: 'Password must be at least 6 characters' };
+    if (password) {
+      const passwordResult = validatePassword(password);
+      if (!passwordResult.isValid) {
+        return { isValid: false, error: passwordResult.error || 'Password is invalid' };
+      }
     }
     return { isValid: true, data: payload as RegisterRequestDto };
   }

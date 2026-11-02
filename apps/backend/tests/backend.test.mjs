@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EventEmitter } from 'node:events';
+import { Readable, EventEmitter } from 'node:stream';
 import { createApp } from '../dist/app.js';
 import { AuthService } from '../dist/modules/auth/auth.service.js';
 import { AuthValidator } from '../dist/modules/auth/auth.validator.js';
@@ -13,7 +13,11 @@ import { RoomManager } from '../dist/websocket/roomManager.js';
 // Helper to simulate in-memory HTTP requests without TCP binding
 function invokeApp(app, method, url, body = null, headers = {}) {
   return new Promise((resolve) => {
-    const req = new EventEmitter();
+    const bodyBuffer = body
+      ? Buffer.from(typeof body === 'string' ? body : JSON.stringify(body))
+      : Buffer.alloc(0);
+
+    const req = Readable.from(body ? [bodyBuffer] : []);
     req.method = method;
     req.url = url;
     req.headers = { host: 'localhost', ...headers };
@@ -45,12 +49,6 @@ function invokeApp(app, method, url, body = null, headers = {}) {
     };
 
     app.handleRequest(req, res);
-
-    if (body) {
-      const data = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-      req.emit('data', data);
-    }
-    req.emit('end');
   });
 }
 
