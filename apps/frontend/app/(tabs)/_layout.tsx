@@ -7,10 +7,9 @@ import { THEME } from '../../src/constants/theme';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  // Android 3-button navigation bar (||| O <) occupies ~48dp when app renders edge-to-edge.
-  // Using 44-48dp clearance ensures tab icons and labels never collide with system navigation.
-  const bottomInset = insets.bottom >= 40 ? insets.bottom : Platform.OS === 'android' ? 46 : Math.max(insets.bottom, 12);
-  const tabBarHeight = 58 + bottomInset;
+  // Ensure generous clearance for Android 3-button navigation (||| O <) so labels never overlap system keys
+  const bottomClearance = Math.max(insets.bottom, Platform.OS === 'android' ? 52 : 16);
+  const tabBarHeight = 62 + bottomClearance;
 
   return (
     <Tabs
@@ -20,7 +19,7 @@ export default function TabsLayout() {
           styles.tabBar,
           {
             height: tabBarHeight,
-            paddingBottom: bottomInset + 2,
+            paddingBottom: bottomClearance,
           },
         ],
         tabBarActiveTintColor: '#2BD67B',
@@ -97,9 +96,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   tabItem: {
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingVertical: 2,
+    paddingTop: 4,
   },
   tabLabel: {
     fontSize: 10,

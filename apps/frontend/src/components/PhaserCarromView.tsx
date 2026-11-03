@@ -13,6 +13,8 @@ import { THEME } from '../constants/theme';
 
 export interface PhaserCarromViewRef {
   shoot: (power: number, angle?: number) => void;
+  setAimPower: (power: number) => void;
+  cancelAim: () => void;
   resetBoard: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -44,7 +46,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
   (
     {
       size,
-      themeId = 'forest',
+      themeId = 'classic',
       strikerSkin = 'emerald',
       activeSeat = 0,
       strikerOffset = 0,
@@ -102,6 +104,12 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
     useImperativeHandle(ref, () => ({
       shoot: (power: number, angle?: number) => {
         sendToPhaser('SHOOT', { power, angle });
+      },
+      setAimPower: (power: number) => {
+        sendToPhaser('SET_AIM_POWER', { power });
+      },
+      cancelAim: () => {
+        sendToPhaser('CANCEL_AIM');
       },
       resetBoard: () => {
         sendToPhaser('RESET_BOARD');
@@ -239,7 +247,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           <RNWebView
             ref={webViewRef}
             originWhitelist={['*']}
-            source={{ html: htmlContent }}
+            source={{ html: htmlContent, baseUrl: 'https://localhost' }}
             onMessage={handleMessage}
             javaScriptEnabled={true}
             domStorageEnabled={true}
@@ -247,12 +255,22 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
             bounces={false}
             overScrollMode="never"
             scalesPageToFit={false}
-            androidLayerType="none"
-            androidHardwareAccelerationDisabled={false}
+            androidLayerType="hardware"
             mixedContentMode="always"
             allowFileAccess={true}
             allowFileAccessFromFileURLs={true}
             allowUniversalAccessFromFileURLs={true}
+            onLoadEnd={() => {
+              const js = `
+                try {
+                  if (window._phaserGameInstance && window._phaserGameInstance.scale) {
+                    window._phaserGameInstance.scale.refresh();
+                  }
+                } catch(e){}
+                true;
+              `;
+              webViewRef.current?.injectJavaScript(js);
+            }}
             onError={(e: any) => {
               console.warn('[PhaserCarromView] WebView onError:', e.nativeEvent);
             }}
@@ -280,26 +298,25 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#07130E',
-    borderRadius: 8,
-    overflow: 'hidden',
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    ...THEME.shadows.card,
+    overflow: Platform.OS === 'web' ? 'hidden' : 'visible',
+    borderRadius: Platform.OS === 'web' ? 8 : 0,
   },
   webViewContainer: {
     width: '100%',
     height: '100%',
     flex: 1,
     alignSelf: 'stretch',
-    backgroundColor: '#07130E',
+    backgroundColor: 'transparent',
   },
   webView: {
     width: '100%',
     height: '100%',
     flex: 1,
     alignSelf: 'stretch',
-    backgroundColor: '#07130E',
+    backgroundColor: 'transparent',
   },
   loadingOverlay: {
     position: 'absolute',
