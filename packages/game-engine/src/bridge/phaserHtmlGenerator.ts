@@ -1345,22 +1345,22 @@ ${PHASER_MIN_JS}
           var pullDy = py - curY;
           var pullDist = Math.hypot(pullDx, pullDy);
 
-          // If finger is right on the striker (< 14px), treat as cancel zone
-          if (pullDist < 14) {
+          // If finger is within 15px of striker center, cancel zone
+          if (pullDist < 16) {
             this.aimGraphics.clear();
             this.aimPowerRatio = 0;
-            // Draw soft red cancel indicator
-            this.aimGraphics.fillStyle(0xEF4444, 0.35);
-            this.aimGraphics.fillCircle(px, py, this.strikerRadius + 8);
-            this.aimGraphics.lineStyle(2, 0xEF4444, 0.9);
-            this.aimGraphics.strokeCircle(px, py, this.strikerRadius + 8);
+            // Soft red cancel zone ring
+            this.aimGraphics.fillStyle(0xEF4444, 0.25);
+            this.aimGraphics.fillCircle(px, py, this.strikerRadius + 6);
+            this.aimGraphics.lineStyle(2, 0xEF4444, 0.85);
+            this.aimGraphics.strokeCircle(px, py, this.strikerRadius + 6);
             return;
           }
 
           var angle = Math.atan2(pullDy, pullDx);
-          var maxPullPx = 135;
+          var maxPullPx = 130;
           var clampedPull = Math.min(pullDist, maxPullPx);
-          this.aimPowerRatio = Math.max(0.05, Math.min(1.0, (clampedPull - 14) / (maxPullPx - 14)));
+          this.aimPowerRatio = Math.max(0.05, Math.min(1.0, (clampedPull - 16) / (maxPullPx - 16)));
           this.aimAngle = angle;
 
           this.renderAimGuide(angle, this.aimPowerRatio, curX, curY);
@@ -1372,37 +1372,114 @@ ${PHASER_MIN_JS}
           var sr = this.strikerRadius;
           var cosA = Math.cos(angle);
           var sinA = Math.sin(angle);
+          var s = this.canvasSize;
+          var scale = BOARD_PX / 528;
 
           this.aimGraphics.clear();
 
-          // 1. Slingshot Tension Arc & Arrow behind Striker (Carrom Pool Style!)
-          var powerCol = powerRatio > 0.75 ? 0xEF4444 : (powerRatio > 0.40 ? 0xF59E0B : 0x2BD67B);
-          var arcR = sr + 14 + powerRatio * 16;
-          var oppAngle = angle + Math.PI;
-          var spread = 0.55 + powerRatio * 0.45;
+          // 1. Translucent Dashed Touch Boundary Circle centered on striker (Carrom Pool Screenshot 5!)
+          var boundaryR = 95 * scale;
+          this.aimGraphics.fillStyle(0xFFFFFF, 0.035);
+          this.aimGraphics.fillCircle(px, py, boundaryR);
 
-          // Glowing force arc behind striker
-          this.aimGraphics.lineStyle(4, powerCol, 0.85);
-          this.aimGraphics.beginPath();
-          this.aimGraphics.arc(px, py, arcR, oppAngle - spread, oppAngle + spread);
-          this.aimGraphics.strokePath();
-
-          // Elastic slingshot tension lines from striker edges to pull position if pulling
-          if (typeof pullX === 'number' && typeof pullY === 'number') {
-            var perpX = -sinA * (sr * 0.8);
-            var perpY = cosA * (sr * 0.8);
-            this.aimGraphics.lineStyle(2.5, powerCol, 0.65);
-            this.aimGraphics.lineBetween(px + perpX, py + perpY, pullX, pullY);
-            this.aimGraphics.lineBetween(px - perpX, py - perpY, pullX, pullY);
-
-            // Pull handle knob
-            this.aimGraphics.fillStyle(powerCol, 0.9);
-            this.aimGraphics.fillCircle(pullX, pullY, 12);
-            this.aimGraphics.lineStyle(2, 0xFFFFFF, 0.95);
-            this.aimGraphics.strokeCircle(pullX, pullY, 12);
+          // Dashed border (28 segments)
+          var nDashes = 28;
+          var dStep = (Math.PI * 2) / nDashes;
+          this.aimGraphics.lineStyle(1.6, 0xFFFFFF, 0.26);
+          for (var b = 0; b < nDashes; b += 2) {
+            this.aimGraphics.beginPath();
+            this.aimGraphics.arc(px, py, boundaryR, b * dStep, (b + 1) * dStep);
+            this.aimGraphics.strokePath();
           }
 
-          // 2. Forward Raycasting to find nearest collision (Coins & Cushions)
+          // 2. Back-Trace Dotted Line to Touch Pointer (Screenshot 5!)
+          if (typeof pullX === 'number' && typeof pullY === 'number') {
+            var backDx = pullX - px;
+            var backDy = pullY - py;
+            var backDist = Math.hypot(backDx, backDy);
+            if (backDist > sr) {
+              var bDirX = backDx / backDist;
+              var bDirY = backDy / backDist;
+              for (var bd = sr + 8; bd < backDist; bd += 11) {
+                this.aimGraphics.fillStyle(0xFFFFFF, 0.55);
+                this.aimGraphics.fillCircle(px + bDirX * bd, py + bDirY * bd, 2.4);
+              }
+            }
+          }
+
+          // 3. Tapered Gradient Power Arrow (Originates at striker edge and points FORWARD along angle!)
+          var bodyLen = 22 + powerRatio * 62;
+          var headLen = 18;
+          var arrowTotalLen = bodyLen + headLen;
+
+          var arrowStartX = px + cosA * sr;
+          var arrowStartY = py + sinA * sr;
+
+          // Normal perpendicular unit vector for width
+          var normX = -sinA;
+          var normY = cosA;
+
+          var baseW = 15; // Width at striker base
+          var neckW = 11; // Width before arrowhead
+          var headW = 23; // Arrowhead wings width
+
+          var neckX = arrowStartX + cosA * bodyLen;
+          var neckY = arrowStartY + sinA * bodyLen;
+          var tipX = arrowStartX + cosA * arrowTotalLen;
+          var tipY = arrowStartY + sinA * arrowTotalLen;
+
+          // Arrow Body polygon (Tapered trapezoid)
+          var p1x = arrowStartX + normX * (baseW / 2);
+          var p1y = arrowStartY + normY * (baseW / 2);
+          var p2x = arrowStartX - normX * (baseW / 2);
+          var p2y = arrowStartY - normY * (baseW / 2);
+          var p3x = neckX - normX * (neckW / 2);
+          var p3y = neckY - normY * (neckW / 2);
+          var p4x = neckX + normX * (neckW / 2);
+          var p4y = neckY + normY * (neckW / 2);
+
+          // Arrow Head polygon (Triangular point)
+          var h1x = neckX + normX * (headW / 2);
+          var h1y = neckY + normY * (headW / 2);
+          var h2x = neckX - normX * (headW / 2);
+          var h2y = neckY - normY * (headW / 2);
+
+          // Render Arrow Body: Warm Yellow (#F59E0B) with bright gold core
+          this.aimGraphics.fillStyle(0xF59E0B, 0.95);
+          this.aimGraphics.fillPoints([
+            { x: p1x, y: p1y },
+            { x: p2x, y: p2y },
+            { x: p3x, y: p3y },
+            { x: p4x, y: p4y }
+          ], true);
+
+          // Yellow inner core
+          this.aimGraphics.fillStyle(0xFDE047, 0.85);
+          this.aimGraphics.fillPoints([
+            { x: arrowStartX + normX * (baseW * 0.3), y: arrowStartY + normY * (baseW * 0.3) },
+            { x: arrowStartX - normX * (baseW * 0.3), y: arrowStartY - normY * (baseW * 0.3) },
+            { x: neckX - normX * (neckW * 0.3), y: neckY - normY * (neckW * 0.3) },
+            { x: neckX + normX * (neckW * 0.3), y: neckY + normY * (neckW * 0.3) }
+          ], true);
+
+          // Render Arrow Head: Fiery Red (#EF4444 / #DC2626) with sharp point
+          this.aimGraphics.fillStyle(0xEF4444, 0.98);
+          this.aimGraphics.fillTriangle(h1x, h1y, h2x, h2y, tipX, tipY);
+
+          // Crisp dark outline around entire arrow
+          this.aimGraphics.lineStyle(1.6, 0x7F1D1D, 0.95);
+          this.aimGraphics.strokePoints([
+            { x: p1x, y: p1y },
+            { x: p2x, y: p2y },
+            { x: p3x, y: p3y },
+            { x: h2x, y: h2y },
+            { x: tipX, y: tipY },
+            { x: h1x, y: h1y },
+            { x: p4x, y: p4y },
+            { x: p1x, y: p1y }
+          ], true);
+
+          // 4. Forward Raycasting to find nearest collision (Coins & Cushions)
           var nearestDist = 800;
           var hitType = 'none';
           var hitCoin = null;
@@ -1427,7 +1504,6 @@ ${PHASER_MIN_JS}
             }
           }
 
-          var s = this.canvasSize;
           var fw = (s - BOARD_PX) / 2;
           var boardMin = fw + sr;
           var boardMax = s - fw - sr;
@@ -1451,55 +1527,47 @@ ${PHASER_MIN_JS}
           var contactX = px + cosA * nearestDist;
           var contactY = py + sinA * nearestDist;
 
-          // 3. Dotted Aim Line with Glowing Trajectory
-          var segLen = 9;
-          var gapLen = 6;
-          var step = segLen + gapLen;
-          for (var d = 0; d < nearestDist; d += step) {
-            var curD1 = d;
-            var curD2 = Math.min(d + segLen, nearestDist);
-            var alpha = 0.85 * (1 - (d / (nearestDist + 200)) * 0.4);
-            this.aimGraphics.lineStyle(2.5, powerCol, alpha);
-            this.aimGraphics.lineBetween(
-              px + cosA * curD1, py + sinA * curD1,
-              px + cosA * curD2, py + sinA * curD2
-            );
+          // 5. Crisp Pure White Dotted Trajectory Line from arrow tip to contact point
+          var arrowTipDist = sr + arrowTotalLen;
+          var dotSpacing = 11.5;
+          for (var td = arrowTipDist; td < nearestDist; td += dotSpacing) {
+            var dotX = px + cosA * td;
+            var dotY = py + sinA * td;
+            this.aimGraphics.fillStyle(0xFFFFFF, 0.95);
+            this.aimGraphics.fillCircle(dotX, dotY, 2.7);
           }
 
-          // 4. Ghost Striker at Contact Point
-          this.aimGraphics.lineStyle(2, powerCol, 0.75);
+          // 6. Ghost Striker at Contact Point (Screenshot 5!)
+          this.aimGraphics.lineStyle(1.8, 0xFFFFFF, 0.85);
           this.aimGraphics.strokeCircle(contactX, contactY, sr);
-          this.aimGraphics.fillStyle(powerCol, 0.18);
+          this.aimGraphics.fillStyle(0xFFFFFF, 0.12);
           this.aimGraphics.fillCircle(contactX, contactY, sr);
 
-          // 5. If Target is a Coin -> Render Deflection Trajectory Line & Target Impact Arrow!
+          // 7. If Target is a Coin -> Render Deflection Trajectory & Ghost Coin!
           if (hitType === 'coin' && hitCoin && hitCoin.body) {
             var targetX = hitCoin.body.position.x;
             var targetY = hitCoin.body.position.y;
-            var normX = targetX - contactX;
-            var normY = targetY - contactY;
-            var normDist = Math.hypot(normX, normY) || 1;
-            var deflDirX = normX / normDist;
-            var deflDirY = normY / normDist;
-            var deflDist = Math.min(130, 45 + powerRatio * 85);
+            var normX2 = targetX - contactX;
+            var normY2 = targetY - contactY;
+            var normDist = Math.hypot(normX2, normY2) || 1;
+            var deflDirX = normX2 / normDist;
+            var deflDirY = normY2 / normDist;
+            var deflDist = Math.min(140, 45 + powerRatio * 85);
 
-            for (var dd = 0; dd < deflDist; dd += step) {
-              var d1 = dd;
-              var d2 = Math.min(dd + segLen, deflDist);
-              this.aimGraphics.lineStyle(2.5, 0xF5ECD2, 0.90); // Crisp cream trajectory for target coin
-              this.aimGraphics.lineBetween(
-                targetX + deflDirX * d1, targetY + deflDirY * d1,
-                targetX + deflDirX * d2, targetY + deflDirY * d2
-              );
+            for (var dd = 0; dd < deflDist; dd += dotSpacing) {
+              var cDotX = targetX + deflDirX * dd;
+              var cDotY = targetY + deflDirY * dd;
+              this.aimGraphics.fillStyle(0xFFFFFF, 0.95);
+              this.aimGraphics.fillCircle(cDotX, cDotY, 2.7);
             }
 
             // Target rollout ghost coin
-            this.aimGraphics.lineStyle(1.8, 0xF5ECD2, 0.95);
+            this.aimGraphics.lineStyle(1.8, 0xFFFFFF, 0.90);
             this.aimGraphics.strokeCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX);
-            this.aimGraphics.fillStyle(0xF5ECD2, 0.25);
+            this.aimGraphics.fillStyle(0xFFFFFF, 0.18);
             this.aimGraphics.fillCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX);
           } else if (hitType === 'wall') {
-            // Cushion rebound reflection angle!
+            // Cushion rebound reflection angle
             var reflAngle = angle;
             if (wallHitSide === 'left' || wallHitSide === 'right') {
               reflAngle = Math.PI - angle;
@@ -1508,16 +1576,13 @@ ${PHASER_MIN_JS}
             }
             var rCos = Math.cos(reflAngle);
             var rSin = Math.sin(reflAngle);
-            var reboundDist = Math.min(100, 30 + powerRatio * 70);
+            var reboundDist = Math.min(110, 35 + powerRatio * 75);
 
-            for (var rd = 0; rd < reboundDist; rd += step) {
-              var rd1 = rd;
-              var rd2 = Math.min(rd + segLen, reboundDist);
-              this.aimGraphics.lineStyle(2, powerCol, 0.55);
-              this.aimGraphics.lineBetween(
-                contactX + rCos * rd1, contactY + rSin * rd1,
-                contactX + rCos * rd2, contactY + rSin * rd2
-              );
+            for (var rd = 0; rd < reboundDist; rd += dotSpacing) {
+              var rDotX = contactX + rCos * rd;
+              var rDotY = contactY + rSin * rd;
+              this.aimGraphics.fillStyle(0xFFFFFF, 0.75);
+              this.aimGraphics.fillCircle(rDotX, rDotY, 2.5);
             }
           }
 
@@ -1836,6 +1901,24 @@ ${PHASER_MIN_JS}
             }
             this.strikerShadow.setPosition(this.strikerBody.position.x + 3, this.strikerBody.position.y + 4);
             this.strikerShadow.setRotation(0); // Shadows stay fixed to light angle
+
+            // Pulsing Cyan/Turquoise Radiant Aura Ring around Striker when resting/idle
+            if (this.strikerAura) {
+              if (!this.isShotActive && !this.isAiming && !this.isStrikerOverlapping) {
+                var pulse = (Math.sin(Date.now() / 240) + 1) / 2; // 0..1
+                var auraR = this.strikerRadius + 5 + pulse * 6;
+                var auraAlpha = 0.45 + pulse * 0.45;
+                this.strikerAura.clear();
+                this.strikerAura.lineStyle(2.5, 0x00FFFF, auraAlpha);
+                this.strikerAura.strokeCircle(this.strikerBody.position.x, this.strikerBody.position.y, auraR);
+                this.strikerAura.lineStyle(5, 0x26E6D9, auraAlpha * 0.35);
+                this.strikerAura.strokeCircle(this.strikerBody.position.x, this.strikerBody.position.y, auraR + 2);
+              } else {
+                this.strikerAura.clear();
+              }
+            }
+          } else if (this.strikerAura) {
+            this.strikerAura.clear();
           }
 
           this.coins.forEach(function(c) {
