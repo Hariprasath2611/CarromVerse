@@ -26,8 +26,8 @@ export const BoardPreview: React.FC<BoardPreviewProps> = ({
     theme === 'emerald'
       ? '#0F5A3E'
       : theme === 'mahogany'
-      ? '#4A1D13'
-      : '#F5ECD2'; // Cream playing surface
+      ? '#38160E'
+      : '#E5CBA7'; // Natural light birchwood surface
 
   return (
     <View
@@ -104,10 +104,10 @@ export const BoardPreview: React.FC<BoardPreviewProps> = ({
 
 const styles = StyleSheet.create({
   outerFrame: {
-    backgroundColor: '#7A431C',
+    backgroundColor: '#38160E',
     borderRadius: 14,
     borderWidth: 5,
-    borderColor: '#4D270E',
+    borderColor: '#240D07',
     alignItems: 'center',
     justifyContent: 'center',
     ...THEME.shadows.card,
@@ -171,12 +171,12 @@ const styles = StyleSheet.create({
   },
   striker: {
     position: 'absolute',
-    backgroundColor: '#2BD67B',
+    backgroundColor: '#4A126D',
     borderWidth: 2,
-    borderColor: '#169352',
+    borderColor: '#E9B949',
     zIndex: 4,
-    shadowColor: '#2BD67B',
-    shadowOpacity: 0.5,
+    shadowColor: '#00FFFF',
+    shadowOpacity: 0.6,
     shadowRadius: 6,
     elevation: 4,
   },
