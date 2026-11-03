@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  GestureResponderEvent,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,11 +10,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  Button,
   PauseModal,
   PhaserCarromView,
   PhaserCarromViewRef,
-  PlayerAvatar,
   PlayerHandoverModal,
   ScreenContainer,
   StickersModal,
@@ -40,7 +39,6 @@ export default function GameBoardScreen() {
     currentTurn,
     queenStatus,
     activePlayers,
-    savedConfig,
     isHandoverPending,
     nextPlayerToHandover,
     confirmHandover,
@@ -53,9 +51,9 @@ export default function GameBoardScreen() {
   } = useGameSessionStore();
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  // Maximized board size preserving strict 1:1 aspect ratio with compact footer controls
-  const availableBoardHeight = screenHeight - 130;
-  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 8, availableBoardHeight, 520));
+  // Maximized board size preserving strict 1:1 aspect ratio with Carrom Pool layout
+  const availableBoardHeight = screenHeight - 160;
+  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 38, availableBoardHeight, 480));
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
@@ -65,8 +63,13 @@ export default function GameBoardScreen() {
   const [powerRatio, setPowerRatio] = useState(0.55);
   const [aimAngle, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
+  const [isStrikerOverlapping, setIsStrikerOverlapping] = useState(false);
   const [pocketToast, setPocketToast] = useState<string | null>(null);
   const [floatingScore, setFloatingScore] = useState<{ text: string; color: string } | null>(null);
+
+  // Side Power Meter State (Carrom Pool Force Meter)
+  const [sidePower, setSidePower] = useState(0);
+  const [isPullingSideMeter, setIsPullingSideMeter] = useState(false);
 
   const triggerFloatingScore = (text: string, color: string) => {
     setFloatingScore({ text, color });
@@ -105,7 +108,7 @@ export default function GameBoardScreen() {
       const baseConfig = createDefaultGameConfig(selectedMode);
       const config = {
         ...baseConfig,
-        boardTheme,
+        boardTheme: boardTheme || 'classic',
         targetScore: targetPoints,
         turnTimeLimitSeconds: turnTimeLimitSec,
       };
@@ -155,18 +158,11 @@ export default function GameBoardScreen() {
     }
   }, [secondsRemaining, turnTimeLimitSec, isPaused, isHandoverPending, isShotActive]);
 
-  const handleShoot = () => {
-    if (isShotActive || isHandoverPending || isPaused) return;
-    AudioManager.getInstance().playSound('STRIKER_SHOOT', powerRatio);
-    if (carromRef.current) {
-      carromRef.current.shoot(powerRatio, aimAngle);
-    }
-  };
-
   const handleRestartMatch = () => {
     setShowPauseModal(false);
     restartSession();
     setStrikerOffsetRatio(0);
+    setIsStrikerOverlapping(false);
     carromRef.current?.resetBoard();
     showToast('Match restarted!');
   };
@@ -205,14 +201,52 @@ export default function GameBoardScreen() {
     AudioManager.getInstance().playSound('STRIKER_PLACE', 0.4);
   };
 
+  const handleSliderTouch = (evt: GestureResponderEvent) => {
+    if (isShotActive || isHandoverPending || isPaused) return;
+    const { locationX } = evt.nativeEvent;
+    // Map slider width (~screenWidth - 90) to -0.92..0.92
+    const sliderWidth = Math.max(120, screenWidth - 110);
+    const normalized = Math.max(0, Math.min(1, locationX / sliderWidth));
+    const newOffset = (normalized - 0.5) * 1.84;
+    setStrikerOffsetRatio(Math.max(-0.92, Math.min(0.92, newOffset)));
+  };
+
+  // Side Power Meter touch and drag handlers
+  const handleSideMeterTouch = (evt: GestureResponderEvent) => {
+    if (isShotActive || isHandoverPending || isPaused) return;
+    const { locationY } = evt.nativeEvent;
+    const meterHeight = BOARD_SIZE * 0.82;
+    // Pull down from top to bottom charges 0.05 to 1.0
+    const rawRatio = Math.max(0, Math.min(1.0, locationY / meterHeight));
+    setSidePower(rawRatio);
+    setIsPullingSideMeter(true);
+    carromRef.current?.setAimPower(rawRatio);
+  };
+
+  const handleSideMeterRelease = () => {
+    if (isShotActive || isHandoverPending || isPaused) return;
+    if (sidePower >= 0.12 && !isStrikerOverlapping) {
+      AudioManager.getInstance().playSound('STRIKER_SHOOT', sidePower);
+      carromRef.current?.shoot(sidePower, aimAngle);
+    } else {
+      carromRef.current?.cancelAim();
+    }
+    setSidePower(0);
+    setIsPullingSideMeter(false);
+  };
+
   const showToast = (msg: string) => {
     setPocketToast(msg);
     setTimeout(() => setPocketToast(null), 2500);
   };
 
-  // Team scores computation for 2v2
-  const teamAScore = (scores['player_0']?.points ?? 0) + (scores['player_2']?.points ?? 0);
-  const teamBScore = (scores['player_1']?.points ?? 0) + (scores['player_3']?.points ?? 0);
+  // Remaining coins calculation for 1v1
+  const p1WhiteLeft = Math.max(0, 9 - (scores['player_0']?.whiteCoinsPocketed ?? 0));
+  const p2BlackLeft = Math.max(0, 9 - (scores['player_2']?.blackCoinsPocketed ?? 0));
+
+  // Dynamic turn timer color (green -> amber -> red)
+  const timerRingColor =
+    secondsRemaining > 10 ? '#2BD67B' : secondsRemaining > 5 ? '#E9B949' : '#EF4444';
 
   return (
     <ScreenContainer
@@ -220,308 +254,366 @@ export default function GameBoardScreen() {
       edges={['top', 'left', 'right', 'bottom']}
       contentContainerStyle={styles.container}
     >
-      {/* Decorative background shapes */}
+      {/* Subtle Background Decorative Shapes */}
       <View style={styles.bokehTop} pointerEvents="none" />
       <View style={styles.bokehBottom} pointerEvents="none" />
 
-      {/* TOP PLAYERS HUD - DYNAMIC ACROSS ALL MODES */}
-      {selectedMode === 'four_player_team' ? (
-        // 2v2 Team Mode HUD
-        <View style={styles.topHudRow}>
-          <View
-            style={[
-              styles.teamCard,
-              styles.teamCardA,
-              activePlayer.teamId === 'team_a' && styles.activePlayerGlow,
-            ]}
-          >
-            <View style={styles.teamAvatarsRow}>
-              <Text style={styles.teamEmoji}>{activePlayers.find((p) => p.seat === 0)?.avatarUrl || '👑'}</Text>
-              <Text style={styles.teamEmoji}>{activePlayers.find((p) => p.seat === 2)?.avatarUrl || '🦅'}</Text>
-              <View>
-                <Text style={styles.teamTitle} numberOfLines={1}>{teamAName}</Text>
-                <Text style={styles.teamTargetCoin}>⚪ White</Text>
-              </View>
-            </View>
-            <Text style={styles.teamScoreText}>{teamAScore}</Text>
-          </View>
-
-          <View
-            style={[
-              styles.teamCard,
-              styles.teamCardB,
-              activePlayer.teamId === 'team_b' && styles.activePlayerGlowGold,
-            ]}
-          >
-            <View style={styles.teamAvatarsRow}>
-              <Text style={styles.teamEmoji}>{activePlayers.find((p) => p.seat === 1)?.avatarUrl || '🐯'}</Text>
-              <Text style={styles.teamEmoji}>{activePlayers.find((p) => p.seat === 3)?.avatarUrl || '🦁'}</Text>
-              <View>
-                <Text style={styles.teamTitle} numberOfLines={1}>{teamBName}</Text>
-                <Text style={styles.teamTargetCoin}>⚫ Black</Text>
-              </View>
-            </View>
-            <Text style={styles.teamScoreTextGold}>{teamBScore}</Text>
-          </View>
+      {/* TOP HEADER: MATCH STAKES & PAUSE ICON */}
+      <View style={styles.topHeaderBar}>
+        <View style={styles.stakesPill}>
+          <Text style={styles.stakesPillText}>🪙 500 · 1v1 CLASSIC</Text>
         </View>
-      ) : selectedMode === 'two_player_individual' ? (
-        // 2-Player 1v1 Mode HUD
-        <View style={styles.topHudRow}>
-          {/* Opponent (North / Seat 2) */}
-          <View
-            style={[
-              styles.opponentCard,
-              activeSeat === 2 && styles.activePlayerGlowGold,
-            ]}
-          >
-            <View style={styles.playerInfoLeft}>
-              <View style={[styles.avatarBox, styles.avatarBoxGold]}>
-                <Text style={styles.avatarEmojiText}>
-                  {activePlayers.find((p) => p.seat === 2)?.avatarUrl || '🐯'}
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.playerNameText} numberOfLines={1}>
-                  {activePlayers.find((p) => p.seat === 2)?.name || 'Player 2'}
-                </Text>
-                <Text style={styles.coinIndicator}>⚫ Black</Text>
-              </View>
-            </View>
-            <Text style={styles.opponentScoreText}>
-              {scores[activePlayers.find((p) => p.seat === 2)?.id ?? '']?.points ?? 0}
-            </Text>
-          </View>
 
-          {/* You / Player 1 (South / Seat 0) */}
-          <View
-            style={[
-              styles.youCard,
-              activeSeat === 0 && styles.activePlayerGlow,
-            ]}
-          >
-            <View style={styles.playerInfoLeft}>
-              <View style={[styles.avatarBox, styles.avatarBoxEmerald]}>
-                <Text style={styles.avatarEmojiText}>
-                  {activePlayers.find((p) => p.seat === 0)?.avatarUrl || '👑'}
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.playerNameText} numberOfLines={1}>
-                  {activePlayers.find((p) => p.seat === 0)?.name || 'Player 1'}
-                </Text>
-                <Text style={styles.coinIndicator}>⚪ White</Text>
-              </View>
-            </View>
-            <Text style={styles.youScoreText}>
-              {scores[activePlayers.find((p) => p.seat === 0)?.id ?? '']?.points ?? 0}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        // 3-Player or 4-Player Individual Mode HUD
-        <View style={styles.multiPlayerHudRow}>
-          {activePlayers.map((p) => {
-            const isActive = p.seat === activeSeat;
-            const pScore = scores[p.id]?.points ?? 0;
-            return (
-              <View
-                key={p.id}
-                style={[
-                  styles.multiPlayerChip,
-                  isActive && styles.multiPlayerChipActive,
-                ]}
-              >
-                <Text style={styles.multiPlayerEmoji}>{p.avatarUrl || '👑'}</Text>
-                <View style={styles.multiPlayerTextCol}>
-                  <Text style={styles.multiPlayerName} numberOfLines={1}>{p.name}</Text>
-                  <Text style={styles.multiPlayerScore}>{pScore} pts</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-
-      {/* TURN & TIMER TITLE */}
-      <View style={styles.turnTitleWrap}>
-        <Text style={styles.turnTitleText}>
-          {activePlayer.name.toUpperCase()}'S TURN
-          {queenStatus === 'pending_cover' ? ' · 👑 COVER QUEEN' : ''}
-          {turnTimeLimitSec > 0
-            ? ` · 0:${secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}`
-            : ''}
-        </Text>
+        <TouchableOpacity
+          style={styles.headerPauseBtn}
+          activeOpacity={0.8}
+          onPress={() => {
+            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+            pauseSession();
+            carromRef.current?.pauseGame();
+            setShowPauseModal(true);
+          }}
+        >
+          <Text style={styles.headerPauseIcon}>⏸</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* CARROM BOARD CONTAINER (WITH PHASER ENGINE & REACTION BUBBLE) */}
-      <View style={styles.boardContainer}>
-        {activeReaction && (
-          <View style={styles.reactionBubble}>
-            <Text style={styles.reactionText}>{activeReaction}</Text>
+      {/* TOP PLAYERS HUD - CARROM POOL CIRCULAR COUNTDOWN RING STYLE */}
+      <View style={styles.topHudRow}>
+        {/* PLAYER 1 CARD (YOU / SEAT 0) */}
+        <View
+          style={[
+            styles.playerHudCard,
+            activeSeat === 0 && styles.playerHudCardActive,
+            activeSeat === 0 && { borderColor: timerRingColor },
+          ]}
+        >
+          {/* Avatar with Circular Countdown Ring */}
+          <View
+            style={[
+              styles.avatarTimerRing,
+              activeSeat === 0 && {
+                borderColor: timerRingColor,
+                shadowColor: timerRingColor,
+              },
+            ]}
+          >
+            <View style={styles.avatarInner}>
+              <Text style={styles.avatarEmojiText}>
+                {activePlayers.find((p) => p.seat === 0)?.avatarUrl || '👑'}
+              </Text>
+            </View>
           </View>
-        )}
 
-        {pocketToast && (
-          <View style={styles.toastBubble}>
-            <Text style={styles.toastText}>{pocketToast}</Text>
+          <View style={styles.playerMetaCol}>
+            <Text style={styles.playerNameText} numberOfLines={1}>
+              {activePlayers.find((p) => p.seat === 0)?.name || 'Player 1'}
+            </Text>
+            <View style={styles.coinBadgeRow}>
+              <Text style={styles.coinBadgeText}>⚪ White</Text>
+              <Text style={styles.coinCountPill}>{p1WhiteLeft} left</Text>
+            </View>
           </View>
-        )}
 
-        {floatingScore && (
-          <View style={[styles.floatingScoreBadge, { borderColor: floatingScore.color }]}>
-            <Text style={[styles.floatingScoreText, { color: floatingScore.color }]}>
-              {floatingScore.text}
+          <Text style={styles.playerScoreDisplay}>
+            {scores[activePlayers.find((p) => p.seat === 0)?.id ?? '']?.points ?? 0}
+          </Text>
+        </View>
+
+        {/* CENTER TURN INDICATOR & COUNTDOWN TIMER */}
+        <View style={styles.centerTurnBlock}>
+          <View
+            style={[
+              styles.turnStatusPill,
+              { backgroundColor: activeSeat === 0 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(233, 185, 73, 0.2)' },
+              { borderColor: timerRingColor },
+            ]}
+          >
+            <Text style={[styles.turnStatusText, { color: timerRingColor }]}>
+              {activeSeat === 0 ? 'YOUR TURN' : "OPPONENT'S TURN"}
             </Text>
           </View>
-        )}
 
-        <PhaserCarromView
-          ref={carromRef}
-          size={BOARD_SIZE}
-          themeId={boardTheme}
-          strikerSkin="emerald"
-          activeSeat={activeSeat}
-          strikerOffset={strikerOffsetRatio}
-          soundEnabled={settings.soundEnabled}
-          soundVolume={settings.soundVolume}
-          onStrikerDragged={(offset) => setStrikerOffsetRatio(offset)}
-          onShotStarted={() => setIsShotActive(true)}
-          onAimChanged={(details) => {
-            setPowerRatio(details.powerRatio);
-            setAimAngle(details.angle);
-          }}
-          onObjectPocketed={(details) => {
-            if (details.type === 'white') {
-              AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-              triggerFloatingScore('⚪ +10', '#2BD67B');
-              showToast('⚪ White Coin Pocketed!');
-            } else if (details.type === 'black') {
-              AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-              triggerFloatingScore('⚫ +10', '#E9B949');
-              showToast('⚫ Black Coin Pocketed!');
-            } else if (details.type === 'queen') {
-              AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-              triggerFloatingScore('👑 QUEEN +25', '#E9B949');
-              showToast('👑 QUEEN Pocketed!');
-            }
-          }}
-          onStrikerPocketed={() => {
-            AudioManager.getInstance().playSound('FOUL', 0.9);
-            triggerFloatingScore('⚠️ FOUL', '#EF4444');
-            showToast('⚠️ Striker Pocketed (Foul)');
-          }}
-          onShotSettled={(details: any) => {
-            setIsShotActive(false);
-            const evalResult = processSettledShot({
-              pocketedCoins: details?.pocketed ?? [],
-              strikerPocketed: !!details?.strikerPocketed,
-              durationMs: details?.duration_ms,
-            });
+          <Text style={[styles.turnTimerClock, { color: timerRingColor }]}>
+            0:{secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
+          </Text>
 
-            if (evalResult) {
-              if (evalResult.foulOccurred) {
-                AudioManager.getInstance().playSound('FOUL', 0.9);
-                showToast(`FOUL: ${evalResult.primaryFoulType === 'striker_pocketed' ? 'Striker Scratch' : 'Foul committed'}`);
-              } else if (evalResult.queenCoveredThisShot) {
+          {queenStatus === 'pending_cover' && (
+            <View style={styles.queenCoverBadge}>
+              <Text style={styles.queenCoverText}>👑 COVER QUEEN</Text>
+            </View>
+          )}
+        </View>
+
+        {/* PLAYER 2 CARD (OPPONENT / SEAT 2) */}
+        <View
+          style={[
+            styles.playerHudCard,
+            activeSeat === 2 && styles.playerHudCardActive,
+            activeSeat === 2 && { borderColor: timerRingColor },
+          ]}
+        >
+          <Text style={styles.opponentScoreDisplay}>
+            {scores[activePlayers.find((p) => p.seat === 2)?.id ?? '']?.points ?? 0}
+          </Text>
+
+          <View style={[styles.playerMetaCol, { alignItems: 'flex-end' }]}>
+            <Text style={styles.playerNameText} numberOfLines={1}>
+              {activePlayers.find((p) => p.seat === 2)?.name || 'Player 2'}
+            </Text>
+            <View style={styles.coinBadgeRow}>
+              <Text style={styles.coinCountPill}>{p2BlackLeft} left</Text>
+              <Text style={styles.coinBadgeText}>⚫ Black</Text>
+            </View>
+          </View>
+
+          {/* Avatar with Circular Countdown Ring */}
+          <View
+            style={[
+              styles.avatarTimerRing,
+              activeSeat === 2 && {
+                borderColor: timerRingColor,
+                shadowColor: timerRingColor,
+              },
+            ]}
+          >
+            <View style={styles.avatarInner}>
+              <Text style={styles.avatarEmojiText}>
+                {activePlayers.find((p) => p.seat === 2)?.avatarUrl || '🐯'}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* CARROM BOARD AREA WITH SIDE POWER METER (CARROM POOL STYLE) */}
+      <View style={styles.boardAndControlsArea}>
+        <View style={styles.boardCenterWrapper}>
+          {activeReaction && (
+            <View style={styles.reactionBubble}>
+              <Text style={styles.reactionText}>{activeReaction}</Text>
+            </View>
+          )}
+
+          {pocketToast && (
+            <View style={styles.toastBubble}>
+              <Text style={styles.toastText}>{pocketToast}</Text>
+            </View>
+          )}
+
+          {floatingScore && (
+            <View style={[styles.floatingScoreBadge, { borderColor: floatingScore.color }]}>
+              <Text style={[styles.floatingScoreText, { color: floatingScore.color }]}>
+                {floatingScore.text}
+              </Text>
+            </View>
+          )}
+
+          <PhaserCarromView
+            ref={carromRef}
+            size={BOARD_SIZE}
+            themeId={boardTheme || 'classic'}
+            strikerSkin="emerald"
+            activeSeat={activeSeat}
+            strikerOffset={strikerOffsetRatio}
+            soundEnabled={settings.soundEnabled}
+            soundVolume={settings.soundVolume}
+            onStrikerDragged={(offset, isOverlapping) => {
+              setStrikerOffsetRatio(offset);
+              if (typeof isOverlapping === 'boolean') {
+                setIsStrikerOverlapping(isOverlapping);
+              }
+            }}
+            onShotStarted={() => setIsShotActive(true)}
+            onAimChanged={(details) => {
+              setPowerRatio(details.powerRatio);
+              setAimAngle(details.angle);
+            }}
+            onObjectPocketed={(details) => {
+              if (details.type === 'white') {
+                AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
+                triggerFloatingScore('⚪ +10', '#2BD67B');
+                showToast('⚪ White Coin Pocketed!');
+              } else if (details.type === 'black') {
+                AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
+                triggerFloatingScore('⚫ +10', '#E9B949');
+                showToast('⚫ Black Coin Pocketed!');
+              } else if (details.type === 'queen') {
                 AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-                triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
-                showToast('👑 QUEEN COVERED! +25 Points');
-              } else if (evalResult.queenStatusAfter === 'pending_cover') {
-                AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
-                showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
-              } else if (evalResult.queenReturnedToCenter) {
-                AudioManager.getInstance().playSound('FOUL', 0.7);
-                showToast('Failed to cover Queen! Returned to center');
-              } else if (evalResult.extraTurnEarned) {
-                triggerFloatingScore('🎯 EXTRA TURN', '#2BD67B');
-                showToast('🎯 Coin Pocketed! Extra Turn');
-              } else {
-                AudioManager.getInstance().playSound('TURN_CHANGE', 0.6);
-                showToast('Dry shot · Turn passed');
+                triggerFloatingScore('👑 QUEEN +25', '#E9B949');
+                showToast('👑 QUEEN Pocketed!');
               }
+            }}
+            onStrikerPocketed={() => {
+              AudioManager.getInstance().playSound('FOUL', 0.9);
+              triggerFloatingScore('⚠️ FOUL', '#EF4444');
+              showToast('⚠️ Striker Pocketed (Foul)');
+            }}
+            onShotSettled={(details: any) => {
+              setIsShotActive(false);
+              const evalResult = processSettledShot({
+                pocketedCoins: details?.pocketed ?? [],
+                strikerPocketed: !!details?.strikerPocketed,
+                durationMs: details?.duration_ms,
+              });
 
-              if (evalResult.isMatchOver) {
-                AudioManager.getInstance().playSound('VICTORY', 1.0);
-                setTimeout(() => {
-                  router.replace('/game-result');
-                }, 1800);
+              if (evalResult) {
+                if (evalResult.foulOccurred) {
+                  AudioManager.getInstance().playSound('FOUL', 0.9);
+                  showToast(
+                    `FOUL: ${evalResult.primaryFoulType === 'striker_pocketed' ? 'Striker Scratch' : 'Foul committed'}`
+                  );
+                } else if (evalResult.queenCoveredThisShot) {
+                  AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
+                  triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
+                  showToast('👑 QUEEN COVERED! +25 Points');
+                } else if (evalResult.queenStatusAfter === 'pending_cover') {
+                  AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
+                  showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
+                } else if (evalResult.queenReturnedToCenter) {
+                  AudioManager.getInstance().playSound('FOUL', 0.7);
+                  showToast('Failed to cover Queen! Returned to center');
+                } else if (evalResult.extraTurnEarned) {
+                  triggerFloatingScore('🎯 EXTRA TURN', '#2BD67B');
+                  showToast('🎯 Coin Pocketed! Extra Turn');
+                } else {
+                  AudioManager.getInstance().playSound('TURN_CHANGE', 0.6);
+                  showToast('Dry shot · Turn passed');
+                }
+
+                if (evalResult.isMatchOver) {
+                  AudioManager.getInstance().playSound('VICTORY', 1.0);
+                  setTimeout(() => {
+                    router.replace('/game-result');
+                  }, 1800);
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+
+          {/* FLOATING QUICK EMOTE BUTTON (CARROM POOL BOTTOM-LEFT CORNER) */}
+          <TouchableOpacity
+            style={styles.floatingEmoteBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+              setShowStickersModal(true);
+            }}
+          >
+            <Text style={styles.floatingEmoteIcon}>💬</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* SPRING-LOADED SIDE POWER METER (CARROM POOL VERTICAL FORCE GAUGE) */}
+        <View style={styles.sideMeterWrapper}>
+          <View
+            style={styles.sideMeterTrack}
+            onStartShouldSetResponder={() => true}
+            onResponderGrant={handleSideMeterTouch}
+            onResponderMove={handleSideMeterTouch}
+            onResponderRelease={handleSideMeterRelease}
+          >
+            {/* Background force gradations */}
+            <View style={styles.meterGripMark} />
+            <View style={styles.meterGripMark} />
+            <View style={styles.meterGripMark} />
+
+            {/* Glowing Power Fill */}
+            <View
+              style={[
+                styles.sideMeterFill,
+                {
+                  height: `${Math.round(sidePower * 100)}%`,
+                  backgroundColor:
+                    sidePower > 0.75
+                      ? '#EF4444'
+                      : sidePower > 0.4
+                      ? '#E9B949'
+                      : '#2BD67B',
+                },
+              ]}
+            />
+
+            {/* Draggable Force Knob */}
+            <View
+              style={[
+                styles.sideMeterKnob,
+                {
+                  top: `${Math.min(88, Math.max(0, sidePower * 88))}%`,
+                  borderColor:
+                    sidePower > 0.75
+                      ? '#EF4444'
+                      : sidePower > 0.4
+                      ? '#E9B949'
+                      : '#2BD67B',
+                },
+              ]}
+            >
+              <Text style={styles.sideMeterKnobIcon}>⚡</Text>
+            </View>
+          </View>
+          <Text style={styles.sideMeterTitle}>FORCE</Text>
+        </View>
       </View>
 
-      {/* BOTTOM CONTROLS FOOTER: BASELINE POSITIONER & COMPACT ACTIONS */}
-      <View style={styles.bottomFooterWrap}>
-        {/* TACTILE BASELINE POSITIONER */}
-        <View style={styles.baselineControllerRow}>
+      {/* CARROM POOL TACTILE BASELINE SLIDER */}
+      <View style={styles.baselineControlWrap}>
+        <View style={styles.baselineSliderRow}>
           <TouchableOpacity
             style={styles.nudgeBtn}
             onPress={() => handleNudgeStriker(-0.12)}
             disabled={isShotActive || isHandoverPending}
-            hitSlop={8}
+            activeOpacity={0.7}
           >
             <Text style={styles.nudgeBtnText}>◀</Text>
           </TouchableOpacity>
 
-          <View style={styles.baselineTrack}>
+          {/* Interactive Brushed Metal Baseline Rail */}
+          <View
+            style={[
+              styles.baselineTrack,
+              isStrikerOverlapping && styles.baselineTrackOverlap,
+            ]}
+            onStartShouldSetResponder={() => true}
+            onResponderGrant={handleSliderTouch}
+            onResponderMove={handleSliderTouch}
+          >
+            {/* Glowing Striker Knob */}
             <View
               style={[
-                styles.baselineMarker,
+                styles.baselineKnob,
                 {
-                  left: `${((strikerOffsetRatio + 1) / 2) * 88 + 6}%`,
+                  left: `${((strikerOffsetRatio + 0.92) / 1.84) * 88 + 2}%`,
                 },
+                isStrikerOverlapping && styles.baselineKnobOverlap,
               ]}
-            />
+            >
+              <View
+                style={[
+                  styles.baselineKnobCore,
+                  isStrikerOverlapping && styles.baselineKnobCoreOverlap,
+                ]}
+              />
+            </View>
           </View>
 
           <TouchableOpacity
             style={styles.nudgeBtn}
             onPress={() => handleNudgeStriker(0.12)}
             disabled={isShotActive || isHandoverPending}
-            hitSlop={8}
+            activeOpacity={0.7}
           >
             <Text style={styles.nudgeBtnText}>▶</Text>
           </TouchableOpacity>
         </View>
 
-        {/* COMPACT BOTTOM CONTROLS: EMOTE | SHOOT | PAUSE */}
-        <View style={styles.bottomControlsRow}>
-          <Button
-            title="EMOTE"
-            variant="secondary"
-            size="sm"
-            onPress={() => {
-              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-              setShowStickersModal(true);
-            }}
-            style={styles.controlBtnSide}
-            textStyle={styles.controlBtnText}
-          />
-
-          <Button
-            title={isShotActive ? 'MOVING...' : 'SHOOT'}
-            variant="primary"
-            size="sm"
-            disabled={isShotActive || isHandoverPending}
-            onPress={handleShoot}
-            style={styles.shootBtn}
-            textStyle={styles.shootBtnText}
-          />
-
-          <Button
-            title="PAUSE"
-            variant="secondary"
-            size="sm"
-            onPress={() => {
-              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-              pauseSession();
-              carromRef.current?.pauseGame();
-              setShowPauseModal(true);
-            }}
-            style={styles.controlBtnSide}
-            textStyle={styles.controlBtnText}
-          />
+        {/* Real-time Status / Guidance Pill */}
+        <View style={[styles.guidePill, isStrikerOverlapping && styles.guidePillOverlap]}>
+          <Text style={[styles.guidePillText, isStrikerOverlapping && styles.guidePillTextOverlap]}>
+            {isStrikerOverlapping
+              ? '⚠️ Strikeline blocked · Reposition striker away from coin'
+              : '🎯 Drag striker or slider · Pull back to shoot'}
+          </Text>
         </View>
       </View>
 
@@ -533,6 +625,7 @@ export default function GameBoardScreen() {
           AudioManager.getInstance().playSound('HANDOVER', 0.7);
           confirmHandover();
           setStrikerOffsetRatio(0);
+          setIsStrikerOverlapping(false);
         }}
       />
 
@@ -585,196 +678,333 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
-  topHudRow: {
+  topHeaderBar: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  opponentCard: {
-    flex: 1,
-    height: 48,
-    backgroundColor: '#07261C',
-    borderColor: '#E9B949',
-    borderWidth: 1.5,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    marginBottom: 4,
   },
-  youCard: {
-    flex: 1,
-    height: 48,
-    backgroundColor: '#07261C',
-    borderColor: '#2BD67B',
-    borderWidth: 1.5,
+  stakesPill: {
+    backgroundColor: 'rgba(7, 38, 28, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(233, 185, 73, 0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
   },
-  teamCard: {
-    flex: 1,
-    height: 48,
-    backgroundColor: '#07261C',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-  },
-  teamCardA: {
-    borderColor: '#2BD67B',
-  },
-  teamCardB: {
-    borderColor: '#E9B949',
-  },
-  teamAvatarsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  teamEmoji: {
-    fontSize: 18,
-  },
-  teamTitle: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    maxWidth: 80,
-  },
-  teamTargetCoin: {
-    color: '#9FD8B8',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  teamScoreText: {
-    color: '#2BD67B',
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  teamScoreTextGold: {
+  stakesPillText: {
     color: '#E9B949',
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  activePlayerGlow: {
-    borderColor: '#2BD67B',
-    backgroundColor: 'rgba(43, 214, 123, 0.15)',
-    shadowColor: '#2BD67B',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  activePlayerGlowGold: {
-    borderColor: '#E9B949',
-    backgroundColor: 'rgba(233, 185, 73, 0.15)',
-    shadowColor: '#E9B949',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  playerInfoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  avatarBox: {
+  headerPauseBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    justifyContent: 'center',
+    backgroundColor: 'rgba(7, 38, 28, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(43, 214, 123, 0.4)',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerPauseIcon: {
+    color: '#2BD67B',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  topHudRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  playerHudCard: {
+    flex: 1,
+    height: 52,
+    backgroundColor: '#07261C',
+    borderRadius: 14,
     borderWidth: 1.5,
+    borderColor: 'rgba(43, 214, 123, 0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 6,
   },
-  avatarBoxEmerald: {
-    backgroundColor: 'rgba(43, 214, 123, 0.2)',
-    borderColor: '#2BD67B',
+  playerHudCardActive: {
+    backgroundColor: 'rgba(43, 214, 123, 0.12)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  avatarBoxGold: {
-    backgroundColor: 'rgba(233, 185, 73, 0.2)',
-    borderColor: '#E9B949',
+  avatarTimerRing: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 2.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
+  avatarInner: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(7, 38, 28, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarEmojiText: {
-    fontSize: 18,
+    fontSize: 17,
+  },
+  playerMetaCol: {
+    flex: 1,
   },
   playerNameText: {
-    color: '#F5ECD2',
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.5,
-    maxWidth: 90,
+    letterSpacing: 0.3,
   },
-  coinIndicator: {
+  coinBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
+  },
+  coinBadgeText: {
     color: '#9FD8B8',
     fontSize: 9,
     fontWeight: '700',
   },
-  opponentScoreText: {
+  coinCountPill: {
+    color: '#E9B949',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  playerScoreDisplay: {
+    color: '#2BD67B',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  opponentScoreDisplay: {
     color: '#E9B949',
     fontSize: 18,
     fontWeight: '900',
   },
-  youScoreText: {
-    color: '#2BD67B',
-    fontSize: 18,
-    fontWeight: '900',
+  centerTurnBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 70,
   },
-  multiPlayerHudRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  multiPlayerChip: {
-    flex: 1,
-    height: 44,
-    backgroundColor: 'rgba(7, 38, 28, 0.8)',
+  turnStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(43, 214, 123, 0.3)',
+    marginBottom: 2,
+  },
+  turnStatusText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  turnTimerClock: {
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  queenCoverBadge: {
+    backgroundColor: 'rgba(233, 185, 73, 0.25)',
+    borderColor: '#E9B949',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginTop: 2,
+  },
+  queenCoverText: {
+    color: '#E9B949',
+    fontSize: 8,
+    fontWeight: '900',
+  },
+  boardAndControlsArea: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    gap: 6,
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 'auto',
   },
-  multiPlayerChipActive: {
+  boardCenterWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingEmoteBtn: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(7, 38, 28, 0.88)',
+    borderWidth: 1.5,
     borderColor: '#2BD67B',
-    backgroundColor: '#11573C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 30,
+    elevation: 6,
   },
-  multiPlayerEmoji: {
+  floatingEmoteIcon: {
     fontSize: 18,
   },
-  multiPlayerTextCol: {
-    flex: 1,
-  },
-  multiPlayerName: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  multiPlayerScore: {
-    color: '#2BD67B',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  turnTitleWrap: {
+  sideMeterWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
+    width: 26,
+    height: '84%',
   },
-  turnTitleText: {
-    color: '#2BD67B',
+  sideMeterTrack: {
+    width: 14,
+    flex: 1,
+    backgroundColor: 'rgba(7, 38, 28, 0.95)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(43, 214, 123, 0.4)',
+    borderRadius: 8,
+    position: 'relative',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  meterGripMark: {
+    width: 8,
+    height: 1.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginVertical: 12,
+  },
+  sideMeterFill: {
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    borderRadius: 6,
+  },
+  sideMeterKnob: {
+    position: 'absolute',
+    left: -7,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#07261C',
+    borderWidth: 2,
+    borderColor: '#2BD67B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+  },
+  sideMeterKnobIcon: {
+    color: '#E9B949',
     fontSize: 12,
     fontWeight: '900',
-    letterSpacing: 1,
   },
-  boardContainer: {
+  sideMeterTitle: {
+    color: '#648A79',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginTop: 4,
+  },
+  baselineControlWrap: {
+    width: '100%',
+    paddingHorizontal: 8,
+    paddingBottom: 4,
+    gap: 4,
+  },
+  baselineSliderRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+  },
+  nudgeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15, 90, 62, 0.8)',
+    borderWidth: 1.5,
+    borderColor: '#2BD67B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nudgeBtnText: {
+    color: '#2BD67B',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  baselineTrack: {
+    flex: 1,
+    height: 12,
+    backgroundColor: 'rgba(7, 38, 28, 0.95)',
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(43, 214, 123, 0.4)',
+    justifyContent: 'center',
     position: 'relative',
-    marginVertical: 'auto',
+  },
+  baselineTrackOverlap: {
+    borderColor: '#EF4444',
+    backgroundColor: 'rgba(50, 10, 10, 0.9)',
+  },
+  baselineKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#07261C',
+    borderWidth: 2,
+    borderColor: '#2BD67B',
+    position: 'absolute',
+    top: -6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+  },
+  baselineKnobOverlap: {
+    borderColor: '#EF4444',
+  },
+  baselineKnobCore: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#2BD67B',
+  },
+  baselineKnobCoreOverlap: {
+    backgroundColor: '#EF4444',
+  },
+  guidePill: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(7, 38, 28, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(43, 214, 123, 0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+  },
+  guidePillOverlap: {
+    backgroundColor: 'rgba(60, 12, 12, 0.9)',
+    borderColor: '#EF4444',
+  },
+  guidePillText: {
+    color: '#9FD8B8',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  guidePillTextOverlap: {
+    color: '#FF6B6B',
+    fontWeight: '800',
   },
   reactionBubble: {
     position: 'absolute',
@@ -808,75 +1038,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 13,
-  },
-  bottomFooterWrap: {
-    width: '100%',
-    gap: 4,
-    paddingHorizontal: 4,
-    paddingBottom: 2,
-  },
-  baselineControllerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
-  },
-  nudgeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15, 90, 62, 0.7)',
-    borderWidth: 1.5,
-    borderColor: '#2BD67B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nudgeBtnText: {
-    color: '#2BD67B',
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  baselineTrack: {
-    flex: 1,
-    height: 10,
-    backgroundColor: 'rgba(7, 38, 28, 0.85)',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(43, 214, 123, 0.4)',
-    justifyContent: 'center',
-  },
-  baselineMarker: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#2BD67B',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    position: 'absolute',
-    top: -4,
-  },
-  bottomControlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  controlBtnSide: {
-    flex: 1,
-    height: 36,
-  },
-  shootBtn: {
-    flex: 1.5,
-    height: 36,
-  },
-  controlBtnText: {
-    fontSize: 11,
-    letterSpacing: 0.5,
-  },
-  shootBtnText: {
-    fontSize: 13,
-    letterSpacing: 0.8,
   },
   floatingScoreBadge: {
     position: 'absolute',

@@ -31,7 +31,7 @@ export interface PhaserCarromViewProps {
   soundVolume?: number;
   onEngineReady?: () => void;
   onBoardRendered?: (details: any) => void;
-  onStrikerDragged?: (offset: number) => void;
+  onStrikerDragged?: (offset: number, isOverlapping?: boolean) => void;
   onShotStarted?: (details: any) => void;
   onAimChanged?: (details: { angle: number; powerRatio: number }) => void;
   onObjectPocketed?: (details: { id: string; type: string; pocketIndex: number }) => void;
@@ -176,7 +176,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           break;
         case 'STRIKER_DRAGGED':
           if (typeof data.payload?.offset === 'number') {
-            onStrikerDragged?.(data.payload.offset);
+            onStrikerDragged?.(data.payload.offset, data.payload?.isOverlapping);
           }
           break;
         case 'AIM_CHANGED':

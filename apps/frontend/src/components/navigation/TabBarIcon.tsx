@@ -6,7 +6,7 @@ export type TabName = 'home' | 'friends' | 'customize' | 'rankings' | 'profile';
 export interface TabBarIconProps {
   name: TabName;
   focused: boolean;
-  color?: string;
+  color?: any;
 }
 
 export const TabBarIcon: React.FC<TabBarIconProps> = ({ name, focused, color = '#2BD67B' }) => {
