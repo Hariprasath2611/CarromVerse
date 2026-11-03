@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
+  FloatingReaction,
   PauseModal,
   PhaserCarromView,
   PhaserCarromViewRef,
   PlayerHandoverModal,
   ScreenContainer,
+  StickerItem,
   StickersModal,
 } from '../src/components';
 import { useGameSetupStore } from '../src/store/gameSetupStore';
@@ -57,7 +59,7 @@ export default function GameBoardScreen() {
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
-  const [activeReaction, setActiveReaction] = useState<string | null>(null);
+  const [activeReaction, setActiveReaction] = useState<StickerItem | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(turnTimeLimitSec || 25);
   const [isShotActive, setIsShotActive] = useState(false);
   const [, setPowerRatio] = useState(0.55);
@@ -174,11 +176,9 @@ export default function GameBoardScreen() {
     );
   };
 
-  const handleStickerSelected = (sticker: { text: string }) => {
-    setActiveReaction(sticker.text);
-    setTimeout(() => {
-      setActiveReaction(null);
-    }, 3000);
+  const handleStickerSelected = (sticker: StickerItem) => {
+    setActiveReaction(sticker);
+    AudioManager.getInstance().playSound('BUTTON_CLICK', 0.6);
   };
 
   const handleSliderTouch = (evt: GestureResponderEvent) => {
@@ -277,11 +277,10 @@ export default function GameBoardScreen() {
 
       {/* 3. CENTER CARROM BOARD (Maximized, Perfectly Centered, 1:1 Aspect Ratio) */}
       <View style={styles.boardWrapper}>
-        {activeReaction && (
-          <View style={styles.reactionBubble}>
-            <Text style={styles.reactionText}>{activeReaction}</Text>
-          </View>
-        )}
+        <FloatingReaction
+          sticker={activeReaction}
+          onDismiss={() => setActiveReaction(null)}
+        />
 
         {pocketToast && (
           <View style={styles.toastBubble}>
