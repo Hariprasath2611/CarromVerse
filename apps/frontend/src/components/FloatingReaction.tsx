@@ -156,3 +156,4 @@ const styles = StyleSheet.create({
     borderTopColor: '#E9B949',
   },
 });
+
