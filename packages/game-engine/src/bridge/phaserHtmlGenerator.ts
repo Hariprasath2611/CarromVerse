@@ -139,33 +139,33 @@ ${PHASER_MIN_JS}
       var BOARD_THEMES = {
         classic: {
           id: 'classic',
-          frameColor: '#A0612C',
-          frameAccent: '#E9B949',
-          frameInnerCushion: '#3E2210',
-          surfaceBg: '#F0DDB0',
-          surfaceGrain: '#B8955A',
-          markingsColor: '#6B3A1A',
-          pocketRimColor: '#C9A24B',
-          baselineCircleColor: '#D8344A',
-          baselineDotColor: '#D8344A',
-          greenRingColor: '#1E8F5A',
-          redAccentColor: '#D8344A',
-          arrowColor: '#6B3A1A'
+          frameColor: '#38160E',
+          frameAccent: '#C9943B',
+          frameInnerCushion: '#220D07',
+          surfaceBg: '#E5CBA7',
+          surfaceGrain: '#CEAF85',
+          markingsColor: '#5C2807',
+          pocketRimColor: '#A87C28',
+          cornerBracketColor: '#E87A1E',
+          cornerBracketHighlight: '#FFB04D',
+          baselineDiscColor: '#D97706',
+          baselineDiscOutline: '#4A1E06',
+          arrowColor: '#FF9800'
         },
         mahogany: {
           id: 'mahogany',
-          frameColor: '#5C1D0C',
-          frameAccent: '#E9B949',
-          frameInnerCushion: '#361007',
-          surfaceBg: '#F5E4C3',
-          surfaceGrain: '#C29B63',
-          markingsColor: '#5C1D0C',
-          pocketRimColor: '#C9A24B',
-          baselineCircleColor: '#D8344A',
-          baselineDotColor: '#D8344A',
-          greenRingColor: '#1E8F5A',
-          redAccentColor: '#D8344A',
-          arrowColor: '#5C1D0C'
+          frameColor: '#38160E',
+          frameAccent: '#C9943B',
+          frameInnerCushion: '#220D07',
+          surfaceBg: '#E5CBA7',
+          surfaceGrain: '#CEAF85',
+          markingsColor: '#5C2807',
+          pocketRimColor: '#A87C28',
+          cornerBracketColor: '#E87A1E',
+          cornerBracketHighlight: '#FFB04D',
+          baselineDiscColor: '#D97706',
+          baselineDiscOutline: '#4A1E06',
+          arrowColor: '#FF9800'
         },
         emerald: {
           id: 'emerald',
@@ -501,7 +501,7 @@ ${PHASER_MIN_JS}
       function generateTextures(scene, theme) {
         var dpr = typeof window !== 'undefined' && window.devicePixelRatio ? Math.min(3, Math.max(1, Math.round(window.devicePixelRatio))) : 2;
 
-        // 1. Coins Helper
+        // 1. Coins Helper (Carrom Pool Tournament Ivory & Ebony & Ruby Queen)
         function drawCoinCanvas(ctx, w, h, s, type) {
           var cx = w / 2;
           var faceCy = 110 * s;
@@ -511,24 +511,23 @@ ${PHASER_MIN_JS}
           var isWhite = type === 'white';
           var isBlack = type === 'black';
 
-          var colThickness = isWhite ? '#A89868' : (isBlack ? '#030504' : '#7A1020');
-          var colFaceInner = isWhite ? '#FFFFFF' : (isBlack ? '#4A524E' : '#FF5C78');
-          var colFaceOuter = isWhite ? '#E2D6B4' : (isBlack ? '#0B0F0D' : '#B82545');
-          var colGrooves = isWhite ? '#CDBF9A' : (isBlack ? '#2E3833' : '#FFD0D8');
-          var colEmblemDot = isWhite ? '#CDBF9A' : (isBlack ? '#2BD67B' : '#FFD0D8');
-          var colEmblemDisc = isBlack ? '#141A17' : null;
-          var highlightAlpha = isWhite ? 0.55 : (isBlack ? 0.22 : 0.50);
+          var colThickness = isWhite ? '#B29E72' : (isBlack ? '#070908' : '#7A0E1C');
+          var colFaceInner = isWhite ? '#FFFFFF' : (isBlack ? '#3B4340' : '#FF4D6D');
+          var colFaceOuter = isWhite ? '#E5D6B6' : (isBlack ? '#131815' : '#B81D39');
+          var colGrooves = isWhite ? '#CBB890' : (isBlack ? '#28302C' : '#FFC2CC');
+          var colEmblemDot = isWhite ? '#C2AF84' : (isBlack ? '#D97706' : '#FFD0D8');
+          var highlightAlpha = isWhite ? 0.60 : (isBlack ? 0.22 : 0.55);
 
-          // 1. Edge-thickness disc (r100, 12 units lower)
+          // 1. Edge-thickness disc
           ctx.fillStyle = colThickness;
           ctx.beginPath();
           ctx.arc(cx, thickCy, rFace, 0, Math.PI * 2);
           ctx.fill();
 
           // 2. Face disc with radial gradient
-          var faceGrad = ctx.createRadialGradient(cx - 10 * s, faceCy - 15 * s, 10 * s, cx, faceCy, rFace);
+          var faceGrad = ctx.createRadialGradient(cx - 12 * s, faceCy - 15 * s, 8 * s, cx, faceCy, rFace);
           faceGrad.addColorStop(0, colFaceInner);
-          if (isBlack) faceGrad.addColorStop(0.4, '#2D3330');
+          if (isBlack) faceGrad.addColorStop(0.4, '#262D29');
           faceGrad.addColorStop(1, colFaceOuter);
           ctx.fillStyle = faceGrad;
           ctx.beginPath();
@@ -540,51 +539,32 @@ ${PHASER_MIN_JS}
           ctx.lineWidth = 1.5 * s;
           ctx.stroke();
 
-          // 3. Groove ring r84 (3 units)
-          ctx.lineWidth = 3 * s;
+          // 3. Concentric rings r84 & r66
+          ctx.lineWidth = 2.5 * s;
           ctx.beginPath();
           ctx.arc(cx, faceCy, 84 * s, 0, Math.PI * 2);
           ctx.stroke();
 
-          // 4. Inner ring r66 (2 units)
-          ctx.lineWidth = 2 * s;
+          ctx.lineWidth = 1.8 * s;
           ctx.beginPath();
           ctx.arc(cx, faceCy, 66 * s, 0, Math.PI * 2);
           ctx.stroke();
 
-          // 5. Tick ring (r48, 10-unit stroke dashed [3*s, 15.85*s])
-          ctx.lineWidth = 10 * s;
-          if (ctx.setLineDash) ctx.setLineDash([3 * s, 15.85 * s]);
+          // 4. Center emblem
+          ctx.strokeStyle = colGrooves;
+          ctx.lineWidth = 2 * s;
           ctx.beginPath();
-          ctx.arc(cx, faceCy, 48 * s, 0, Math.PI * 2);
+          ctx.arc(cx, faceCy, 30 * s, 0, Math.PI * 2);
           ctx.stroke();
-          if (ctx.setLineDash) ctx.setLineDash([]);
-
-          // 6. Center emblem (r30 disc, r8 dot)
-          if (colEmblemDisc) {
-            ctx.fillStyle = colEmblemDisc;
-            ctx.beginPath();
-            ctx.arc(cx, faceCy, 30 * s, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = colGrooves;
-            ctx.lineWidth = 1.5 * s;
-            ctx.stroke();
-          } else {
-            ctx.strokeStyle = colGrooves;
-            ctx.lineWidth = 2 * s;
-            ctx.beginPath();
-            ctx.arc(cx, faceCy, 30 * s, 0, Math.PI * 2);
-            ctx.stroke();
-          }
 
           ctx.fillStyle = colEmblemDot;
           ctx.beginPath();
           ctx.arc(cx, faceCy, 8 * s, 0, Math.PI * 2);
           ctx.fill();
 
-          // 7. Top highlight ellipse (center 74, 62; 40x16; rotated -35°; white)
+          // 5. Specular highlight
           ctx.save();
-          ctx.translate(74 * s, 62 * s);
+          ctx.translate(72 * s, 60 * s);
           ctx.rotate(-35 * Math.PI / 180);
           ctx.fillStyle = 'rgba(255, 255, 255, ' + highlightAlpha + ')';
           ctx.beginPath();
@@ -631,7 +611,7 @@ ${PHASER_MIN_JS}
           ctx.fill();
         });
 
-        // 2. Striker Textures
+        // 2. Striker Textures (Carrom Pool Signature Royal Purple Medallion with Gold Mandala & Ruby Gem)
         var strikerW = Math.round(98 * dpr);
         var strikerH = Math.round(98 * (276 / 260) * dpr);
         var strikerS = strikerW / 260;
@@ -642,86 +622,96 @@ ${PHASER_MIN_JS}
           var thickCy = 144 * s;
           var rFace = 120 * s;
 
-          // 1. Thickness disc (#0B6F3C lower by 14)
-          ctx.fillStyle = '#0B6F3C';
+          // 1. Thickness disc (dark rich violet base)
+          ctx.fillStyle = '#2A0740';
           ctx.beginPath();
           ctx.arc(cx, thickCy, rFace, 0, Math.PI * 2);
           ctx.fill();
 
-          // 2. Rim r120 gradient (#5BF0A0 -> #138A4C)
+          // 2. Royal Purple outer rim with radial gradient
           var rimGrad = ctx.createRadialGradient(cx - 15 * s, faceCy - 20 * s, 15 * s, cx, faceCy, rFace);
-          rimGrad.addColorStop(0, '#5BF0A0');
-          rimGrad.addColorStop(0.5, '#2BD67B');
-          rimGrad.addColorStop(0.85, '#19A35C');
-          rimGrad.addColorStop(1, '#138A4C');
+          rimGrad.addColorStop(0, '#6B1B9A');
+          rimGrad.addColorStop(0.5, '#4A126D');
+          rimGrad.addColorStop(0.85, '#3B0957');
+          rimGrad.addColorStop(1, '#2E0644');
           ctx.fillStyle = rimGrad;
           ctx.beginPath();
           ctx.arc(cx, faceCy, rFace, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#0B6F3C';
+          ctx.strokeStyle = '#2A0740';
           ctx.lineWidth = 2 * s;
           ctx.stroke();
 
-          // 3. Cream disc r100 (#F5ECD2)
-          ctx.fillStyle = '#F5ECD2';
+          // 3. Golden Gear/Mandala Ring r100
+          ctx.fillStyle = '#F59E0B';
           ctx.beginPath();
           ctx.arc(cx, faceCy, 100 * s, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#E0D2AF';
+          ctx.strokeStyle = '#B45309';
           ctx.lineWidth = 2 * s;
           ctx.stroke();
 
-          // 4. Ring r84 emerald 6 units (#2BD67B)
-          ctx.strokeStyle = '#2BD67B';
-          ctx.lineWidth = 6 * s;
+          // Mandala gear notches (12 teeth around r100)
+          ctx.fillStyle = '#D97706';
+          for (var gi = 0; gi < 12; gi++) {
+            var gAng = (gi * Math.PI * 2) / 12;
+            var gnx = cx + Math.cos(gAng) * 94 * s;
+            var gny = faceCy + Math.sin(gAng) * 94 * s;
+            ctx.beginPath();
+            ctx.arc(gnx, gny, 5 * s, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // 4. Inner Royal Purple Medallion r84
+          var medGrad = ctx.createRadialGradient(cx - 10 * s, faceCy - 10 * s, 10 * s, cx, faceCy, 84 * s);
+          medGrad.addColorStop(0, '#5C1687');
+          medGrad.addColorStop(0.8, '#430D63');
+          medGrad.addColorStop(1, '#33084C');
+          ctx.fillStyle = medGrad;
           ctx.beginPath();
           ctx.arc(cx, faceCy, 84 * s, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // 5. Ring r62 brass 3 units (#E9B949)
+          ctx.fill();
           ctx.strokeStyle = '#E9B949';
-          ctx.lineWidth = 3 * s;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, 62 * s, 0, Math.PI * 2);
+          ctx.lineWidth = 2.5 * s;
           ctx.stroke();
 
-          // 6. Dashed ring r40 emerald (stroke 2, dashed [4*s, 4*s])
-          ctx.strokeStyle = '#2BD67B';
+          // 5. Gold Inlay Star / Ring r55
+          ctx.strokeStyle = '#FDE68A';
           ctx.lineWidth = 2 * s;
-          if (ctx.setLineDash) ctx.setLineDash([4 * s, 4 * s]);
           ctx.beginPath();
-          ctx.arc(cx, faceCy, 40 * s, 0, Math.PI * 2);
-          ctx.stroke();
-          if (ctx.setLineDash) ctx.setLineDash([]);
-
-          // 7. Center brass dot r12 (#E9B949, stroke #A47A16)
-          ctx.fillStyle = '#E9B949';
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, 12 * s, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#A47A16';
-          ctx.lineWidth = 1.5 * s;
+          ctx.arc(cx, faceCy, 55 * s, 0, Math.PI * 2);
           ctx.stroke();
 
-          // 8. Aim notch: triangle at top (130, 30) in #06210F at 60% opacity
-          ctx.fillStyle = 'rgba(6, 33, 15, 0.60)';
+          // 6. Central Ruby Jewel r24 with 3D glass dome
+          var rubyGrad = ctx.createRadialGradient(cx - 5 * s, faceCy - 6 * s, 2 * s, cx, faceCy, 24 * s);
+          rubyGrad.addColorStop(0, '#FF4D6D');
+          rubyGrad.addColorStop(0.4, '#DC2626');
+          rubyGrad.addColorStop(0.85, '#991B1B');
+          rubyGrad.addColorStop(1, '#5C0808');
+          ctx.fillStyle = rubyGrad;
           ctx.beginPath();
-          ctx.moveTo(130 * s, 16 * s);
-          ctx.lineTo(122 * s, 34 * s);
-          ctx.lineTo(138 * s, 34 * s);
-          ctx.closePath();
+          ctx.arc(cx, faceCy, 24 * s, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#E9B949';
+          ctx.lineWidth = 2 * s;
+          ctx.stroke();
+
+          // Center jewel glint
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.beginPath();
+          ctx.arc(cx - 6 * s, faceCy - 6 * s, 4 * s, 0, Math.PI * 2);
           ctx.fill();
 
-          // 9. Highlight: ellipse (86, 74; 46x18; -35°; white 50%)
+          // 7. Top curved specular highlight (Carrom Pool 3D look)
           ctx.save();
-          ctx.translate(86 * s, 74 * s);
+          ctx.translate(cx - 28 * s, faceCy - 48 * s);
           ctx.rotate(-35 * Math.PI / 180);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.50)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
           ctx.beginPath();
           if (ctx.ellipse) {
-            ctx.ellipse(0, 0, 23 * s, 9 * s, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 28 * s, 10 * s, 0, 0, Math.PI * 2);
           } else {
-            ctx.arc(0, 0, 18 * s, 0, Math.PI * 2);
+            ctx.arc(0, 0, 20 * s, 0, Math.PI * 2);
           }
           ctx.fill();
           ctx.restore();
