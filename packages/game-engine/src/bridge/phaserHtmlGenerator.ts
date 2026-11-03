@@ -2213,7 +2213,7 @@ ${PHASER_MIN_JS}
           parent: 'carrom-game-container',
           width: ${canvasSize},
           height: ${canvasSize},
-          backgroundColor: '#07130E',
+          transparent: true,
           physics: {
             default: 'matter',
             matter: {

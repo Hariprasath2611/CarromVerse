@@ -47,7 +47,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
     {
       size,
       themeId = 'classic',
-      strikerSkin = 'emerald',
+      strikerSkin = 'royal',
       activeSeat = 0,
       strikerOffset = 0,
       soundEnabled = true,

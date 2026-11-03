@@ -21,7 +21,6 @@ import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
 import { useSettingsStore } from '../src/store/settingsStore';
 import { AudioManager } from '../src/services/audio/AudioManager';
-import { THEME } from '../src/constants/theme';
 import { Player, PlayerSeat } from '@carromverse/shared-types';
 import { createDefaultGameConfig } from '@carromverse/game-logic';
 
@@ -52,24 +51,21 @@ export default function GameBoardScreen() {
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   // Maximized board size preserving strict 1:1 aspect ratio with Carrom Pool layout
-  const availableBoardHeight = screenHeight - 160;
-  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 38, availableBoardHeight, 480));
+  const availableBoardHeight = screenHeight - 230;
+  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 16, availableBoardHeight, 480));
+  const sliderTrackWidth = Math.min(BOARD_SIZE * 0.74, screenWidth - 64);
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
   const [activeReaction, setActiveReaction] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(turnTimeLimitSec || 25);
   const [isShotActive, setIsShotActive] = useState(false);
-  const [powerRatio, setPowerRatio] = useState(0.55);
-  const [aimAngle, setAimAngle] = useState(-Math.PI / 2);
+  const [, setPowerRatio] = useState(0.55);
+  const [, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
   const [isStrikerOverlapping, setIsStrikerOverlapping] = useState(false);
   const [pocketToast, setPocketToast] = useState<string | null>(null);
   const [floatingScore, setFloatingScore] = useState<{ text: string; color: string } | null>(null);
-
-  // Side Power Meter State (Carrom Pool Force Meter)
-  const [sidePower, setSidePower] = useState(0);
-  const [isPullingSideMeter, setIsPullingSideMeter] = useState(false);
 
   const triggerFloatingScore = (text: string, color: string) => {
     setFloatingScore({ text, color });
@@ -82,7 +78,7 @@ export default function GameBoardScreen() {
       const defaultPlayers: Player[] = [
         {
           id: 'player_0',
-          name: 'Player 1',
+          name: teamAName || 'Hari',
           avatarUrl: '👑',
           type: 'human',
           seat: 0,
@@ -94,7 +90,7 @@ export default function GameBoardScreen() {
         },
         {
           id: 'player_2',
-          name: 'Player 2',
+          name: teamBName || 'Ramesh Mendis',
           avatarUrl: '🐯',
           type: 'human',
           seat: 2,
@@ -109,24 +105,15 @@ export default function GameBoardScreen() {
       const config = {
         ...baseConfig,
         boardTheme: boardTheme || 'classic',
-        targetScore: targetPoints,
+        targetScore: targetPoints || 115,
         turnTimeLimitSeconds: turnTimeLimitSec,
       };
       startSession(config, defaultPlayers);
     }
-  }, [stateMachine, startSession, selectedMode, boardTheme, targetPoints, turnTimeLimitSec]);
+  }, [stateMachine, startSession, selectedMode, boardTheme, targetPoints, turnTimeLimitSec, teamAName, teamBName]);
 
   // Active player lookup
   const activeSeat: PlayerSeat = (currentTurn?.activeSeat as PlayerSeat) ?? 0;
-  const activePlayer =
-    activePlayers.find((p) => p.seat === activeSeat) ||
-    activePlayers[0] || {
-      id: 'p1',
-      name: 'Player 1',
-      avatarUrl: '👑',
-      seat: 0 as PlayerSeat,
-      assignedCoinType: 'white',
-    };
 
   // Turn timer countdown (reset on turn change)
   useEffect(() => {
@@ -194,45 +181,12 @@ export default function GameBoardScreen() {
     }, 3000);
   };
 
-  const handleNudgeStriker = (delta: number) => {
-    if (isShotActive || isHandoverPending || isPaused) return;
-    const newOffset = Math.max(-0.92, Math.min(0.92, strikerOffsetRatio + delta));
-    setStrikerOffsetRatio(newOffset);
-    AudioManager.getInstance().playSound('STRIKER_PLACE', 0.4);
-  };
-
   const handleSliderTouch = (evt: GestureResponderEvent) => {
     if (isShotActive || isHandoverPending || isPaused) return;
     const { locationX } = evt.nativeEvent;
-    // Map slider width (~screenWidth - 90) to -0.92..0.92
-    const sliderWidth = Math.max(120, screenWidth - 110);
-    const normalized = Math.max(0, Math.min(1, locationX / sliderWidth));
+    const normalized = Math.max(0, Math.min(1, locationX / sliderTrackWidth));
     const newOffset = (normalized - 0.5) * 1.84;
     setStrikerOffsetRatio(Math.max(-0.92, Math.min(0.92, newOffset)));
-  };
-
-  // Side Power Meter touch and drag handlers
-  const handleSideMeterTouch = (evt: GestureResponderEvent) => {
-    if (isShotActive || isHandoverPending || isPaused) return;
-    const { locationY } = evt.nativeEvent;
-    const meterHeight = BOARD_SIZE * 0.82;
-    // Pull down from top to bottom charges 0.05 to 1.0
-    const rawRatio = Math.max(0, Math.min(1.0, locationY / meterHeight));
-    setSidePower(rawRatio);
-    setIsPullingSideMeter(true);
-    carromRef.current?.setAimPower(rawRatio);
-  };
-
-  const handleSideMeterRelease = () => {
-    if (isShotActive || isHandoverPending || isPaused) return;
-    if (sidePower >= 0.12 && !isStrikerOverlapping) {
-      AudioManager.getInstance().playSound('STRIKER_SHOOT', sidePower);
-      carromRef.current?.shoot(sidePower, aimAngle);
-    } else {
-      carromRef.current?.cancelAim();
-    }
-    setSidePower(0);
-    setIsPullingSideMeter(false);
   };
 
   const showToast = (msg: string) => {
@@ -240,13 +194,15 @@ export default function GameBoardScreen() {
     setTimeout(() => setPocketToast(null), 2500);
   };
 
-  // Remaining coins calculation for 1v1
-  const p1WhiteLeft = Math.max(0, 9 - (scores['player_0']?.whiteCoinsPocketed ?? 0));
-  const p2BlackLeft = Math.max(0, 9 - (scores['player_2']?.blackCoinsPocketed ?? 0));
-
   // Dynamic turn timer color (green -> amber -> red)
   const timerRingColor =
     secondsRemaining > 10 ? '#2BD67B' : secondsRemaining > 5 ? '#E9B949' : '#EF4444';
+
+  const p1 = activePlayers.find((p) => p.seat === 0);
+  const p2 = activePlayers.find((p) => p.seat === 2);
+  const p1Score = scores[p1?.id ?? '']?.points ?? 0;
+  const p2Score = scores[p2?.id ?? '']?.points ?? 0;
+  const maxScore = targetPoints || 115;
 
   return (
     <ScreenContainer
@@ -254,18 +210,242 @@ export default function GameBoardScreen() {
       edges={['top', 'left', 'right', 'bottom']}
       contentContainerStyle={styles.container}
     >
-      {/* Subtle Background Decorative Shapes */}
-      <View style={styles.bokehTop} pointerEvents="none" />
-      <View style={styles.bokehBottom} pointerEvents="none" />
-
-      {/* TOP HEADER: MATCH STAKES & PAUSE ICON */}
+      {/* 1. TOP HEADER BAR: CARROM POOL PLAYERS & CENTER GOLD COINS (Images 1 & 2) */}
       <View style={styles.topHeaderBar}>
-        <View style={styles.stakesPill}>
-          <Text style={styles.stakesPillText}>🪙 500 · 1v1 CLASSIC</Text>
+        {/* Left Player (Hari) */}
+        <View style={styles.playerProfileCol}>
+          <View
+            style={[
+              styles.playerAvatarBox,
+              activeSeat === 0 && styles.playerAvatarBoxActive,
+              activeSeat === 0 && { borderColor: timerRingColor },
+            ]}
+          >
+            <Text style={styles.playerAvatarEmoji}>{p1?.avatarUrl || '👑'}</Text>
+          </View>
+          <Text style={styles.playerProfileName} numberOfLines={1}>
+            {p1?.name || 'Hari'}
+          </Text>
+          <Text style={styles.playerProfileScore}>
+            {p1Score}/{maxScore}
+          </Text>
         </View>
 
+        {/* Center 3D Gold Coins Stack & Pot Amount (Screenshot 3 & 4: 400) */}
+        <View style={styles.centerPotBlock}>
+          <View style={styles.goldCoinsStackGraphic}>
+            <Text style={styles.goldCoinsStackEmoji}>🪙</Text>
+          </View>
+          <Text style={styles.centerPotAmount}>400</Text>
+        </View>
+
+        {/* Right Player (Ramesh Mendis) */}
+        <View style={styles.playerProfileCol}>
+          <View
+            style={[
+              styles.playerAvatarBox,
+              activeSeat === 2 && styles.playerAvatarBoxActive,
+              activeSeat === 2 && { borderColor: timerRingColor },
+            ]}
+          >
+            <Text style={styles.playerAvatarEmoji}>{p2?.avatarUrl || '🐯'}</Text>
+          </View>
+          <Text style={styles.playerProfileName} numberOfLines={1}>
+            {p2?.name || 'Ramesh Mendis'}
+          </Text>
+          <Text style={styles.playerProfileScore}>
+            {p2Score}/{maxScore}
+          </Text>
+        </View>
+      </View>
+
+      {/* 2. COIN POINT VALUES PILL ROW (50 Queen · 10 Black · 20 White) */}
+      <View style={styles.pointValuesRow}>
+        <View style={styles.pointValItem}>
+          <View style={[styles.coinPointDot, styles.coinPointDotRed]} />
+          <Text style={styles.pointValNum}>50</Text>
+        </View>
+        <View style={styles.pointValItem}>
+          <View style={[styles.coinPointDot, styles.coinPointDotBlack]} />
+          <Text style={styles.pointValNum}>10</Text>
+        </View>
+        <View style={styles.pointValItem}>
+          <View style={[styles.coinPointDot, styles.coinPointDotWhite]} />
+          <Text style={styles.pointValNum}>20</Text>
+        </View>
+      </View>
+
+      {/* 3. CENTER CARROM BOARD (Maximized, Perfectly Centered, 1:1 Aspect Ratio) */}
+      <View style={styles.boardWrapper}>
+        {activeReaction && (
+          <View style={styles.reactionBubble}>
+            <Text style={styles.reactionText}>{activeReaction}</Text>
+          </View>
+        )}
+
+        {pocketToast && (
+          <View style={styles.toastBubble}>
+            <Text style={styles.toastText}>{pocketToast}</Text>
+          </View>
+        )}
+
+        {floatingScore && (
+          <View style={[styles.floatingScoreBadge, { borderColor: floatingScore.color }]}>
+            <Text style={[styles.floatingScoreText, { color: floatingScore.color }]}>
+              {floatingScore.text}
+            </Text>
+          </View>
+        )}
+
+        <PhaserCarromView
+          ref={carromRef}
+          size={BOARD_SIZE}
+          themeId={boardTheme || 'classic'}
+          strikerSkin="royal"
+          activeSeat={activeSeat}
+          strikerOffset={strikerOffsetRatio}
+          soundEnabled={settings.soundEnabled}
+          soundVolume={settings.soundVolume}
+          onStrikerDragged={(offset, isOverlapping) => {
+            setStrikerOffsetRatio(offset);
+            if (typeof isOverlapping === 'boolean') {
+              setIsStrikerOverlapping(isOverlapping);
+            }
+          }}
+          onShotStarted={() => setIsShotActive(true)}
+          onAimChanged={(details) => {
+            setPowerRatio(details.powerRatio);
+            setAimAngle(details.angle);
+          }}
+          onObjectPocketed={(details) => {
+            if (details.type === 'white') {
+              AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
+              triggerFloatingScore('⚪ +20', '#FFFFFF');
+              showToast('⚪ White Coin Pocketed!');
+            } else if (details.type === 'black') {
+              AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
+              triggerFloatingScore('⚫ +10', '#E9B949');
+              showToast('⚫ Black Coin Pocketed!');
+            } else if (details.type === 'queen') {
+              AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
+              triggerFloatingScore('👑 QUEEN +50', '#EF4444');
+              showToast('👑 QUEEN Pocketed!');
+            }
+          }}
+          onStrikerPocketed={() => {
+            AudioManager.getInstance().playSound('FOUL', 0.9);
+            triggerFloatingScore('⚠️ FOUL', '#EF4444');
+            showToast('⚠️ Striker Pocketed (Foul)');
+          }}
+          onShotSettled={(details: any) => {
+            setIsShotActive(false);
+            const evalResult = processSettledShot({
+              pocketedCoins: details?.pocketed ?? [],
+              strikerPocketed: !!details?.strikerPocketed,
+              durationMs: details?.duration_ms,
+            });
+
+            if (evalResult) {
+              if (evalResult.foulOccurred) {
+                AudioManager.getInstance().playSound('FOUL', 0.9);
+                showToast(
+                  `FOUL: ${evalResult.primaryFoulType === 'striker_pocketed' ? 'Striker Scratch' : 'Foul committed'}`
+                );
+              } else if (evalResult.queenCoveredThisShot) {
+                AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
+                triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
+                showToast('👑 QUEEN COVERED! +50 Points');
+              } else if (evalResult.queenStatusAfter === 'pending_cover') {
+                AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
+                showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
+              } else if (evalResult.queenReturnedToCenter) {
+                AudioManager.getInstance().playSound('FOUL', 0.7);
+                showToast('Failed to cover Queen! Returned to center');
+              } else if (evalResult.extraTurnEarned) {
+                triggerFloatingScore('🎯 EXTRA TURN', '#2BD67B');
+                showToast('🎯 Coin Pocketed! Extra Turn');
+              } else {
+                AudioManager.getInstance().playSound('TURN_CHANGE', 0.6);
+                showToast('Dry shot · Turn passed');
+              }
+
+              if (evalResult.isMatchOver) {
+                AudioManager.getInstance().playSound('VICTORY', 1.0);
+                setTimeout(() => {
+                  router.replace('/game-result');
+                }, 1800);
+              }
+            }
+          }}
+        />
+      </View>
+
+      {/* 4. RECESSED DARK MAHOGANY WOODEN BASELINE SLIDER (Carrom Pool Style!) */}
+      <View style={styles.baselineArea}>
+        <View
+          style={[
+            styles.recessedWoodenTrack,
+            { width: sliderTrackWidth },
+            isStrikerOverlapping && styles.recessedWoodenTrackOverlap,
+          ]}
+          onStartShouldSetResponder={() => true}
+          onResponderGrant={handleSliderTouch}
+          onResponderMove={handleSliderTouch}
+        >
+          {/* Inner Trough Guide Line */}
+          <View style={styles.recessedInnerGuide} />
+
+          {/* Draggable Mini Striker Medallion inside the track */}
+          <View
+            style={[
+              styles.miniStrikerKnob,
+              {
+                left: `${((strikerOffsetRatio + 0.92) / 1.84) * 86 + 2}%`,
+              },
+              isStrikerOverlapping && styles.miniStrikerKnobOverlap,
+            ]}
+          >
+            <View style={styles.miniStrikerGearRim} />
+            <View style={styles.miniStrikerCore} />
+          </View>
+        </View>
+
+        {isStrikerOverlapping && (
+          <View style={styles.overlapWarningPill}>
+            <Text style={styles.overlapWarningText}>
+              ⚠️ Striker blocked · Slide away from coin
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* 5. BOTTOM ACTIONS ROW: CIRCULAR GLOWING GOLD BUTTONS (Chat & Menu) */}
+      <View style={styles.bottomBarRow}>
+        {/* Bottom Left: Circular Glowing Gold Button (Chat) */}
         <TouchableOpacity
-          style={styles.headerPauseBtn}
+          style={styles.circleGoldBtn}
+          activeOpacity={0.8}
+          onPress={() => {
+            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+            setShowStickersModal(true);
+          }}
+        >
+          <View style={styles.circleGoldBtnInner}>
+            <Text style={styles.circleGoldBtnIcon}>💬</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Turn Countdown Display */}
+        <View style={styles.bottomTurnPill}>
+          <Text style={[styles.bottomTurnText, { color: timerRingColor }]}>
+            {activeSeat === 0 ? 'YOUR TURN' : "OPPONENT'S TURN"} · 0:
+            {secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
+          </Text>
+        </View>
+
+        {/* Bottom Right: Circular Glowing Gold Button (Menu) */}
+        <TouchableOpacity
+          style={styles.circleGoldBtn}
           activeOpacity={0.8}
           onPress={() => {
             AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
@@ -274,347 +454,10 @@ export default function GameBoardScreen() {
             setShowPauseModal(true);
           }}
         >
-          <Text style={styles.headerPauseIcon}>⏸</Text>
+          <View style={styles.circleGoldBtnInner}>
+            <Text style={styles.circleGoldBtnIcon}>☰</Text>
+          </View>
         </TouchableOpacity>
-      </View>
-
-      {/* TOP PLAYERS HUD - CARROM POOL CIRCULAR COUNTDOWN RING STYLE */}
-      <View style={styles.topHudRow}>
-        {/* PLAYER 1 CARD (YOU / SEAT 0) */}
-        <View
-          style={[
-            styles.playerHudCard,
-            activeSeat === 0 && styles.playerHudCardActive,
-            activeSeat === 0 && { borderColor: timerRingColor },
-          ]}
-        >
-          {/* Avatar with Circular Countdown Ring */}
-          <View
-            style={[
-              styles.avatarTimerRing,
-              activeSeat === 0 && {
-                borderColor: timerRingColor,
-                shadowColor: timerRingColor,
-              },
-            ]}
-          >
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarEmojiText}>
-                {activePlayers.find((p) => p.seat === 0)?.avatarUrl || '👑'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.playerMetaCol}>
-            <Text style={styles.playerNameText} numberOfLines={1}>
-              {activePlayers.find((p) => p.seat === 0)?.name || 'Player 1'}
-            </Text>
-            <View style={styles.coinBadgeRow}>
-              <Text style={styles.coinBadgeText}>⚪ White</Text>
-              <Text style={styles.coinCountPill}>{p1WhiteLeft} left</Text>
-            </View>
-          </View>
-
-          <Text style={styles.playerScoreDisplay}>
-            {scores[activePlayers.find((p) => p.seat === 0)?.id ?? '']?.points ?? 0}
-          </Text>
-        </View>
-
-        {/* CENTER TURN INDICATOR & COUNTDOWN TIMER */}
-        <View style={styles.centerTurnBlock}>
-          <View
-            style={[
-              styles.turnStatusPill,
-              { backgroundColor: activeSeat === 0 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(233, 185, 73, 0.2)' },
-              { borderColor: timerRingColor },
-            ]}
-          >
-            <Text style={[styles.turnStatusText, { color: timerRingColor }]}>
-              {activeSeat === 0 ? 'YOUR TURN' : "OPPONENT'S TURN"}
-            </Text>
-          </View>
-
-          <Text style={[styles.turnTimerClock, { color: timerRingColor }]}>
-            0:{secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
-          </Text>
-
-          {queenStatus === 'pending_cover' && (
-            <View style={styles.queenCoverBadge}>
-              <Text style={styles.queenCoverText}>👑 COVER QUEEN</Text>
-            </View>
-          )}
-        </View>
-
-        {/* PLAYER 2 CARD (OPPONENT / SEAT 2) */}
-        <View
-          style={[
-            styles.playerHudCard,
-            activeSeat === 2 && styles.playerHudCardActive,
-            activeSeat === 2 && { borderColor: timerRingColor },
-          ]}
-        >
-          <Text style={styles.opponentScoreDisplay}>
-            {scores[activePlayers.find((p) => p.seat === 2)?.id ?? '']?.points ?? 0}
-          </Text>
-
-          <View style={[styles.playerMetaCol, { alignItems: 'flex-end' }]}>
-            <Text style={styles.playerNameText} numberOfLines={1}>
-              {activePlayers.find((p) => p.seat === 2)?.name || 'Player 2'}
-            </Text>
-            <View style={styles.coinBadgeRow}>
-              <Text style={styles.coinCountPill}>{p2BlackLeft} left</Text>
-              <Text style={styles.coinBadgeText}>⚫ Black</Text>
-            </View>
-          </View>
-
-          {/* Avatar with Circular Countdown Ring */}
-          <View
-            style={[
-              styles.avatarTimerRing,
-              activeSeat === 2 && {
-                borderColor: timerRingColor,
-                shadowColor: timerRingColor,
-              },
-            ]}
-          >
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarEmojiText}>
-                {activePlayers.find((p) => p.seat === 2)?.avatarUrl || '🐯'}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* CARROM BOARD AREA WITH SIDE POWER METER (CARROM POOL STYLE) */}
-      <View style={styles.boardAndControlsArea}>
-        <View style={styles.boardCenterWrapper}>
-          {activeReaction && (
-            <View style={styles.reactionBubble}>
-              <Text style={styles.reactionText}>{activeReaction}</Text>
-            </View>
-          )}
-
-          {pocketToast && (
-            <View style={styles.toastBubble}>
-              <Text style={styles.toastText}>{pocketToast}</Text>
-            </View>
-          )}
-
-          {floatingScore && (
-            <View style={[styles.floatingScoreBadge, { borderColor: floatingScore.color }]}>
-              <Text style={[styles.floatingScoreText, { color: floatingScore.color }]}>
-                {floatingScore.text}
-              </Text>
-            </View>
-          )}
-
-          <PhaserCarromView
-            ref={carromRef}
-            size={BOARD_SIZE}
-            themeId={boardTheme || 'classic'}
-            strikerSkin="emerald"
-            activeSeat={activeSeat}
-            strikerOffset={strikerOffsetRatio}
-            soundEnabled={settings.soundEnabled}
-            soundVolume={settings.soundVolume}
-            onStrikerDragged={(offset, isOverlapping) => {
-              setStrikerOffsetRatio(offset);
-              if (typeof isOverlapping === 'boolean') {
-                setIsStrikerOverlapping(isOverlapping);
-              }
-            }}
-            onShotStarted={() => setIsShotActive(true)}
-            onAimChanged={(details) => {
-              setPowerRatio(details.powerRatio);
-              setAimAngle(details.angle);
-            }}
-            onObjectPocketed={(details) => {
-              if (details.type === 'white') {
-                AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-                triggerFloatingScore('⚪ +10', '#2BD67B');
-                showToast('⚪ White Coin Pocketed!');
-              } else if (details.type === 'black') {
-                AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-                triggerFloatingScore('⚫ +10', '#E9B949');
-                showToast('⚫ Black Coin Pocketed!');
-              } else if (details.type === 'queen') {
-                AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-                triggerFloatingScore('👑 QUEEN +25', '#E9B949');
-                showToast('👑 QUEEN Pocketed!');
-              }
-            }}
-            onStrikerPocketed={() => {
-              AudioManager.getInstance().playSound('FOUL', 0.9);
-              triggerFloatingScore('⚠️ FOUL', '#EF4444');
-              showToast('⚠️ Striker Pocketed (Foul)');
-            }}
-            onShotSettled={(details: any) => {
-              setIsShotActive(false);
-              const evalResult = processSettledShot({
-                pocketedCoins: details?.pocketed ?? [],
-                strikerPocketed: !!details?.strikerPocketed,
-                durationMs: details?.duration_ms,
-              });
-
-              if (evalResult) {
-                if (evalResult.foulOccurred) {
-                  AudioManager.getInstance().playSound('FOUL', 0.9);
-                  showToast(
-                    `FOUL: ${evalResult.primaryFoulType === 'striker_pocketed' ? 'Striker Scratch' : 'Foul committed'}`
-                  );
-                } else if (evalResult.queenCoveredThisShot) {
-                  AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-                  triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
-                  showToast('👑 QUEEN COVERED! +25 Points');
-                } else if (evalResult.queenStatusAfter === 'pending_cover') {
-                  AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
-                  showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
-                } else if (evalResult.queenReturnedToCenter) {
-                  AudioManager.getInstance().playSound('FOUL', 0.7);
-                  showToast('Failed to cover Queen! Returned to center');
-                } else if (evalResult.extraTurnEarned) {
-                  triggerFloatingScore('🎯 EXTRA TURN', '#2BD67B');
-                  showToast('🎯 Coin Pocketed! Extra Turn');
-                } else {
-                  AudioManager.getInstance().playSound('TURN_CHANGE', 0.6);
-                  showToast('Dry shot · Turn passed');
-                }
-
-                if (evalResult.isMatchOver) {
-                  AudioManager.getInstance().playSound('VICTORY', 1.0);
-                  setTimeout(() => {
-                    router.replace('/game-result');
-                  }, 1800);
-                }
-              }
-            }}
-          />
-
-          {/* FLOATING QUICK EMOTE BUTTON (CARROM POOL BOTTOM-LEFT CORNER) */}
-          <TouchableOpacity
-            style={styles.floatingEmoteBtn}
-            activeOpacity={0.8}
-            onPress={() => {
-              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-              setShowStickersModal(true);
-            }}
-          >
-            <Text style={styles.floatingEmoteIcon}>💬</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* SPRING-LOADED SIDE POWER METER (CARROM POOL VERTICAL FORCE GAUGE) */}
-        <View style={styles.sideMeterWrapper}>
-          <View
-            style={styles.sideMeterTrack}
-            onStartShouldSetResponder={() => true}
-            onResponderGrant={handleSideMeterTouch}
-            onResponderMove={handleSideMeterTouch}
-            onResponderRelease={handleSideMeterRelease}
-          >
-            {/* Background force gradations */}
-            <View style={styles.meterGripMark} />
-            <View style={styles.meterGripMark} />
-            <View style={styles.meterGripMark} />
-
-            {/* Glowing Power Fill */}
-            <View
-              style={[
-                styles.sideMeterFill,
-                {
-                  height: `${Math.round(sidePower * 100)}%`,
-                  backgroundColor:
-                    sidePower > 0.75
-                      ? '#EF4444'
-                      : sidePower > 0.4
-                      ? '#E9B949'
-                      : '#2BD67B',
-                },
-              ]}
-            />
-
-            {/* Draggable Force Knob */}
-            <View
-              style={[
-                styles.sideMeterKnob,
-                {
-                  top: `${Math.min(88, Math.max(0, sidePower * 88))}%`,
-                  borderColor:
-                    sidePower > 0.75
-                      ? '#EF4444'
-                      : sidePower > 0.4
-                      ? '#E9B949'
-                      : '#2BD67B',
-                },
-              ]}
-            >
-              <Text style={styles.sideMeterKnobIcon}>⚡</Text>
-            </View>
-          </View>
-          <Text style={styles.sideMeterTitle}>FORCE</Text>
-        </View>
-      </View>
-
-      {/* CARROM POOL TACTILE BASELINE SLIDER */}
-      <View style={styles.baselineControlWrap}>
-        <View style={styles.baselineSliderRow}>
-          <TouchableOpacity
-            style={styles.nudgeBtn}
-            onPress={() => handleNudgeStriker(-0.12)}
-            disabled={isShotActive || isHandoverPending}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.nudgeBtnText}>◀</Text>
-          </TouchableOpacity>
-
-          {/* Interactive Brushed Metal Baseline Rail */}
-          <View
-            style={[
-              styles.baselineTrack,
-              isStrikerOverlapping && styles.baselineTrackOverlap,
-            ]}
-            onStartShouldSetResponder={() => true}
-            onResponderGrant={handleSliderTouch}
-            onResponderMove={handleSliderTouch}
-          >
-            {/* Glowing Striker Knob */}
-            <View
-              style={[
-                styles.baselineKnob,
-                {
-                  left: `${((strikerOffsetRatio + 0.92) / 1.84) * 88 + 2}%`,
-                },
-                isStrikerOverlapping && styles.baselineKnobOverlap,
-              ]}
-            >
-              <View
-                style={[
-                  styles.baselineKnobCore,
-                  isStrikerOverlapping && styles.baselineKnobCoreOverlap,
-                ]}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.nudgeBtn}
-            onPress={() => handleNudgeStriker(0.12)}
-            disabled={isShotActive || isHandoverPending}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.nudgeBtnText}>▶</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Real-time Status / Guidance Pill */}
-        <View style={[styles.guidePill, isStrikerOverlapping && styles.guidePillOverlap]}>
-          <Text style={[styles.guidePillText, isStrikerOverlapping && styles.guidePillTextOverlap]}>
-            {isStrikerOverlapping
-              ? '⚠️ Strikeline blocked · Reposition striker away from coin'
-              : '🎯 Drag striker or slider · Pull back to shoot'}
-          </Text>
-        </View>
       </View>
 
       {/* PASS-AND-PLAY TURN HANDOVER MODAL */}
@@ -654,357 +497,253 @@ export default function GameBoardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07261C',
+    backgroundColor: '#260805', // Deep rich wine red / burgundy
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
     paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 8,
-  },
-  bokehTop: {
-    position: 'absolute',
-    top: 50,
-    right: -20,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(15, 90, 62, 0.25)',
-  },
-  bokehBottom: {
-    position: 'absolute',
-    bottom: 80,
-    left: -20,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(15, 90, 62, 0.2)',
   },
   topHeaderBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    marginBottom: 4,
+    width: '100%',
+    paddingHorizontal: 16,
+    marginTop: 4,
   },
-  stakesPill: {
-    backgroundColor: 'rgba(7, 38, 28, 0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(233, 185, 73, 0.5)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+  playerProfileCol: {
+    alignItems: 'center',
+    width: 95,
+  },
+  playerAvatarBox: {
+    width: 50,
+    height: 50,
     borderRadius: 14,
+    backgroundColor: '#3D150B',
+    borderWidth: 2.5,
+    borderColor: '#D4892A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D4892A',
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 4,
   },
-  stakesPillText: {
-    color: '#E9B949',
-    fontSize: 11,
+  playerAvatarBoxActive: {
+    borderColor: '#F59E0B',
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 7,
+  },
+  playerAvatarEmoji: {
+    fontSize: 24,
+  },
+  playerProfileName: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    marginTop: 5,
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  headerPauseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(7, 38, 28, 0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(43, 214, 123, 0.4)',
+  playerProfileScore: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 1,
+    textAlign: 'center',
+  },
+  centerPotBlock: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerPauseIcon: {
-    color: '#2BD67B',
-    fontSize: 14,
-    fontWeight: '900',
+  goldCoinsStackGraphic: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
-  topHudRow: {
+  goldCoinsStackEmoji: {
+    fontSize: 34,
+  },
+  centerPotAmount: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  pointValuesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    backgroundColor: 'rgba(25, 6, 4, 0.75)',
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 137, 42, 0.35)',
+    marginVertical: 4,
+  },
+  pointValItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  coinPointDot: {
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
+    borderWidth: 1.5,
+  },
+  coinPointDotRed: {
+    backgroundColor: '#DC2626',
+    borderColor: '#FFA0A0',
+  },
+  coinPointDotBlack: {
+    backgroundColor: '#1E2320',
+    borderColor: '#4A524D',
+  },
+  coinPointDotWhite: {
+    backgroundColor: '#F5ECD2',
+    borderColor: '#FFFFFF',
+  },
+  pointValNum: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  boardWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 'auto',
+  },
+  baselineArea: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 6,
+  },
+  recessedWoodenTrack: {
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#240D07',
+    borderWidth: 1.8,
+    borderColor: '#4E2214',
+    position: 'relative',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  recessedWoodenTrackOverlap: {
+    borderColor: '#EF4444',
+    backgroundColor: '#3D0D0D',
+  },
+  recessedInnerGuide: {
+    height: 2,
+    width: '92%',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  miniStrikerKnob: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4A126D',
+    borderWidth: 2,
+    borderColor: '#E9B949',
+    position: 'absolute',
+    top: -3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#00FFFF',
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  miniStrikerKnobOverlap: {
+    borderColor: '#EF4444',
+    shadowColor: '#EF4444',
+  },
+  miniStrikerGearRim: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+  },
+  miniStrikerCore: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#DC2626',
+    position: 'absolute',
+  },
+  overlapWarningPill: {
+    marginTop: 4,
+    backgroundColor: 'rgba(80, 10, 10, 0.85)',
+    borderColor: '#EF4444',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+  },
+  overlapWarningText: {
+    color: '#FF8888',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  bottomBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 6,
-    paddingHorizontal: 4,
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingBottom: 8,
   },
-  playerHudCard: {
-    flex: 1,
-    height: 52,
-    backgroundColor: '#07261C',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(43, 214, 123, 0.3)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    gap: 6,
-  },
-  playerHudCardActive: {
-    backgroundColor: 'rgba(43, 214, 123, 0.12)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  avatarTimerRing: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  circleGoldBtn: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#D97706',
     borderWidth: 2.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#FDE68A',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
+    shadowColor: '#F59E0B',
+    shadowOpacity: 0.65,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 6,
   },
-  avatarInner: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(7, 38, 28, 0.9)',
+  circleGoldBtnInner: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#B45309',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarEmojiText: {
-    fontSize: 17,
-  },
-  playerMetaCol: {
-    flex: 1,
-  },
-  playerNameText: {
+  circleGoldBtnIcon: {
+    fontSize: 20,
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.3,
   },
-  coinBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 1,
-  },
-  coinBadgeText: {
-    color: '#9FD8B8',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  coinCountPill: {
-    color: '#E9B949',
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  playerScoreDisplay: {
-    color: '#2BD67B',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  opponentScoreDisplay: {
-    color: '#E9B949',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  centerTurnBlock: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 70,
-  },
-  turnStatusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+  bottomTurnPill: {
+    backgroundColor: 'rgba(25, 6, 4, 0.8)',
     borderWidth: 1,
-    marginBottom: 2,
-  },
-  turnStatusText: {
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  turnTimerClock: {
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  queenCoverBadge: {
-    backgroundColor: 'rgba(233, 185, 73, 0.25)',
-    borderColor: '#E9B949',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    marginTop: 2,
-  },
-  queenCoverText: {
-    color: '#E9B949',
-    fontSize: 8,
-    fontWeight: '900',
-  },
-  boardAndControlsArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginVertical: 'auto',
-  },
-  boardCenterWrapper: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  floatingEmoteBtn: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(7, 38, 28, 0.88)',
-    borderWidth: 1.5,
-    borderColor: '#2BD67B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 30,
-    elevation: 6,
-  },
-  floatingEmoteIcon: {
-    fontSize: 18,
-  },
-  sideMeterWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 26,
-    height: '84%',
-  },
-  sideMeterTrack: {
-    width: 14,
-    flex: 1,
-    backgroundColor: 'rgba(7, 38, 28, 0.95)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(43, 214, 123, 0.4)',
-    borderRadius: 8,
-    position: 'relative',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  meterGripMark: {
-    width: 8,
-    height: 1.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    marginVertical: 12,
-  },
-  sideMeterFill: {
-    width: '100%',
-    position: 'absolute',
-    bottom: 0,
-    borderRadius: 6,
-  },
-  sideMeterKnob: {
-    position: 'absolute',
-    left: -7,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#07261C',
-    borderWidth: 2,
-    borderColor: '#2BD67B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-  },
-  sideMeterKnobIcon: {
-    color: '#E9B949',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  sideMeterTitle: {
-    color: '#648A79',
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    marginTop: 4,
-  },
-  baselineControlWrap: {
-    width: '100%',
-    paddingHorizontal: 8,
-    paddingBottom: 4,
-    gap: 4,
-  },
-  baselineSliderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  nudgeBtn: {
-    width: 32,
-    height: 32,
+    borderColor: 'rgba(212, 137, 42, 0.4)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(15, 90, 62, 0.8)',
-    borderWidth: 1.5,
-    borderColor: '#2BD67B',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  nudgeBtnText: {
-    color: '#2BD67B',
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  baselineTrack: {
-    flex: 1,
-    height: 12,
-    backgroundColor: 'rgba(7, 38, 28, 0.95)',
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: 'rgba(43, 214, 123, 0.4)',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  baselineTrackOverlap: {
-    borderColor: '#EF4444',
-    backgroundColor: 'rgba(50, 10, 10, 0.9)',
-  },
-  baselineKnob: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#07261C',
-    borderWidth: 2,
-    borderColor: '#2BD67B',
-    position: 'absolute',
-    top: -6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-  },
-  baselineKnobOverlap: {
-    borderColor: '#EF4444',
-  },
-  baselineKnobCore: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#2BD67B',
-  },
-  baselineKnobCoreOverlap: {
-    backgroundColor: '#EF4444',
-  },
-  guidePill: {
-    alignSelf: 'center',
-    backgroundColor: 'rgba(7, 38, 28, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(43, 214, 123, 0.25)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-  },
-  guidePillOverlap: {
-    backgroundColor: 'rgba(60, 12, 12, 0.9)',
-    borderColor: '#EF4444',
-  },
-  guidePillText: {
-    color: '#9FD8B8',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  guidePillTextOverlap: {
-    color: '#FF6B6B',
+  bottomTurnText: {
+    fontSize: 12,
     fontWeight: '800',
+    letterSpacing: 0.5,
   },
   reactionBubble: {
     position: 'absolute',
@@ -1027,12 +766,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 24,
     zIndex: 25,
-    backgroundColor: 'rgba(7, 38, 28, 0.95)',
+    backgroundColor: 'rgba(40, 10, 8, 0.95)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#2BD67B',
+    borderColor: '#E9B949',
   },
   toastText: {
     color: '#FFFFFF',
@@ -1044,7 +783,7 @@ const styles = StyleSheet.create({
     top: '40%',
     alignSelf: 'center',
     zIndex: 35,
-    backgroundColor: 'rgba(7, 38, 28, 0.92)',
+    backgroundColor: 'rgba(40, 10, 8, 0.92)',
     paddingHorizontal: 18,
     paddingVertical: 8,
     borderRadius: 16,
