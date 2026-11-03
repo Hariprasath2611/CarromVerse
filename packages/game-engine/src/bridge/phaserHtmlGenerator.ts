@@ -811,6 +811,7 @@ ${PHASER_MIN_JS}
 
           this.boardGraphics = this.add.graphics();
           this.pocketsGroup = this.add.group();
+          this.strikerAura = this.add.graphics().setDepth(14);
           this.aimGraphics = this.add.graphics().setDepth(25);
           this.debugGraphics = this.add.graphics().setDepth(100);
 
@@ -844,60 +845,85 @@ ${PHASER_MIN_JS}
           var fw = (s - BOARD_PX) / 2; // Frame width (50px on 840 canvas)
           var surfSize = BOARD_PX;
           var center = s / 2;
-          var scale = BOARD_PX / 528; // 528 units in reference SVG = BOARD_PX (74 cm)
+          var scale = BOARD_PX / 528;
 
           var bo = 74 * scale; // Baseline center line offset from cushion
-          var halfBl = 156 * scale; // Distance from center to baseline red marker centers
+          var halfBl = 156 * scale; // Distance from center to baseline discs
           var pillLen = 336 * scale; // Full length of baseline pill
           var pillH = 24 * scale; // Thickness of baseline pill
           var pillRx = 12 * scale; // Corner radius of baseline pill
-          var markerR = 8 * scale; // Radius of red end markers
+          var discR = 9.5 * scale; // Radius of amber baseline discs
+          var cornerDiscR = 11.5 * scale; // Radius of 4 corner discs
 
           this.boardGraphics.clear();
           this.pocketsGroup.clear(true, true);
 
-          // 1. Frame: Rounded rect r30 with rich wood colors
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameColor || '#A0612C').color, 1);
-          this.boardGraphics.fillRoundedRect(0, 0, s, s, 30 * (s / 640));
+          // 1. Frame: Rounded rect r32 with rich mahogany wood
+          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameColor || '#38160E').color, 1);
+          this.boardGraphics.fillRoundedRect(0, 0, s, s, 32 * (s / 640));
 
           // Brass Inlay Line inset 8 (2 units, 70% opacity)
-          var brassCol = Phaser.Display.Color.HexStringToColor(theme.frameAccent || '#E9B949').color;
+          var brassCol = Phaser.Display.Color.HexStringToColor(theme.frameAccent || '#C9943B').color;
           this.boardGraphics.lineStyle(2, brassCol, 0.70);
-          this.boardGraphics.strokeRoundedRect(8 * (s / 640), 8 * (s / 640), s - 16 * (s / 640), s - 16 * (s / 640), 22 * (s / 640));
+          this.boardGraphics.strokeRoundedRect(8 * (s / 640), 8 * (s / 640), s - 16 * (s / 640), s - 16 * (s / 640), 24 * (s / 640));
 
           // 45 deg miter joints
-          this.boardGraphics.lineStyle(1.5, 0x4A2610, 0.5);
+          this.boardGraphics.lineStyle(1.5, 0x1E0C06, 0.6);
           this.boardGraphics.lineBetween(0, 0, fw, fw);
           this.boardGraphics.lineBetween(s, 0, s - fw, fw);
           this.boardGraphics.lineBetween(0, s, fw, s - fw);
           this.boardGraphics.lineBetween(s, s, s - fw, s - fw);
 
-          // Inner Cushion Lip (Rect in #3E2210)
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion || '#3E2210').color, 1);
+          // Inner Cushion Lip (Rect in #220D07)
+          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion || '#220D07').color, 1);
           this.boardGraphics.fillRect(fw - 8, fw - 8, surfSize + 16, surfSize + 16);
 
-          // 2. Playing Surface 56-584 (528 units square in #F0DDB0)
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg || '#F0DDB0').color, 1);
+          // 2. Playing Surface (Birchwood #E5CBA7)
+          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg || '#E5CBA7').color, 1);
           this.boardGraphics.fillRoundedRect(fw, fw, surfSize, surfSize, 4);
 
-          // Surface 2-unit border #B8955A
-          var grainCol = Phaser.Display.Color.HexStringToColor(theme.surfaceGrain || '#B8955A').color;
-          this.boardGraphics.lineStyle(2, grainCol, 1.0);
+          // Surface fine border
+          var grainCol = Phaser.Display.Color.HexStringToColor(theme.surfaceGrain || '#CEAF85').color;
+          this.boardGraphics.lineStyle(2, grainCol, 0.9);
           this.boardGraphics.strokeRoundedRect(fw, fw, surfSize, surfSize, 4);
 
-          // Faint Vertical Wood Grain Lines every 13 units at 22% opacity
-          this.boardGraphics.lineStyle(1, grainCol, 0.22);
-          var grainStep = 13 * scale;
-          for (var gx = fw + grainStep; gx < s - fw; gx += grainStep) {
-            this.boardGraphics.lineBetween(gx, fw, gx, s - fw);
+          // Horizontal Wood Grain Lines (Carrom Pool Style!)
+          this.boardGraphics.lineStyle(1, grainCol, 0.18);
+          var grainStep = 14 * scale;
+          for (var gy = fw + grainStep; gy < s - fw; gy += grainStep) {
+            this.boardGraphics.lineBetween(fw, gy, s - fw, gy);
           }
 
-          // 3. Diagonal Foul Lines (dashed 6 6 radiating from center to corners)
-          var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor || '#6B3A1A').color;
-          var redCol = Phaser.Display.Color.HexStringToColor(theme.redAccentColor || '#D8344A').color;
-          var greenCol = Phaser.Display.Color.HexStringToColor(theme.greenRingColor || '#1E8F5A').color;
+          // 3. 4 Bright Amber/Orange Curved Corner Pocket Brackets (Carrom Pool Signature!)
+          var bracketCol = Phaser.Display.Color.HexStringToColor(theme.cornerBracketColor || '#E87A1E').color;
+          var bracketHi = Phaser.Display.Color.HexStringToColor(theme.cornerBracketHighlight || '#FFB04D').color;
+          var pocketOffset = 24 * scale;
+          var pr = POCKET_RADIUS_PX;
 
-          this.boardGraphics.lineStyle(1.5, markCol, 0.85);
+          var corners = [
+            { cx: fw + pocketOffset, cy: fw + pocketOffset, start: Math.PI, end: Math.PI * 1.5 },
+            { cx: s - fw - pocketOffset, cy: fw + pocketOffset, start: Math.PI * 1.5, end: Math.PI * 2.0 },
+            { cx: s - fw - pocketOffset, cy: s - fw - pocketOffset, start: 0, end: Math.PI * 0.5 },
+            { cx: fw + pocketOffset, cy: s - fw - pocketOffset, start: Math.PI * 0.5, end: Math.PI }
+          ];
+
+          corners.forEach(function(cDef) {
+            // Main amber/orange curved bracket
+            activeScene.boardGraphics.lineStyle(8 * scale, bracketCol, 1.0);
+            activeScene.boardGraphics.beginPath();
+            activeScene.boardGraphics.arc(cDef.cx, cDef.cy, pr + 11 * scale, cDef.start - 0.15, cDef.end + 0.15);
+            activeScene.boardGraphics.strokePath();
+
+            // 3D Highlight curve
+            activeScene.boardGraphics.lineStyle(2.5 * scale, bracketHi, 0.85);
+            activeScene.boardGraphics.beginPath();
+            activeScene.boardGraphics.arc(cDef.cx, cDef.cy, pr + 13 * scale, cDef.start - 0.08, cDef.end + 0.08);
+            activeScene.boardGraphics.strokePath();
+          });
+
+          // 4. Diagonal Foul Lines (dashed fine lines)
+          var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor || '#5C2807').color;
+          this.boardGraphics.lineStyle(1.5, markCol, 0.80);
           var drawDashedLine = function(g, x1, y1, x2, y2, dLen, gLen) {
             var dx = x2 - x1;
             var dy = y2 - y1;
@@ -913,15 +939,13 @@ ${PHASER_MIN_JS}
             }
           };
 
-          // 4 Diagonal Guides: from (center +- 96*scale) to (center +- 202*scale)
-          drawDashedLine(this.boardGraphics, center - 96 * scale, center - 96 * scale, center - 202 * scale, center - 202 * scale, 6, 6);
-          drawDashedLine(this.boardGraphics, center + 96 * scale, center - 96 * scale, center + 202 * scale, center - 202 * scale, 6, 6);
-          drawDashedLine(this.boardGraphics, center - 96 * scale, center + 96 * scale, center - 202 * scale, center + 202 * scale, 6, 6);
-          drawDashedLine(this.boardGraphics, center + 96 * scale, center + 96 * scale, center + 202 * scale, center + 202 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center - 96 * scale, center - 96 * scale, center - 200 * scale, center - 200 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center + 96 * scale, center - 96 * scale, center + 200 * scale, center - 200 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center - 96 * scale, center + 96 * scale, center - 200 * scale, center + 200 * scale, 6, 6);
+          drawDashedLine(this.boardGraphics, center + 96 * scale, center + 96 * scale, center + 200 * scale, center + 200 * scale, 6, 6);
 
-          // 4. Baselines: 4 Pill Outlines (stroke 2, no fill) with Red End Markers
-          this.boardGraphics.lineStyle(2, markCol, 1.0);
-
+          // 5. Baselines: 4 Pill Outlines (stroke 2, no fill)
+          this.boardGraphics.lineStyle(2, markCol, 0.95);
           // Top Baseline
           this.boardGraphics.strokeRoundedRect(center - pillLen / 2, fw + bo - pillH / 2, pillLen, pillH, pillRx);
           // Bottom Baseline
@@ -931,58 +955,55 @@ ${PHASER_MIN_JS}
           // Right Baseline
           this.boardGraphics.strokeRoundedRect(s - fw - bo - pillH / 2, center - pillLen / 2, pillH, pillLen, pillRx);
 
-          // Red End Markers r8 at pill circle centers (center +- halfBl)
-          this.boardGraphics.fillStyle(redCol, 1);
-          // Top markers
-          this.boardGraphics.fillCircle(center - halfBl, fw + bo, markerR);
-          this.boardGraphics.fillCircle(center + halfBl, fw + bo, markerR);
-          // Bottom markers
-          this.boardGraphics.fillCircle(center - halfBl, s - fw - bo, markerR);
-          this.boardGraphics.fillCircle(center + halfBl, s - fw - bo, markerR);
-          // Left markers
-          this.boardGraphics.fillCircle(fw + bo, center - halfBl, markerR);
-          this.boardGraphics.fillCircle(fw + bo, center + halfBl, markerR);
-          // Right markers
-          this.boardGraphics.fillCircle(s - fw - bo, center - halfBl, markerR);
-          this.boardGraphics.fillCircle(s - fw - bo, center + halfBl, markerR);
+          // Solid Amber/Orange Circular Wooden Discs at Baseline Ends (Carrom Pool Style!)
+          var amberDiscCol = Phaser.Display.Color.HexStringToColor(theme.baselineDiscColor || '#D97706').color;
+          var discOutline = Phaser.Display.Color.HexStringToColor(theme.baselineDiscOutline || '#4A1E06').color;
 
-          // 5. Center Circles and Emblems
-          // Outer Green Circle r86
-          this.boardGraphics.lineStyle(3, greenCol, 0.95);
-          this.boardGraphics.strokeCircle(center, center, 86 * scale);
+          var drawAmberDisc = function(g, dx, dy, rad) {
+            g.fillStyle(amberDiscCol, 1);
+            g.fillCircle(dx, dy, rad);
+            g.lineStyle(1.6, discOutline, 0.95);
+            g.strokeCircle(dx, dy, rad);
+            // Subtle 3D highlight dot
+            g.fillStyle(0xFFE8B2, 0.65);
+            g.fillCircle(dx - rad * 0.3, dy - rad * 0.3, rad * 0.3);
+          };
 
-          // Red Circle r62
-          this.boardGraphics.lineStyle(2, redCol, 0.95);
-          this.boardGraphics.strokeCircle(center, center, 62 * scale);
+          // 8 Baseline End Discs:
+          drawAmberDisc(this.boardGraphics, center - halfBl, fw + bo, discR);
+          drawAmberDisc(this.boardGraphics, center + halfBl, fw + bo, discR);
+          drawAmberDisc(this.boardGraphics, center - halfBl, s - fw - bo, discR);
+          drawAmberDisc(this.boardGraphics, center + halfBl, s - fw - bo, discR);
+          drawAmberDisc(this.boardGraphics, fw + bo, center - halfBl, discR);
+          drawAmberDisc(this.boardGraphics, fw + bo, center + halfBl, discR);
+          drawAmberDisc(this.boardGraphics, s - fw - bo, center - halfBl, discR);
+          drawAmberDisc(this.boardGraphics, s - fw - bo, center + halfBl, discR);
 
-          // Dashed Green Circle r40
-          var nDashes = 18;
-          var dAngle = (2 * Math.PI) / nDashes;
-          this.boardGraphics.lineStyle(1.5, greenCol, 0.9);
-          for (var a = 0; a < nDashes; a += 2) {
-            this.boardGraphics.beginPath();
-            this.boardGraphics.arc(center, center, 40 * scale, a * dAngle, (a + 1) * dAngle);
-            this.boardGraphics.strokePath();
-          }
+          // 4 Corner Amber Discs (Carrom Pool Style!):
+          var cornerOffset = 136 * scale;
+          drawAmberDisc(this.boardGraphics, center - cornerOffset, center - cornerOffset, cornerDiscR);
+          drawAmberDisc(this.boardGraphics, center + cornerOffset, center - cornerOffset, cornerDiscR);
+          drawAmberDisc(this.boardGraphics, center - cornerOffset, center + cornerOffset, cornerDiscR);
+          drawAmberDisc(this.boardGraphics, center + cornerOffset, center + cornerOffset, cornerDiscR);
 
-          // Four Red Petals (ellipses 7x16) at +-50 units on axes
-          this.boardGraphics.fillStyle(redCol, 1);
-          this.boardGraphics.fillEllipse(center, center - 50 * scale, 14 * scale, 32 * scale);
-          this.boardGraphics.fillEllipse(center, center + 50 * scale, 14 * scale, 32 * scale);
-          this.boardGraphics.fillEllipse(center - 50 * scale, center, 32 * scale, 14 * scale);
-          this.boardGraphics.fillEllipse(center + 50 * scale, center, 32 * scale, 14 * scale);
+          // 6. Center Concentric Wood-Etched Rings (Clean, authentic Carrom Pool style!)
+          // Outer coin cluster ring (fits 19 coins)
+          this.boardGraphics.lineStyle(2, markCol, 0.9);
+          this.boardGraphics.strokeCircle(center, center, 88 * scale);
+          this.boardGraphics.lineStyle(1, markCol, 0.45);
+          this.boardGraphics.strokeCircle(center, center, 84 * scale);
 
-          // Inner Green Ring r18
-          this.boardGraphics.lineStyle(2, greenCol, 1.0);
-          this.boardGraphics.strokeCircle(center, center, 18 * scale);
+          // Inner Queen circle (fits Queen coin)
+          this.boardGraphics.lineStyle(2, markCol, 0.9);
+          this.boardGraphics.strokeCircle(center, center, 24 * scale);
+          this.boardGraphics.lineStyle(1, markCol, 0.45);
+          this.boardGraphics.strokeCircle(center, center, 14 * scale);
 
-          // Center Red Dot r10
-          this.boardGraphics.fillStyle(redCol, 1);
-          this.boardGraphics.fillCircle(center, center, 10 * scale);
+          // Center wood dot
+          this.boardGraphics.fillStyle(markCol, 0.85);
+          this.boardGraphics.fillCircle(center, center, 4 * scale);
 
-          // 6. Corner Pockets (visual sprites at exact sensor centers: fw + 24*scale)
-          var pr = POCKET_RADIUS_PX;
-          var pocketOffset = 24 * scale;
+          // 7. Corner Pocket Sprites
           var pCoords = [
             { x: fw + pocketOffset, y: fw + pocketOffset },
             { x: s - fw - pocketOffset, y: fw + pocketOffset },
