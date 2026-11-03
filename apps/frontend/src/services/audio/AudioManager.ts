@@ -39,7 +39,7 @@ export class AudioManager {
   private isInitialized = false;
 
   private constructor() {
-    this.initAudioContext();
+    // Lazily initialize AudioContext on user gesture to comply with Chrome autoplay policies
   }
 
   public static getInstance(): AudioManager {
@@ -49,20 +49,17 @@ export class AudioManager {
     return this.instance;
   }
 
-  private initAudioContext(): void {
-    if (typeof window !== 'undefined') {
+  private ensureUnlocked(): void {
+    if (!this.audioContext && typeof window !== 'undefined') {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
         try {
           this.audioContext = new AudioCtx();
         } catch {
-          // AudioContext might require user interaction to unlock
+          // Requires user gesture
         }
       }
     }
-  }
-
-  private ensureUnlocked(): void {
     if (this.audioContext && this.audioContext.state === 'suspended') {
       this.audioContext.resume().catch(() => {});
     }

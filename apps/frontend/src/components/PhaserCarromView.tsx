@@ -78,6 +78,9 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       });
     }, [themeId, strikerSkin, activeSeat]);
 
+    // Mounting key forces React to discard any stale in-memory cached frames
+    const contentKey = `carrom_${themeId}_${strikerSkin}_${htmlContent.length}`;
+
     const sendToPhaser = (type: string, payload?: any) => {
       if (!isReady) return;
       const msg = JSON.stringify({ type, payload });
@@ -233,6 +236,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       <View style={[styles.container, { width: size, height: size }, style]}>
         {Platform.OS === 'web' ? (
           <iframe
+            key={contentKey}
             ref={iframeRef}
             srcDoc={htmlContent}
             title="CarromVerse Canvas"
@@ -245,6 +249,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           />
         ) : (
           <RNWebView
+            key={contentKey}
             ref={webViewRef}
             originWhitelist={['*']}
             source={{ html: htmlContent, baseUrl: 'https://localhost' }}
