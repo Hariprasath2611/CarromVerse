@@ -1521,17 +1521,6 @@ ${PHASER_MIN_JS}
           });
         },
 
-          sendToReactNative({
-            type: 'AIM_CHANGED',
-            payload: {
-              angle: angle,
-              powerRatio: this.aimPowerRatio,
-              speed_cm_s: STRIKER_MIN_SPEED_CM_S + this.aimPowerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S)
-            },
-            timestamp: Date.now()
-          });
-        },
-
         executeShot: function(angle, powerRatio) {
           if (this.isShotActive || !this.strikerBody || this.isStrikerOverlapping) return;
 
