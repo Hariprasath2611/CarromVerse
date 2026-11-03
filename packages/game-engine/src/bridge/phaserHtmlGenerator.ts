@@ -10,8 +10,8 @@ export interface PhaserHtmlOptions {
 }
 
 export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): string {
-  const initialTheme = options.themeId || 'forest';
-  const initialSkin = options.strikerSkin || 'emerald';
+  const initialTheme = options.themeId || 'classic';
+  const initialSkin = options.strikerSkin || 'royal';
   const initialSeat = options.activeSeat ?? 0;
   const canvasSize = options.canvasSize || 840;
   const initialDebug = options.debugOverlay ?? false;
@@ -36,7 +36,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #07130E;
+      background: radial-gradient(circle, #3D100A 0%, #1A0503 100%);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -53,7 +53,7 @@ export function generateCarromPhaserHtml(options: PhaserHtmlOptions = {}): strin
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.95);
       border-radius: 8px;
     }
   </style>
