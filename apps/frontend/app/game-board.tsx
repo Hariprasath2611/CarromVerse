@@ -107,8 +107,8 @@ export default function GameBoardScreen() {
       const config = {
         ...baseConfig,
         boardTheme: boardTheme || 'classic',
-        targetScore: targetPoints || 115,
-        turnTimeLimitSeconds: turnTimeLimitSec,
+        targetScore: targetPoints || 25,
+        turnTimeLimitSeconds: turnTimeLimitSec || 15,
       };
       startSession(config, defaultPlayers);
     }
@@ -202,7 +202,7 @@ export default function GameBoardScreen() {
   const p2 = activePlayers.find((p) => p.seat === 2);
   const p1Score = scores[p1?.id ?? '']?.points ?? 0;
   const p2Score = scores[p2?.id ?? '']?.points ?? 0;
-  const maxScore = targetPoints || 115;
+  const maxScore = targetPoints || 25;
 
   return (
     <ScreenContainer
@@ -259,19 +259,19 @@ export default function GameBoardScreen() {
         </View>
       </View>
 
-      {/* 2. COIN POINT VALUES PILL ROW (50 Queen · 10 Black · 20 White) */}
+      {/* 2. COIN POINT VALUES PILL ROW (Official SGFI: 3 Queen · 1 Black · 1 White) */}
       <View style={styles.pointValuesRow}>
         <View style={styles.pointValItem}>
           <View style={[styles.coinPointDot, styles.coinPointDotRed]} />
-          <Text style={styles.pointValNum}>50</Text>
+          <Text style={styles.pointValNum}>3</Text>
         </View>
         <View style={styles.pointValItem}>
           <View style={[styles.coinPointDot, styles.coinPointDotBlack]} />
-          <Text style={styles.pointValNum}>10</Text>
+          <Text style={styles.pointValNum}>1</Text>
         </View>
         <View style={styles.pointValItem}>
           <View style={[styles.coinPointDot, styles.coinPointDotWhite]} />
-          <Text style={styles.pointValNum}>20</Text>
+          <Text style={styles.pointValNum}>1</Text>
         </View>
       </View>
 
@@ -319,22 +319,22 @@ export default function GameBoardScreen() {
           onObjectPocketed={(details) => {
             if (details.type === 'white') {
               AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-              triggerFloatingScore('⚪ +20', '#FFFFFF');
+              triggerFloatingScore('⚪ +1', '#FFFFFF');
               showToast('⚪ White Coin Pocketed!');
             } else if (details.type === 'black') {
               AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-              triggerFloatingScore('⚫ +10', '#E9B949');
+              triggerFloatingScore('⚫ +1', '#E9B949');
               showToast('⚫ Black Coin Pocketed!');
             } else if (details.type === 'queen') {
               AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-              triggerFloatingScore('👑 QUEEN +50', '#EF4444');
+              triggerFloatingScore('👑 QUEEN +3', '#EF4444');
               showToast('👑 QUEEN Pocketed!');
             }
           }}
           onStrikerPocketed={() => {
             AudioManager.getInstance().playSound('FOUL', 0.9);
-            triggerFloatingScore('⚠️ FOUL', '#EF4444');
-            showToast('⚠️ Striker Pocketed (Foul)');
+            triggerFloatingScore('⚠️ FOUL (-1 Due)', '#EF4444');
+            showToast('⚠️ Striker Pocketed (Scratch Foul)');
           }}
           onShotSettled={(details: any) => {
             setIsShotActive(false);

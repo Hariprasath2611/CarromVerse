@@ -12,6 +12,8 @@ export interface QueenEvaluationInput {
   queenPocketedThisShot: boolean;
   assignedCoinsPocketedCount: number;
   foulOccurred: boolean;
+  playerBankedCoinsCount?: number;
+  strictQueenEligibility?: boolean;
 }
 
 export interface QueenShotResult {
@@ -19,6 +21,7 @@ export interface QueenShotResult {
   queenCoveredThisShot: boolean;
   queenReturnedToBoard: boolean;
   isFailedCover: boolean;
+  isPrematurePocket?: boolean;
   queenRetainedByPlayerId?: PlayerId;
   queenRetainedByTeamId?: TeamId;
 }
@@ -130,13 +133,19 @@ export class QueenManager {
         this.status = 'returned_to_board';
         queenReturnedToBoard = true;
       } else if (assignedCoinsPocketedCount > 0) {
-        // Immediate Cover: Pocketed Queen AND assigned coin in the SAME shot!
+        // Immediate Cover: Pocketed Queen AND assigned coin in the SAME shot! (SGFI Law 58)
         this.status = 'covered';
         this.pocketedByPlayerId = shooter.id;
         this.pocketedByTeamId = shooter.teamId;
         queenCoveredThisShot = true;
+      } else if (input.strictQueenEligibility && (input.playerBankedCoinsCount ?? 0) === 0) {
+        // Official SGFI Law 56 & 57: Sinking Queen alone without previously banking at least 1 piece is invalid!
+        // Queen must be placed back in center circle and player loses turn.
+        this.status = 'returned_to_board';
+        queenReturnedToBoard = true;
+        isFailedCover = true;
       } else {
-        // Queen pocketed alone -> becomes pending cover
+        // Queen pocketed alone legally -> becomes pending cover
         this.status = 'pending_cover';
         this.pocketedByPlayerId = shooter.id;
         this.pocketedByTeamId = shooter.teamId;
@@ -148,6 +157,7 @@ export class QueenManager {
       queenCoveredThisShot,
       queenReturnedToBoard,
       isFailedCover,
+      isPrematurePocket: input.strictQueenEligibility && (input.playerBankedCoinsCount ?? 0) === 0 && assignedCoinsPocketedCount === 0 && queenPocketedThisShot && !foulOccurred,
       queenRetainedByPlayerId: this.pocketedByPlayerId,
       queenRetainedByTeamId: this.pocketedByTeamId,
     };

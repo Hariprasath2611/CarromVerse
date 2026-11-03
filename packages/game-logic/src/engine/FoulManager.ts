@@ -15,6 +15,8 @@ export interface FoulDetectionInput {
   isBaselinePlacementViolated?: boolean;
   contactOccurred?: boolean;
   playerPocketedCoinsCount: number; // how many coins the player has in hand / banked
+  coinsOverboard?: { id?: string; type: CoinType }[];
+  isPrematureQueenPocket?: boolean;
 }
 
 export interface FoulEvaluationResult {
@@ -54,11 +56,20 @@ export class FoulManager {
     let penaltyCoins = 0;
     let penaltyPoints = 0;
 
-    // 1. Striker Pocketed (Scratch)
+    // 1. Striker Pocketed (Scratch) – SGFI Law 88 & 89
     if (strikerPocketed) {
+      let desc = 'Striker was pocketed (Scratch foul)';
+      const pocketedOwn = pocketedCoinTypes.some((t) => this.ruleset.isAssignedCoin(player, t));
+      const pocketedQueen = pocketedCoinTypes.includes('queen');
+      if (pocketedOwn) {
+        desc = 'Striker and own carromman pocketed together (Scratch + C/M penalty - Law 89a)';
+      } else if (pocketedQueen) {
+        desc = 'Striker and Queen pocketed together (Scratch + Queen returned - Law 89c)';
+      }
+
       fouls.push({
         type: 'striker_pocketed',
-        description: 'Striker was pocketed (Scratch foul)',
+        description: desc,
         penaltyCoins: this.ruleset.foulPenaltyCoins,
         penaltyPoints: this.ruleset.foulPenaltyPoints,
       });
@@ -76,6 +87,16 @@ export class FoulManager {
       });
     }
 
+    // 2b. Premature Queen Pocket (SGFI Law 56 & 57)
+    if (input.isPrematureQueenPocket) {
+      fouls.push({
+        type: 'illegal_queen_pocket',
+        description: 'Queen pocketed without prior banked carromman (SGFI Law 56/57)',
+        penaltyCoins: 0, // Queen returns to center circle
+        penaltyPoints: 0,
+      });
+    }
+
     // 3. Baseline placement violation
     if (isBaselinePlacementViolated) {
       fouls.push({
@@ -86,6 +107,16 @@ export class FoulManager {
       });
       penaltyCoins += this.ruleset.foulPenaltyCoins;
       penaltyPoints += this.ruleset.foulPenaltyPoints;
+    }
+
+    // 4. Coins Overboard (SGFI Chapter XII)
+    if (input.coinsOverboard && input.coinsOverboard.length > 0) {
+      fouls.push({
+        type: 'coin_overboard',
+        description: `${input.coinsOverboard.length} coin(s) flew overboard and returned to center`,
+        penaltyCoins: 0,
+        penaltyPoints: 0,
+      });
     }
 
     // 4. Strict opponent coin foul (if enabled in ruleset)

@@ -42,4 +42,6 @@ export interface GameConfiguration {
   musicEnabled?: boolean;
   boardTheme?: string;
   teamNames?: { team_a: string; team_b: string };
+  isOfficialSGFI?: boolean;
+  strictQueenEligibility?: boolean;
 }

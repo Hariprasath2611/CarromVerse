@@ -265,7 +265,7 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
         customNames: { 0: 'Alice', 2: 'Bob' },
       });
       const config = createDefaultGameConfig('two_player_individual');
-      config.targetScore = 15; // Set target to 15 for match completion
+      config.targetScore = 5; // Set target to 5 for SGFI match completion (1 + 1 + 3)
       const sm = new CarromStateMachine(config, players);
 
       // 1. Verify seating and player configs
@@ -283,7 +283,7 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       });
       assert.strictEqual(shot1.extraTurnEarned, true);
       assert.strictEqual(shot1.foulOccurred, false);
-      assert.strictEqual(sm.getSessionState().scores['player_0'].points, 10);
+      assert.strictEqual(sm.getSessionState().scores['player_0'].points, 1);
       // Turn remains with Alice
       assert.strictEqual(shot1.nextTurn.activePlayerId, 'player_0');
 
@@ -302,10 +302,10 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       });
       assert.strictEqual(shot3.queenCoveredThisShot, true);
       assert.strictEqual(shot3.queenStatusAfter, 'covered');
-      // Alice gets 10 pts for white coin + 25 pts for queen = 35 total pts
-      assert.strictEqual(sm.getSessionState().scores['player_0'].points, 45);
+      // Alice gets 1 pt for white coin + 3 pts for queen = 4 pts added (total 5 pts)
+      assert.strictEqual(sm.getSessionState().scores['player_0'].points, 5);
 
-      // 5. Target score reached (45 >= 15) -> Match complete!
+      // 5. Target score reached (5 >= 5) -> Match complete!
       assert.strictEqual(shot3.isMatchOver, true);
       assert.ok(shot3.matchResult);
       assert.strictEqual(shot3.matchResult.winnerId, 'player_0');
@@ -424,7 +424,7 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
         teamBName: 'Golden Strikers',
       });
       const config = createDefaultGameConfig('four_player_team');
-      config.targetScore = 20;
+      config.targetScore = 2;
       const sm = new CarromStateMachine(config, players);
 
       // 1. Verify opposite seating layout
@@ -454,7 +454,7 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       assert.strictEqual(s2.nextTurn.activeSeat, 2);
       assert.strictEqual(s2.nextTurn.activePlayerId, 'player_2');
 
-      // A2 pockets a White coin (+10 points for Team A) -> earns extra turn
+      // A2 pockets a White coin (+1 point for Team A) -> earns extra turn
       const s3 = sm.processShotSettlement({
         pocketedCoins: [{ id: 'w1', type: 'white' }],
         strikerPocketed: false,
@@ -462,13 +462,13 @@ describe('CarromVerse Phase 1.6 – End-to-End Integration Testing', () => {
       assert.strictEqual(s3.extraTurnEarned, true);
       assert.strictEqual(s3.nextTurn.activeSeat, 2);
 
-      // A2 pockets a second White coin (+10 points -> 20 points total for Team A)
+      // A2 pockets a second White coin (+1 point -> 2 points total for Team A)
       const s4 = sm.processShotSettlement({
         pocketedCoins: [{ id: 'w2', type: 'white' }],
         strikerPocketed: false,
       });
 
-      // Team A reached target score (20 points) -> Match complete!
+      // Team A reached target score (2 points) -> Match complete!
       assert.strictEqual(s4.isMatchOver, true);
       assert.strictEqual(s4.matchResult.winningTeamId, 'team_a');
       assert.strictEqual(s4.matchResult.isDraw, false);

@@ -257,6 +257,15 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
     const playerPocketedCount =
       (playerScore?.whiteCoinsPocketed ?? 0) + (playerScore?.blackCoinsPocketed ?? 0);
 
+    // SGFI Law 56/57: Check if sinking queen alone without banking any piece
+    const strictQueenCheck = this.ruleset.strictQueenEligibility ?? false;
+    const isPrematureQueen =
+      strictQueenCheck &&
+      queenWasPocketed &&
+      assignedCoins.length === 0 &&
+      playerPocketedCount === 0 &&
+      !strikerPocketed;
+
     const foulResult = this.foulManager.detectFouls({
       player: shooter,
       strikerPocketed,
@@ -264,6 +273,8 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       isFailedQueenCover: failedQueenCoverAttempt,
       contactOccurred: input.contactOccurred,
       playerPocketedCoinsCount: playerPocketedCount,
+      coinsOverboard: input.coinsOverboard,
+      isPrematureQueenPocket: isPrematureQueen,
     });
 
     const foulOccurred = foulResult.hasFoul;
@@ -274,6 +285,8 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       queenPocketedThisShot: queenWasPocketed,
       assignedCoinsPocketedCount: assignedCoins.length,
       foulOccurred,
+      playerBankedCoinsCount: playerPocketedCount,
+      strictQueenEligibility: strictQueenCheck,
     });
 
     const queenStatusAfter = queenResult.status;
@@ -298,11 +311,38 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       }
     }
 
+    // Handle coins that flew overboard (SGFI Chapter XII)
+    if (input.coinsOverboard && input.coinsOverboard.length > 0) {
+      for (const ob of input.coinsOverboard) {
+        const match = this.coins.find(
+          (c) => c.id === ob.id || (ob.type && c.type === ob.type && c.state !== 'pocketed')
+        );
+        if (match) {
+          match.state = 'on_board';
+          match.position = { x: BOARD_CENTER.x, y: BOARD_CENTER.y };
+          match.velocity = { x: 0, y: 0 };
+          coinsToReturnToBoard.push({ id: match.id, type: match.type });
+        }
+      }
+    }
+
     // Mark newly pocketed coins as pocketed
     for (const p of validPocketedCoins) {
       if (p.type === 'queen' && queenResult.queenReturnedToBoard) {
         continue;
       }
+      // SGFI Law 89a: If striker is pocketed along with own coin, own coin must return to center circle!
+      if (strikerPocketed && this.ruleset.isAssignedCoin(shooter, p.type as CoinType)) {
+        const match = this.coins.find((c) => c.id === p.id);
+        if (match) {
+          match.state = 'on_board';
+          match.position = { x: BOARD_CENTER.x, y: BOARD_CENTER.y };
+          match.velocity = { x: 0, y: 0 };
+          coinsToReturnToBoard.push({ id: match.id, type: match.type });
+        }
+        continue;
+      }
+
       const match = this.coins.find((c) => c.id === p.id);
       if (match) {
         match.state = 'pocketed';
@@ -326,11 +366,12 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       }
     }
 
-    // Settle due penalties if no foul occurred and player pocketed assigned coins
+    // Settle due penalties if no foul occurred and player pocketed assigned coins (SGFI Law 93)
+    let settledDueCount = 0;
     if (!foulOccurred && assignedCoins.length > 0) {
-      const settledCount = this.foulManager.settleDuePenalty(shooter.id, assignedCoins.length);
-      if (settledCount > 0) {
-        let returnCount = settledCount;
+      settledDueCount = this.foulManager.settleDuePenalty(shooter.id, assignedCoins.length);
+      if (settledDueCount > 0) {
+        let returnCount = settledDueCount;
         for (const c of this.coins) {
           if (returnCount <= 0) break;
           if (c.state === 'pocketed' && c.type !== 'queen' && this.ruleset.isAssignedCoin(shooter, c.type)) {
@@ -378,11 +419,12 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
     // 7. Extra turn evaluation
     let extraTurnEarned = false;
     if (!foulOccurred) {
-      const pocketedOwnCoin = assignedCoins.length > 0;
+      // In SGFI Law 93: if all pocketed assigned coins went to settle due, no extra turn earned
+      const retainedAssignedCoins = assignedCoins.length > settledDueCount;
       const pocketedQueenPending = queenWasPocketed && queenStatusAfter === 'pending_cover';
       const coveredQueen = queenResult.queenCoveredThisShot;
 
-      if (pocketedOwnCoin || pocketedQueenPending || coveredQueen) {
+      if (retainedAssignedCoins || pocketedQueenPending || coveredQueen) {
         extraTurnEarned = true;
         this.scoringEngine.recordExtraTurn(shooter);
       }
@@ -499,5 +541,25 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       penaltyCoinsDue: evaluation.fouls.reduce((acc, f) => acc + f.penaltyCoins, 0),
       coinsToReturnToBoard: evaluation.coinsToReturnToBoard,
     };
+  }
+
+  /**
+   * Settles official SGFI/ICF board completion.
+   * Awards 1 pt per opponent piece remaining on board + 3 pts Queen bonus (subject to 21 pt cap).
+   */
+  public settleBoardCompletion(winner: Player): {
+    winnerPoints: number;
+    remainingOpponentCoins: number;
+    queenBonus: number;
+  } {
+    const queenCoveredByWinner =
+      this.queenManager.getPocketedByPlayerId() === winner.id ||
+      (winner.teamId && this.queenManager.getPocketedByTeamId() === winner.teamId);
+
+    return this.scoringEngine.settleBoardOutcome({
+      winner,
+      coinsOnBoard: this.coins,
+      queenCoveredByWinner: Boolean(queenCoveredByWinner && this.queenManager.isCovered()),
+    });
   }
 }

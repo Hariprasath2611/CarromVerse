@@ -14,11 +14,15 @@ export class FourPlayerTeamRuleset implements IRuleset {
   public readonly maxRounds: number;
   public readonly foulPenaltyCoins: number;
   public readonly foulPenaltyPoints: number;
+  public readonly isOfficialSGFI: boolean;
+  public readonly strictQueenEligibility: boolean;
 
   constructor(options?: Partial<RulesetOptions>) {
-    this.whiteCoinPoints = options?.whiteCoinPoints ?? 10;
-    this.blackCoinPoints = options?.blackCoinPoints ?? 5;
-    this.queenPoints = options?.queenPoints ?? 25;
+    this.isOfficialSGFI = options?.isOfficialSGFI ?? true;
+    this.strictQueenEligibility = options?.strictQueenEligibility ?? false;
+    this.whiteCoinPoints = options?.whiteCoinPoints ?? (this.isOfficialSGFI ? 1 : 10);
+    this.blackCoinPoints = options?.blackCoinPoints ?? (this.isOfficialSGFI ? 1 : 5);
+    this.queenPoints = options?.queenPoints ?? (this.isOfficialSGFI ? 3 : 25);
     this.targetScore = options?.targetScore ?? 25;
     this.maxRounds = options?.maxRounds ?? 8;
     this.foulPenaltyCoins = options?.foulPenaltyCoins ?? 1;

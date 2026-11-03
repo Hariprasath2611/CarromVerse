@@ -9,6 +9,8 @@ export type FoulType =
   | 'striker_not_on_baseline'
   | 'turn_timeout'
   | 'queen_failed_cover'
+  | 'illegal_queen_pocket'
+  | 'coin_overboard'
   | 'no_contact'
   | 'illegal_break'
   | 'touch_foul';
@@ -38,6 +40,7 @@ export interface ShotSettlementInput {
   strikerPocketed: boolean;
   durationMs?: number;
   contactOccurred?: boolean;
+  coinsOverboard?: { id?: string; type: CoinType }[];
 }
 
 export interface ShotResult {

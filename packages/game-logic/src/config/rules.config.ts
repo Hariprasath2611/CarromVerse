@@ -54,21 +54,49 @@ export const GAME_MODE_DEFINITIONS: Record<GameMode, GameModeDefinition> = {
   },
 };
 
-export function createDefaultGameConfig(mode: GameMode): GameConfiguration {
+export function createDefaultGameConfig(mode: GameMode, overrides?: Partial<GameConfiguration>): GameConfiguration {
   const def = GAME_MODE_DEFINITIONS[mode];
+  const isClassicTournament = mode === 'two_player_individual' || mode === 'four_player_team';
+
   return {
     id: `config_${mode}`,
     mode,
     variant: def.isTeamBased || mode === 'two_player_individual' ? 'classic_carrom' : 'points_carrom',
-    targetScore: mode === 'two_player_individual' || mode === 'four_player_team' ? 25 : 50,
-    turnTimeLimitSeconds: 25,
-    maxRounds: 8,
-    foulPenaltyCoins: 1,
-    whiteCoinPoints: 10,
-    blackCoinPoints: 5,
-    queenPoints: 25,
+    targetScore: overrides?.targetScore ?? (isClassicTournament ? 25 : 50),
+    turnTimeLimitSeconds: overrides?.turnTimeLimitSeconds ?? (isClassicTournament ? 15 : 25),
+    maxRounds: overrides?.maxRounds ?? 8,
+    foulPenaltyCoins: overrides?.foulPenaltyCoins ?? 1,
+    whiteCoinPoints: overrides?.whiteCoinPoints ?? (isClassicTournament ? 1 : 10),
+    blackCoinPoints: overrides?.blackCoinPoints ?? (isClassicTournament ? 1 : 5),
+    queenPoints: overrides?.queenPoints ?? (isClassicTournament ? 3 : 25),
     queenCoverRequired: def.requiresQueenCover,
     allowSuicideFoulPenalty: true,
     boardDimensions: DEFAULT_BOARD_DIMENSIONS,
+    isOfficialSGFI: overrides?.isOfficialSGFI ?? isClassicTournament,
+    strictQueenEligibility: overrides?.strictQueenEligibility ?? false,
+    ...overrides,
   };
+}
+
+/**
+ * Creates a strict SGFI / ICF Tournament configuration:
+ * 25-point target, 8 rounds max, 15s turn limit, 1 pt per piece, 3 pts Queen bonus,
+ * with strict Queen eligibility (must bank 1 piece before sinking Queen alone).
+ */
+export function createSGFITournamentConfig(
+  mode: GameMode = 'two_player_individual',
+  overrides?: Partial<GameConfiguration>
+): GameConfiguration {
+  return createDefaultGameConfig(mode, {
+    targetScore: 25,
+    maxRounds: 8,
+    turnTimeLimitSeconds: 15,
+    foulPenaltyCoins: 1,
+    whiteCoinPoints: 1,
+    blackCoinPoints: 1,
+    queenPoints: 3,
+    isOfficialSGFI: true,
+    strictQueenEligibility: true,
+    ...overrides,
+  });
 }

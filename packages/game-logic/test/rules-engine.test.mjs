@@ -76,7 +76,7 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
       });
 
       assert.strictEqual(evalResult.foulOccurred, false);
-      assert.strictEqual(evalResult.playerScoreDelta, 10);
+      assert.strictEqual(evalResult.playerScoreDelta, 1);
       assert.strictEqual(evalResult.extraTurnEarned, true);
       assert.strictEqual(evalResult.nextTurn?.activePlayerId, 'p1');
       assert.strictEqual(evalResult.nextTurn?.turnNumber, 2);
@@ -126,7 +126,7 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
 
     it('target score achievement completes the match with winner', () => {
       const config = createDefaultGameConfig('two_player_individual');
-      config.targetScore = 20; // 2 white coins needed
+      config.targetScore = 2; // 2 white coins needed
       const engine = new CarromRulesEngine(config, create2PPlayers());
 
       // Alice pockets 2 white coins in one shot
@@ -138,7 +138,7 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
         strikerPocketed: false,
       });
 
-      assert.strictEqual(shot.playerScoreDelta, 20);
+      assert.strictEqual(shot.playerScoreDelta, 2);
       assert.strictEqual(shot.isMatchOver, true);
       assert.ok(shot.matchResult);
       assert.strictEqual(shot.matchResult?.winnerId, 'p1');
@@ -230,14 +230,14 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
       const config = createDefaultGameConfig('four_player_team');
       const engine = new CarromRulesEngine(config, create4PTeamPlayers());
 
-      // Alice (Team A, seat 0) pockets 1 White coin (+10)
+      // Alice (Team A, seat 0) pockets 1 White coin (+1)
       const s1 = engine.processShotSettlement({
         pocketedCoins: [{ id: 'coin_inner_0', type: 'white' }],
         strikerPocketed: false,
       });
-      assert.strictEqual(s1.playerScoreDelta, 10);
-      assert.strictEqual(s1.teamScoreDelta, 10);
-      assert.strictEqual(s1.teamScores?.team_a.points, 10);
+      assert.strictEqual(s1.playerScoreDelta, 1);
+      assert.strictEqual(s1.teamScoreDelta, 1);
+      assert.strictEqual(s1.teamScores?.team_a.points, 1);
 
       // Alice takes a dry shot -> passes to Bob (Team B)
       engine.processShotSettlement({ pocketedCoins: [], strikerPocketed: false });
@@ -246,18 +246,18 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
       engine.processShotSettlement({ pocketedCoins: [], strikerPocketed: false });
       assert.strictEqual(engine.getTurnManager().getActivePlayer().id, 'tA2');
 
-      // Andrew (Team A partner) pockets another White coin (+10)
+      // Andrew (Team A partner) pockets another White coin (+1)
       const s3 = engine.processShotSettlement({
         pocketedCoins: [{ id: 'coin_outer_0', type: 'white' }],
         strikerPocketed: false,
       });
-      assert.strictEqual(s3.teamScores?.team_a.points, 20);
+      assert.strictEqual(s3.teamScores?.team_a.points, 2);
       assert.strictEqual(s3.teamScores?.team_a.whiteCoinsPocketed, 2);
     });
 
     it('team win condition triggers when team reaches target score', () => {
       const config = createDefaultGameConfig('four_player_team');
-      config.targetScore = 20;
+      config.targetScore = 2;
       const engine = new CarromRulesEngine(config, create4PTeamPlayers());
 
       const s1 = engine.processShotSettlement({
@@ -298,8 +298,8 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
 
       assert.strictEqual(s2.queenStatusAfter, 'covered');
       assert.strictEqual(s2.queenCoveredThisShot, true);
-      // Scores White coin (10) + Queen (25) = 35 points!
-      assert.strictEqual(s2.playerScoreDelta, 35);
+      // Scores White coin (1) + Queen (3) = 4 points!
+      assert.strictEqual(s2.playerScoreDelta, 4);
       assert.strictEqual(s2.extraTurnEarned, true);
     });
 
@@ -318,7 +318,7 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
       assert.strictEqual(shot.queenStatusAfter, 'covered');
       assert.strictEqual(shot.queenCoveredThisShot, true);
       assert.strictEqual(shot.queenReturnedToCenter, false);
-      assert.strictEqual(shot.playerScoreDelta, 35);
+      assert.strictEqual(shot.playerScoreDelta, 4);
       assert.strictEqual(shot.extraTurnEarned, true);
     });
 
@@ -405,7 +405,7 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
         pocketedCoins: [{ id: 'coin_inner_0', type: 'white' }],
         strikerPocketed: false,
       });
-      assert.strictEqual(engine.getScoringEngine().getPlayerScore('p1')?.points, 10);
+      assert.strictEqual(engine.getScoringEngine().getPlayerScore('p1')?.points, 1);
 
       // Turn 2: Attempting to submit the same coin_inner_0 again is deduplicated
       const s2 = engine.processShotSettlement({
@@ -415,7 +415,166 @@ describe('CarromVerse Phase 1.5 – Comprehensive Rules Engine Tests', () => {
       // Should be treated as dry shot since coin was already pocketed
       assert.strictEqual(s2.playerScoreDelta, 0);
       assert.strictEqual(s2.extraTurnEarned, false);
-      assert.strictEqual(engine.getScoringEngine().getPlayerScore('p1')?.points, 10);
+      assert.strictEqual(engine.getScoringEngine().getPlayerScore('p1')?.points, 1);
+    });
+  });
+
+  describe('7. Official SGFI / ICF Tournament Laws Verification', () => {
+    it('SGFI Law 56 & 57: Sinking Queen alone without previously banking at least 1 piece is invalid -> Queen returned to center and turn lost', () => {
+      const config = createDefaultGameConfig('two_player_individual', { strictQueenEligibility: true });
+      const engine = new CarromRulesEngine(config, create2PPlayers());
+
+      // Turn 1: Alice sinks Queen alone with 0 banked coins
+      const shot = engine.processShotSettlement({
+        pocketedCoins: [{ id: 'coin_queen', type: 'queen' }],
+        strikerPocketed: false,
+      });
+
+      assert.strictEqual(shot.queenStatusAfter, 'returned_to_board');
+      assert.strictEqual(shot.queenReturnedToCenter, true);
+      assert.strictEqual(shot.queenCoveredThisShot, false);
+      assert.strictEqual(shot.extraTurnEarned, false);
+      assert.strictEqual(shot.coinsToReturnToBoard.some((c) => c.type === 'queen'), true);
+      assert.strictEqual(shot.nextTurn?.activePlayerId, 'p2');
+    });
+
+    it('SGFI Law 58: Sinking Queen AND own coin together in the same stroke is valid even on first shot -> Queen covered', () => {
+      const config = createDefaultGameConfig('two_player_individual', { strictQueenEligibility: true });
+      const engine = new CarromRulesEngine(config, create2PPlayers());
+
+      const shot = engine.processShotSettlement({
+        pocketedCoins: [
+          { id: 'coin_queen', type: 'queen' },
+          { id: 'coin_inner_0', type: 'white' },
+        ],
+        strikerPocketed: false,
+      });
+
+      assert.strictEqual(shot.queenStatusAfter, 'covered');
+      assert.strictEqual(shot.queenCoveredThisShot, true);
+      assert.strictEqual(shot.queenReturnedToCenter, false);
+      assert.strictEqual(shot.extraTurnEarned, true);
+      assert.strictEqual(shot.playerScoreDelta, 4); // 1 pt White + 3 pts Queen
+    });
+
+    it('SGFI Law 78: 21-Point Cap - Queen gives 0 points if player already has 21 or more points', () => {
+      const config = createDefaultGameConfig('two_player_individual');
+      const engine = new CarromRulesEngine(config, create2PPlayers());
+
+      // Simulate Alice having already accumulated 21 points
+      const p1Score = engine.getScoringEngine().getPlayerScore('p1');
+      if (p1Score) {
+        p1Score.points = 21;
+        p1Score.whiteCoinsPocketed = 1;
+      }
+
+      // Alice now covers the Queen with a white coin
+      // Shot 1: Queen pocketed alone
+      engine.processShotSettlement({
+        pocketedCoins: [{ id: 'coin_queen', type: 'queen' }],
+        strikerPocketed: false,
+      });
+
+      // Shot 2: White coin covers Queen
+      const s2 = engine.processShotSettlement({
+        pocketedCoins: [{ id: 'coin_inner_0', type: 'white' }],
+        strikerPocketed: false,
+      });
+
+      assert.strictEqual(s2.queenCoveredThisShot, true);
+      // Under SGFI Law 78, Queen bonus is 0 because points >= 21! Only White coin gives 1 point!
+      assert.strictEqual(s2.playerScoreDelta, 1);
+      assert.strictEqual(engine.getScoringEngine().getPlayerScore('p1')?.points, 22);
+    });
+
+    it('SGFI Law 89a: Striker pocketed with own coin returns both the pocketed coin and 1 penalty coin to center', () => {
+      const config = createDefaultGameConfig('two_player_individual');
+      const engine = new CarromRulesEngine(config, create2PPlayers());
+
+      // Alice banks 1 White coin legally
+      engine.processShotSettlement({
+        pocketedCoins: [{ id: 'coin_inner_0', type: 'white' }],
+        strikerPocketed: false,
+      });
+      assert.strictEqual(engine.getCoins().find((c) => c.id === 'coin_inner_0')?.state, 'pocketed');
+
+      // Alice now scratches striker while also sinking a second White coin
+      const foulShot = engine.processShotSettlement({
+        pocketedCoins: [{ id: 'coin_outer_0', type: 'white' }],
+        strikerPocketed: true,
+      });
+
+      assert.strictEqual(foulShot.foulOccurred, true);
+      assert.strictEqual(foulShot.primaryFoulType, 'striker_pocketed');
+      // Both the pocketed coin and the penalty coin are returned to center circle (total 2 coins)
+      assert.strictEqual(foulShot.coinsToReturnToBoard.length, 2);
+      assert.strictEqual(foulShot.coinsToReturnToBoard.every((c) => c.type === 'white'), true);
+      assert.strictEqual(foulShot.extraTurnEarned, false);
+      assert.strictEqual(foulShot.nextTurn?.activePlayerId, 'p2');
+    });
+
+    it('SGFI Law 89b: Striker pocketed with opponent coin keeps opponent coin pocketed and assesses 1 penalty to shooter', () => {
+      const config = createDefaultGameConfig('two_player_individual');
+      const engine = new CarromRulesEngine(config, create2PPlayers());
+
+      // Alice scratches while sinking Bob's Black coin
+      const foulShot = engine.processShotSettlement({
+        pocketedCoins: [{ id: 'coin_inner_1', type: 'black' }],
+        strikerPocketed: true,
+      });
+
+      assert.strictEqual(foulShot.foulOccurred, true);
+      // Opponent's Black coin stays pocketed on the board
+      const blackCoin = engine.getCoins().find((c) => c.id === 'coin_inner_1');
+      assert.strictEqual(blackCoin?.state, 'pocketed');
+      // Alice had 0 banked coins, so penalty is logged as 1 outstanding due
+      assert.strictEqual(engine.getFoulManager().getPenaltiesDue('p1'), 1);
+      assert.strictEqual(foulShot.extraTurnEarned, false);
+      assert.strictEqual(foulShot.nextTurn?.activePlayerId, 'p2');
+    });
+
+    it('SGFI Chapter XII: Coins overboard are returned to center circle', () => {
+      const config = createDefaultGameConfig('two_player_individual');
+      const engine = new CarromRulesEngine(config, create2PPlayers());
+
+      const shot = engine.processShotSettlement({
+        pocketedCoins: [],
+        strikerPocketed: false,
+        coinsOverboard: [{ id: 'coin_inner_0', type: 'white' }],
+      });
+
+      assert.strictEqual(shot.coinsToReturnToBoard.length, 1);
+      assert.strictEqual(shot.coinsToReturnToBoard[0].id, 'coin_inner_0');
+      assert.strictEqual(shot.coinsToReturnToBoard[0].type, 'white');
+      const coin = engine.getCoins().find((c) => c.id === 'coin_inner_0');
+      assert.strictEqual(coin?.state, 'on_board');
+      assert.strictEqual(coin?.position.x, 500);
+      assert.strictEqual(coin?.position.y, 500);
+    });
+
+    it('SGFI Laws 75-79: settleBoardCompletion awards 1 pt per opponent coin remaining + 3 pts Queen bonus', () => {
+      const config = createDefaultGameConfig('two_player_individual');
+      const players = create2PPlayers();
+      const engine = new CarromRulesEngine(config, players);
+
+      // Alice banks White coin and Queen
+      engine.processShotSettlement({
+        pocketedCoins: [
+          { id: 'coin_queen', type: 'queen' },
+          { id: 'coin_inner_0', type: 'white' },
+        ],
+        strikerPocketed: false,
+      });
+
+      // Settle board with Alice as winner. Bob still has 9 Black coins on board.
+      const boardResult = engine.settleBoardCompletion(players[0]);
+
+      // Bob has 9 Black coins remaining -> 9 points
+      assert.strictEqual(boardResult.remainingOpponentCoins, 9);
+      // Queen covered by winner Alice -> 3 points bonus
+      assert.strictEqual(boardResult.queenBonus, 3);
+      // Total board points: 9 + 3 = 12 points
+      assert.strictEqual(boardResult.winnerPoints, 12);
     });
   });
 });

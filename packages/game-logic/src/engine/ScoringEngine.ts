@@ -97,7 +97,10 @@ export class ScoringEngine {
           this.teamScores[shooter.teamId].blackCoinsPocketed += 1;
         }
       } else if (coinType === 'queen' && queenCoveredThisShot) {
-        const pts = this.ruleset.getPointsForCoin('queen');
+        // Official SGFI Law 78: 21-point cap
+        // "If the score of the winner of a board is 21 or more, he shall not be entitled to the points for Queen."
+        const currentPoints = score?.points ?? 0;
+        const pts = currentPoints >= 21 ? 0 : this.ruleset.getPointsForCoin('queen');
         playerDelta += pts;
         if (score) {
           score.queenPocketed = true;
@@ -181,6 +184,54 @@ export class ScoringEngine {
 
   public getScoreHistory(): ScoreHistoryEntry[] {
     return [...this.history];
+  }
+
+  /**
+   * Official SGFI/ICF Board Scoring (Laws 75-79):
+   * 1. Winner of the board receives 1 point for each opponent C/M remaining on the board.
+   * 2. If the winner covered the Queen, they receive 3 bonus points (subject to 21-point cap).
+   * 3. If winner had 21 or more points prior to board settlement, Queen bonus is 0.
+   * 4. Loser gets 0 points for the board.
+   */
+  public settleBoardOutcome(params: {
+    winner: Player;
+    coinsOnBoard: { type: CoinType; state: string }[];
+    queenCoveredByWinner: boolean;
+  }): {
+    winnerPoints: number;
+    remainingOpponentCoins: number;
+    queenBonus: number;
+  } {
+    const { winner, coinsOnBoard, queenCoveredByWinner } = params;
+    const remainingOpponentCoins = coinsOnBoard.filter(
+      (c) => c.state === 'on_board' && this.ruleset.isOpponentCoin(winner, c.type)
+    ).length;
+
+    const currentScore = this.playerScores[winner.id]?.points ?? 0;
+    const queenBonus =
+      queenCoveredByWinner && currentScore < 21 ? this.ruleset.getPointsForCoin('queen') : 0;
+    const totalPoints = remainingOpponentCoins + queenBonus;
+
+    const score = this.playerScores[winner.id];
+    if (score) {
+      score.points += totalPoints;
+      if (queenCoveredByWinner) {
+        score.queenPocketed = true;
+      }
+    }
+
+    if (this.teamScores && winner.teamId && this.teamScores[winner.teamId]) {
+      this.teamScores[winner.teamId].points += totalPoints;
+      if (queenCoveredByWinner) {
+        this.teamScores[winner.teamId].queenPocketed = true;
+      }
+    }
+
+    return {
+      winnerPoints: totalPoints,
+      remainingOpponentCoins,
+      queenBonus,
+    };
   }
 }
 

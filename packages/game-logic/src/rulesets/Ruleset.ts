@@ -42,6 +42,8 @@ export interface RulesetOptions {
   foulPenaltyCoins: number;
   foulPenaltyPoints: number;
   allowStrictOpponentCoinFoul?: boolean;
+  isOfficialSGFI?: boolean;
+  strictQueenEligibility?: boolean;
 }
 
 export interface IRuleset {
@@ -57,6 +59,8 @@ export interface IRuleset {
   readonly maxRounds: number;
   readonly foulPenaltyCoins: number;
   readonly foulPenaltyPoints: number;
+  readonly isOfficialSGFI?: boolean;
+  readonly strictQueenEligibility?: boolean;
 
   isAssignedCoin(player: Player, coinType: CoinType): boolean;
   isOpponentCoin(player: Player, coinType: CoinType): boolean;
