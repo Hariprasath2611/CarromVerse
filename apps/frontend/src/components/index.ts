@@ -23,4 +23,6 @@ export * from './PauseModal';
 export * from './ProfileHeader';
 export * from './PhaserCarromView';
 export * from './PlayerHandoverModal';
+export * from './AnimatedCoinSticker';
+export * from './FloatingReaction';
 export * from './navigation/TabBarIcon';
