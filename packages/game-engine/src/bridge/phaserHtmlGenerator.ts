@@ -152,6 +152,36 @@ ${PHASER_MIN_JS}
           redAccentColor: '#D8344A',
           arrowColor: '#6B3A1A'
         },
+        mahogany: {
+          id: 'mahogany',
+          frameColor: '#5C1D0C',
+          frameAccent: '#E9B949',
+          frameInnerCushion: '#361007',
+          surfaceBg: '#F5E4C3',
+          surfaceGrain: '#C29B63',
+          markingsColor: '#5C1D0C',
+          pocketRimColor: '#C9A24B',
+          baselineCircleColor: '#D8344A',
+          baselineDotColor: '#D8344A',
+          greenRingColor: '#1E8F5A',
+          redAccentColor: '#D8344A',
+          arrowColor: '#5C1D0C'
+        },
+        emerald: {
+          id: 'emerald',
+          frameColor: '#071810',
+          frameAccent: '#2BD67B',
+          frameInnerCushion: '#064E3B',
+          surfaceBg: '#0F261B',
+          surfaceGrain: '#163828',
+          markingsColor: '#4ADE80',
+          pocketRimColor: '#16A34A',
+          baselineCircleColor: '#D8344A',
+          baselineDotColor: '#4ADE80',
+          greenRingColor: '#2BD67B',
+          redAccentColor: '#D8344A',
+          arrowColor: '#22C55E'
+        },
         forest: {
           id: 'forest',
           frameColor: '#071810',
@@ -209,8 +239,8 @@ ${PHASER_MIN_JS}
       var activeScene = null;
 
       function getTheme(id) {
-        var key = id ? id.toLowerCase() : 'forest';
-        return BOARD_THEMES[key] || BOARD_THEMES['forest'];
+        var key = id ? id.toLowerCase() : 'classic';
+        return BOARD_THEMES[key] || BOARD_THEMES['classic'];
       }
 
       // Convert speed in cm/s to step velocity (px/step)
@@ -2082,14 +2112,21 @@ ${PHASER_MIN_JS}
         handleHostMessage(ev.data);
       });
 
-      // INITIALIZE PHASER WITH MATTER PHYSICS (CANVAS RENDERER FOR 100% RELIABLE MOBILE COMPOSITING)
+      // INITIALIZE PHASER WITH MATTER PHYSICS (AUTO DETECT WEBGL / CANVAS FOR 100% RELIABILITY)
       function initPhaser() {
         if (window._phaserGameInstance) return;
         var container = document.getElementById('carrom-game-container');
         if (!container) return;
 
+        var w = window.innerWidth || (document.documentElement ? document.documentElement.clientWidth : 0);
+        var h = window.innerHeight || (document.documentElement ? document.documentElement.clientHeight : 0);
+        if (!w || !h || w < 50 || h < 50) {
+          setTimeout(initPhaser, 40);
+          return;
+        }
+
         var config = {
-          type: Phaser.CANVAS,
+          type: Phaser.AUTO,
           parent: 'carrom-game-container',
           width: ${canvasSize},
           height: ${canvasSize},
@@ -2123,6 +2160,14 @@ ${PHASER_MIN_JS}
           setTimeout(initPhaser, 30);
         });
       }
+
+      window.addEventListener('load', function() {
+        if (window._phaserGameInstance && window._phaserGameInstance.scale) {
+          setTimeout(function() {
+            window._phaserGameInstance.scale.refresh();
+          }, 60);
+        }
+      });
 
       window.addEventListener('resize', function() {
         if (window._phaserGameInstance && window._phaserGameInstance.scale) {
