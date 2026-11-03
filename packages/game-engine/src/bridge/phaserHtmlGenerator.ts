@@ -1208,84 +1208,160 @@ ${PHASER_MIN_JS}
             var px = scene.strikerBody.position.x;
             var py = scene.strikerBody.position.y;
             var dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, px, py);
+            var s = scene.canvasSize;
+            var fw = (s - BOARD_PX) / 2;
+            var scale = BOARD_PX / 528;
+            var bo = 74 * scale;
 
-            if (dist <= scene.strikerRadius * 2.5) {
-              if (scene.isStrikerOverlapping) {
-                // Striker is overlapping a coin, block aiming
-                return;
-              }
+            // 1. Direct Slingshot Touch on Striker (Carrom Pool Style!)
+            if (dist <= scene.strikerRadius * 2.8) {
+              if (scene.isStrikerOverlapping) return;
+              scene.inputMode = 'slingshot';
               scene.isAiming = true;
-              scene.aimStartPoint = { x: pointer.x, y: pointer.y };
+              scene.aimStartPoint = { x: px, y: py };
               scene.updateAim(pointer.x, pointer.y);
+              return;
+            }
+
+            // 2. Baseline Horizontal Slider Touch Zone (near bottom baseline)
+            var baselineY = s - fw - bo;
+            if (currentSeat === 0 && Math.abs(pointer.y - baselineY) < 55) {
+              scene.inputMode = 'baseline_drag';
+              scene.handleBaselinePointer(pointer);
+              return;
+            }
+
+            // 3. Direct Board Touch-To-Aim (touching anywhere else on playing surface)
+            if (!scene.isStrikerOverlapping) {
+              scene.inputMode = 'touch_aim';
+              scene.isAiming = true;
+              scene.aimStartPoint = { x: px, y: py };
+              var aimAngle = Math.atan2(pointer.y - py, pointer.x - px);
+              scene.aimAngle = aimAngle;
+              scene.aimPowerRatio = 0.70; // Sweet-spot default power
+              scene.renderAimGuide(aimAngle, scene.aimPowerRatio);
             }
           });
 
           this.input.on('pointermove', function(pointer) {
-            if (!pointer.isDown) return;
+            if (!pointer.isDown || scene.isShotActive) return;
 
-            if (scene.isAiming) {
+            if (scene.inputMode === 'slingshot') {
               scene.updateAim(pointer.x, pointer.y);
-            } else if (!scene.isShotActive) {
-              // Direct drag on baseline
-              var s = scene.canvasSize;
-              var bl = BOARD_PX * 0.54;
-              var halfBl = bl / 2;
-              var center = s / 2;
-
-              var off = 0;
-              if (currentSeat === 0 || currentSeat === 2) {
-                off = (pointer.x - center) / halfBl;
-              } else {
-                off = (pointer.y - center) / halfBl;
-              }
-
-              currentOffsetRatio = Math.max(-0.95, Math.min(0.95, off));
-              scene.updateStrikerPosition();
-
-              sendToReactNative({
-                type: 'STRIKER_DRAGGED',
-                payload: { offset: currentOffsetRatio, isOverlapping: scene.isStrikerOverlapping },
-                timestamp: Date.now()
-              });
+            } else if (scene.inputMode === 'touch_aim') {
+              var px = scene.strikerBody.position.x;
+              var py = scene.strikerBody.position.y;
+              var aimAngle = Math.atan2(pointer.y - py, pointer.x - px);
+              scene.aimAngle = aimAngle;
+              scene.renderAimGuide(aimAngle, scene.aimPowerRatio || 0.70);
+            } else if (scene.inputMode === 'baseline_drag') {
+              scene.handleBaselinePointer(pointer);
             }
           });
 
           this.input.on('pointerup', function() {
-            if (scene.isAiming) {
+            if (scene.inputMode === 'slingshot') {
               scene.isAiming = false;
               scene.aimGraphics.clear();
 
-              if (!scene.isStrikerOverlapping && scene.aimPowerRatio > 0.05) {
+              if (!scene.isStrikerOverlapping && scene.aimPowerRatio >= 0.05) {
                 scene.executeShot(scene.aimAngle, scene.aimPowerRatio);
               }
             }
+            scene.inputMode = null;
+          });
+        },
+
+        handleBaselinePointer: function(pointer) {
+          var s = this.canvasSize;
+          var bl = BOARD_PX * 0.54;
+          var halfBl = bl / 2;
+          var center = s / 2;
+
+          var off = 0;
+          if (currentSeat === 0 || currentSeat === 2) {
+            off = (pointer.x - center) / halfBl;
+          } else {
+            off = (pointer.y - center) / halfBl;
+          }
+
+          currentOffsetRatio = Math.max(-0.95, Math.min(0.95, off));
+          this.updateStrikerPosition();
+
+          sendToReactNative({
+            type: 'STRIKER_DRAGGED',
+            payload: { offset: currentOffsetRatio, isOverlapping: this.isStrikerOverlapping },
+            timestamp: Date.now()
           });
         },
 
         updateAim: function(curX, curY) {
-          var dx = this.aimStartPoint.x - curX;
-          var dy = this.aimStartPoint.y - curY;
-          var dist = Math.hypot(dx, dy);
+          var px = this.strikerBody.position.x;
+          var py = this.strikerBody.position.y;
 
-          if (dist < 8) {
+          // Slingshot pull vector: pulling backward from striker aims forward
+          var pullDx = px - curX;
+          var pullDy = py - curY;
+          var pullDist = Math.hypot(pullDx, pullDy);
+
+          // If finger is right on the striker (< 14px), treat as cancel zone
+          if (pullDist < 14) {
             this.aimGraphics.clear();
             this.aimPowerRatio = 0;
+            // Draw soft red cancel indicator
+            this.aimGraphics.fillStyle(0xEF4444, 0.35);
+            this.aimGraphics.fillCircle(px, py, this.strikerRadius + 8);
+            this.aimGraphics.lineStyle(2, 0xEF4444, 0.9);
+            this.aimGraphics.strokeCircle(px, py, this.strikerRadius + 8);
             return;
           }
 
-          var angle = Math.atan2(dy, dx);
-          var maxDragPx = 120; // 12 cm * 10 px/cm
-          var clampedDist = Math.min(dist, maxDragPx);
-          this.aimPowerRatio = Math.max(0, Math.min(1, (clampedDist - 8) / (maxDragPx - 8)));
+          var angle = Math.atan2(pullDy, pullDx);
+          var maxPullPx = 135;
+          var clampedPull = Math.min(pullDist, maxPullPx);
+          this.aimPowerRatio = Math.max(0.05, Math.min(1.0, (clampedPull - 14) / (maxPullPx - 14)));
           this.aimAngle = angle;
 
+          this.renderAimGuide(angle, this.aimPowerRatio, curX, curY);
+        },
+
+        renderAimGuide: function(angle, powerRatio, pullX, pullY) {
           var px = this.strikerBody.position.x;
           var py = this.strikerBody.position.y;
           var sr = this.strikerRadius;
-
-          // Raycast to find contact point against coins and cushions
           var cosA = Math.cos(angle);
           var sinA = Math.sin(angle);
+
+          this.aimGraphics.clear();
+
+          // 1. Slingshot Tension Arc & Arrow behind Striker (Carrom Pool Style!)
+          var powerCol = powerRatio > 0.75 ? 0xEF4444 : (powerRatio > 0.40 ? 0xF59E0B : 0x2BD67B);
+          var arcR = sr + 14 + powerRatio * 16;
+          var oppAngle = angle + Math.PI;
+          var spread = 0.55 + powerRatio * 0.45;
+
+          // Glowing force arc behind striker
+          this.aimGraphics.lineStyle(4, powerCol, 0.85);
+          this.aimGraphics.beginPath();
+          this.aimGraphics.arc(px, py, arcR, oppAngle - spread, oppAngle + spread);
+          this.aimGraphics.strokePath();
+
+          // Elastic slingshot tension lines from striker edges to pull position if pulling
+          if (typeof pullX === 'number' && typeof pullY === 'number') {
+            var perpX = -sinA * (sr * 0.8);
+            var perpY = cosA * (sr * 0.8);
+            this.aimGraphics.lineStyle(2.5, powerCol, 0.65);
+            this.aimGraphics.lineBetween(px + perpX, py + perpY, pullX, pullY);
+            this.aimGraphics.lineBetween(px - perpX, py - perpY, pullX, pullY);
+
+            // Pull handle knob
+            this.aimGraphics.fillStyle(powerCol, 0.9);
+            this.aimGraphics.fillCircle(pullX, pullY, 12);
+            this.aimGraphics.lineStyle(2, 0xFFFFFF, 0.95);
+            this.aimGraphics.strokeCircle(pullX, pullY, 12);
+          }
+
+          // 2. Forward Raycasting to find nearest collision (Coins & Cushions)
           var nearestDist = 800;
           var hitType = 'none';
           var hitCoin = null;
@@ -1314,40 +1390,48 @@ ${PHASER_MIN_JS}
           var fw = (s - BOARD_PX) / 2;
           var boardMin = fw + sr;
           var boardMax = s - fw - sr;
+          var wallHitSide = null;
 
-          if (cosA > 0.001) nearestDist = Math.min(nearestDist, (boardMax - px) / cosA);
-          else if (cosA < -0.001) nearestDist = Math.min(nearestDist, (boardMin - px) / cosA);
-          if (sinA > 0.001) nearestDist = Math.min(nearestDist, (boardMax - py) / sinA);
-          else if (sinA < -0.001) nearestDist = Math.min(nearestDist, (boardMin - py) / sinA);
+          if (cosA > 0.001) {
+            var dRight = (boardMax - px) / cosA;
+            if (dRight < nearestDist) { nearestDist = dRight; hitType = 'wall'; wallHitSide = 'right'; }
+          } else if (cosA < -0.001) {
+            var dLeft = (boardMin - px) / cosA;
+            if (dLeft < nearestDist) { nearestDist = dLeft; hitType = 'wall'; wallHitSide = 'left'; }
+          }
+          if (sinA > 0.001) {
+            var dBottom = (boardMax - py) / sinA;
+            if (dBottom < nearestDist) { nearestDist = dBottom; hitType = 'wall'; wallHitSide = 'bottom'; }
+          } else if (sinA < -0.001) {
+            var dTop = (boardMin - py) / sinA;
+            if (dTop < nearestDist) { nearestDist = dTop; hitType = 'wall'; wallHitSide = 'top'; }
+          }
 
           var contactX = px + cosA * nearestDist;
           var contactY = py + sinA * nearestDist;
 
-          // Render Aim Line & Contact Point Ghost Striker
-          this.aimGraphics.clear();
-          var col = this.aimPowerRatio > 0.75 ? 0xF59E0B : 0x4ADE80;
-
-          // Dotted guide line
-          var segLen = 8;
+          // 3. Dotted Aim Line with Glowing Trajectory
+          var segLen = 9;
           var gapLen = 6;
           var step = segLen + gapLen;
           for (var d = 0; d < nearestDist; d += step) {
             var curD1 = d;
             var curD2 = Math.min(d + segLen, nearestDist);
-            this.aimGraphics.lineStyle(2, col, 0.75);
+            var alpha = 0.85 * (1 - (d / (nearestDist + 200)) * 0.4);
+            this.aimGraphics.lineStyle(2.5, powerCol, alpha);
             this.aimGraphics.lineBetween(
               px + cosA * curD1, py + sinA * curD1,
               px + cosA * curD2, py + sinA * curD2
             );
           }
 
-          // Ghost striker circle at contact point
-          this.aimGraphics.lineStyle(2, col, 0.7);
+          // 4. Ghost Striker at Contact Point
+          this.aimGraphics.lineStyle(2, powerCol, 0.75);
           this.aimGraphics.strokeCircle(contactX, contactY, sr);
-          this.aimGraphics.fillStyle(col, 0.22);
+          this.aimGraphics.fillStyle(powerCol, 0.18);
           this.aimGraphics.fillCircle(contactX, contactY, sr);
 
-          // If aimed at a target coin, render its projected deflection trajectory line
+          // 5. If Target is a Coin -> Render Deflection Trajectory Line & Target Impact Arrow!
           if (hitType === 'coin' && hitCoin && hitCoin.body) {
             var targetX = hitCoin.body.position.x;
             var targetY = hitCoin.body.position.y;
@@ -1356,20 +1440,56 @@ ${PHASER_MIN_JS}
             var normDist = Math.hypot(normX, normY) || 1;
             var deflDirX = normX / normDist;
             var deflDirY = normY / normDist;
-            var deflDist = Math.min(100, 35 + this.aimPowerRatio * 65);
+            var deflDist = Math.min(130, 45 + powerRatio * 85);
 
             for (var dd = 0; dd < deflDist; dd += step) {
               var d1 = dd;
               var d2 = Math.min(dd + segLen, deflDist);
-              this.aimGraphics.lineStyle(2, 0xF5ECD2, 0.85); // Cream trajectory for target coin
+              this.aimGraphics.lineStyle(2.5, 0xF5ECD2, 0.90); // Crisp cream trajectory for target coin
               this.aimGraphics.lineBetween(
                 targetX + deflDirX * d1, targetY + deflDirY * d1,
                 targetX + deflDirX * d2, targetY + deflDirY * d2
               );
             }
-            this.aimGraphics.lineStyle(1.5, 0xF5ECD2, 0.9);
-            this.aimGraphics.strokeCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX * 0.75);
+
+            // Target rollout ghost coin
+            this.aimGraphics.lineStyle(1.8, 0xF5ECD2, 0.95);
+            this.aimGraphics.strokeCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX);
+            this.aimGraphics.fillStyle(0xF5ECD2, 0.25);
+            this.aimGraphics.fillCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX);
+          } else if (hitType === 'wall') {
+            // Cushion rebound reflection angle!
+            var reflAngle = angle;
+            if (wallHitSide === 'left' || wallHitSide === 'right') {
+              reflAngle = Math.PI - angle;
+            } else {
+              reflAngle = -angle;
+            }
+            var rCos = Math.cos(reflAngle);
+            var rSin = Math.sin(reflAngle);
+            var reboundDist = Math.min(100, 30 + powerRatio * 70);
+
+            for (var rd = 0; rd < reboundDist; rd += step) {
+              var rd1 = rd;
+              var rd2 = Math.min(rd + segLen, reboundDist);
+              this.aimGraphics.lineStyle(2, powerCol, 0.55);
+              this.aimGraphics.lineBetween(
+                contactX + rCos * rd1, contactY + rSin * rd1,
+                contactX + rCos * rd2, contactY + rSin * rd2
+              );
+            }
           }
+
+          sendToReactNative({
+            type: 'AIM_CHANGED',
+            payload: {
+              angle: angle,
+              powerRatio: powerRatio,
+              speed_cm_s: STRIKER_MIN_SPEED_CM_S + powerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S)
+            },
+            timestamp: Date.now()
+          });
+        },
 
           sendToReactNative({
             type: 'AIM_CHANGED',
@@ -1906,6 +2026,21 @@ ${PHASER_MIN_JS}
               if (msg.payload && typeof msg.payload.offset === 'number') {
                 activeScene.setOffset(msg.payload.offset);
               }
+              break;
+            case 'SET_AIM_POWER':
+              if (msg.payload && typeof msg.payload.power === 'number') {
+                var p = Math.max(0, Math.min(1.0, msg.payload.power));
+                activeScene.aimPowerRatio = p;
+                if (p > 0.02) {
+                  activeScene.renderAimGuide(activeScene.aimAngle || -Math.PI / 2, p);
+                } else {
+                  activeScene.aimGraphics.clear();
+                }
+              }
+              break;
+            case 'CANCEL_AIM':
+              activeScene.aimGraphics.clear();
+              activeScene.aimPowerRatio = 0;
               break;
             case 'SHOOT':
               var pVal = (msg.payload && (typeof msg.payload.power === 'number' ? msg.payload.power : typeof msg.payload.powerRatio === 'number' ? msg.payload.powerRatio : 0.75)) || 0.75;
