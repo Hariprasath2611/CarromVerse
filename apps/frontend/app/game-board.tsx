@@ -500,6 +500,8 @@ export default function GameBoardScreen() {
             setIsShotActive(false);
             setIsAiming(false);
             setPowerRatio(0);
+            setStrikerOffsetRatio(0);
+            setIsStrikerOverlapping(false);
             const evalResult = processSettledShot({
               pocketedCoins: details?.pocketed ?? [],
               strikerPocketed: !!details?.strikerPocketed,
@@ -575,10 +577,9 @@ export default function GameBoardScreen() {
           style={[
             styles.sliderArea,
             {
-              opacity: activeSeat !== 0 ? 0.35 : isAiming ? 0.55 : 1.0,
+              opacity: isAiming ? 0.55 : 1.0,
             },
           ]}
-          pointerEvents={activeSeat !== 0 ? 'none' : 'auto'}
         >
           <View
             style={[
