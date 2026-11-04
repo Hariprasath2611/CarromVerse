@@ -41,7 +41,7 @@ export class App {
 
     // Set CORS headers
     httpRes.setHeader('Access-Control-Allow-Origin', ENV.corsOrigin);
-    httpRes.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    httpRes.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     httpRes.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (httpReq.method === 'OPTIONS') {

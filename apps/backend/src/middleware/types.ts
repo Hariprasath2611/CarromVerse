@@ -5,7 +5,7 @@ export interface HttpRequest extends IncomingMessage {
   query?: Record<string, string>;
   body?: unknown;
   params?: Record<string, string>;
-  user?: { id: string; email: string; username?: string };
+  user?: { id: string; email: string; username?: string; displayName?: string; picture?: string };
 }
 
 export interface HttpResponse extends ServerResponse {

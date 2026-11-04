@@ -1,7 +1,8 @@
 import { HttpRequest, HttpResponse, NextFunction } from './types.js';
 import { ResponseFormatter } from '../utils/responseFormatter.js';
+import { FirebaseAuthService } from '../auth/firebaseAuth.service.js';
 
-export function authMiddleware(req: HttpRequest, res: HttpResponse, next: NextFunction): void {
+export async function authMiddleware(req: HttpRequest, res: HttpResponse, next: NextFunction): Promise<void> {
   const authHeader = req.headers['authorization'];
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -15,16 +16,20 @@ export function authMiddleware(req: HttpRequest, res: HttpResponse, next: NextFu
     return;
   }
 
-  // Demo / Dev token parser (substitutable with Firebase Auth or JWT verification)
   try {
+    const authService = FirebaseAuthService.getInstance();
+    const decoded = await authService.verifyIdToken(token);
+
     req.user = {
-      id: 'usr_authenticated',
-      email: 'player@carromverse.io',
-      username: 'CarromChampion',
+      id: decoded.uid,
+      email: decoded.email || '',
+      displayName: decoded.displayName || '',
+      username: decoded.displayName || decoded.uid,
+      picture: decoded.picture,
     };
     next();
-  } catch (err) {
-    res.status(401).json(ResponseFormatter.error('Token verification failed', 'UNAUTHORIZED', err));
+  } catch (err: any) {
+    const message = err?.message || 'Token verification failed';
+    res.status(401).json(ResponseFormatter.error(message, 'UNAUTHORIZED'));
   }
 }
-

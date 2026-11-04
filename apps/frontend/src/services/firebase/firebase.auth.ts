@@ -68,14 +68,26 @@ export async function registerWithEmailPassword(
     await updateProfile(firebaseUser, { displayName: username.trim() });
 
     // Create user profile in Firestore
+    const now = new Date().toISOString();
     const newProfile: UserProfile = {
       userId: firebaseUser.uid,
+      displayName: username.trim(),
       username: username.trim(),
       email: firebaseUser.email || email.trim(),
+      avatarUrl: '👑',
       profileImage: undefined,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
+      accountCreatedAt: now,
+      lastUpdatedAt: now,
+      accountStatus: 'active',
+      playerLevel: 1,
       totalMatches: 0,
+      totalWins: 0,
+      totalLosses: 0,
+      totalDraws: 0,
+      totalCoinsPocketed: 0,
+      totalFouls: 0,
+      createdAt: now,
+      lastLogin: now,
       wins: 0,
       losses: 0,
       experience: 0,

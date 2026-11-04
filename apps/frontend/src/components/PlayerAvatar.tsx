@@ -1,11 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Image, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { THEME } from '../constants/theme';
 
 export interface PlayerAvatarProps {
   name: string;
   size?: number;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   isActive?: boolean;
   showHalo?: boolean;
   level?: number;
@@ -90,6 +90,17 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
 
   const colors = getResolvedColors();
 
+  const isImageUri =
+    avatarUrl &&
+    (avatarUrl.startsWith('http://') ||
+      avatarUrl.startsWith('https://') ||
+      avatarUrl.startsWith('data:image/'));
+
+  const isEmoji =
+    avatarUrl &&
+    !isImageUri &&
+    avatarUrl.trim().length <= 4;
+
   return (
     <View style={[styles.wrapper, style]}>
       <View
@@ -101,21 +112,36 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
             borderRadius: radius,
             borderColor: colors.ring,
             backgroundColor: colors.fill,
+            overflow: 'hidden',
           },
           isGlowing && styles.activeHalo,
         ]}
       >
-        <Text
-          style={[
-            styles.initial,
-            {
-              fontSize: size * 0.44,
-              color: colors.text,
-            },
-          ]}
-        >
-          {initial}
-        </Text>
+        {isImageUri ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{
+              width: size - 6,
+              height: size - 6,
+              borderRadius: (size - 6) / 2,
+            }}
+            resizeMode="cover"
+          />
+        ) : isEmoji ? (
+          <Text style={{ fontSize: size * 0.52 }}>{avatarUrl.trim()}</Text>
+        ) : (
+          <Text
+            style={[
+              styles.initial,
+              {
+                fontSize: size * 0.44,
+                color: colors.text,
+              },
+            ]}
+          >
+            {initial}
+          </Text>
+        )}
       </View>
 
       {level !== undefined && (

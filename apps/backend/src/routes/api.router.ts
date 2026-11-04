@@ -5,6 +5,11 @@ import { createUsersRouter } from '../modules/users/users.routes.js';
 import { createMatchesRouter } from '../modules/matches/matches.routes.js';
 import { createLeaderboardsRouter } from '../modules/leaderboards/leaderboards.routes.js';
 import { createMultiplayerRouter } from '../modules/multiplayer/multiplayer.routes.js';
+import {
+  createPlayersRouter,
+  createProfileRouter,
+  createUsernamesRouter,
+} from '../modules/profile/profile.routes.js';
 
 export function createApiRouter() {
   const authRouter = createAuthRouter();
@@ -12,6 +17,9 @@ export function createApiRouter() {
   const matchesRouter = createMatchesRouter();
   const leaderboardsRouter = createLeaderboardsRouter();
   const multiplayerRouter = createMultiplayerRouter();
+  const profileRouter = createProfileRouter();
+  const playersRouter = createPlayersRouter();
+  const usernamesRouter = createUsernamesRouter();
 
   return async (req: HttpRequest, res: HttpResponse): Promise<boolean> => {
     const originalPath = req.path || '';
@@ -20,6 +28,22 @@ export function createApiRouter() {
     if (originalPath.startsWith('/auth')) {
       req.path = originalPath.substring(5);
       return authRouter(req, res);
+    }
+
+    // Phase 2.2 Profile Endpoints
+    if (originalPath.startsWith('/profile')) {
+      req.path = originalPath.substring(8);
+      return profileRouter(req, res);
+    }
+
+    if (originalPath.startsWith('/players')) {
+      req.path = originalPath.substring(8);
+      return playersRouter(req, res);
+    }
+
+    if (originalPath.startsWith('/usernames')) {
+      req.path = originalPath.substring(10);
+      return usernamesRouter(req, res);
     }
 
     if (originalPath.startsWith('/users')) {
@@ -48,4 +72,3 @@ export function createApiRouter() {
     return true;
   };
 }
-
