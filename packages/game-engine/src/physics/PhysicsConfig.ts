@@ -5,32 +5,40 @@
  */
 
 // 1. Board & Unit Scale
-export const BOARD_PX = 740; // Playable surface width in canvas pixels
+export const BOARD_FRAME_PX = 740; // Default board frame width in canvas pixels
+export const BOARD_PX = BOARD_FRAME_PX; // Playable surface width in canvas pixels
 export const BOARD_CM = 74;  // Playable surface width in cm (ICF standard: 74cm x 74cm)
-export const PX_PER_CM = BOARD_PX / BOARD_CM; // Exactly 10.0 px per cm
+export const PX_PER_CM = 0.017 * BOARD_FRAME_PX; // Exactly 0.017 * boardFrameWidthPx (12.58 px per cm)
 
-// 2. Physical Dimensions (in cm and px)
+/**
+ * Calculates px per cm for any given board frame width in pixels.
+ */
+export function calculatePxPerCm(boardFrameWidthPx: number = BOARD_FRAME_PX): number {
+  return 0.017 * boardFrameWidthPx;
+}
+
+// 2. Physical Dimensions (in cm and px calibrated to 0.052 B, 0.078 B, 0.043 B)
 export const SIZES = {
-  // Coin: 3.1 cm diameter -> 1.55 cm radius
-  coinDiameterCm: 3.1,
-  coinRadiusCm: 1.55,
-  coinRadiusPx: 1.55 * PX_PER_CM, // 15.5 px
+  // Coin: 0.052 B diameter -> 0.026 B radius
+  coinDiameterCm: (0.052 * BOARD_PX) / PX_PER_CM,
+  coinRadiusCm: (0.026 * BOARD_PX) / PX_PER_CM,
+  coinRadiusPx: 0.026 * BOARD_PX, // 19.24 px
 
-  // Striker: 4.1 cm diameter -> 2.05 cm radius
-  strikerDiameterCm: 4.1,
-  strikerRadiusCm: 2.05,
-  strikerRadiusPx: 2.05 * PX_PER_CM, // 20.5 px
+  // Striker: 0.078 B diameter -> 0.039 B radius
+  strikerDiameterCm: (0.078 * BOARD_PX) / PX_PER_CM,
+  strikerRadiusCm: (0.039 * BOARD_PX) / PX_PER_CM,
+  strikerRadiusPx: 0.039 * BOARD_PX, // 28.86 px
 
-  // Pocket: visible hole radius 3.9 cm (diameter 7.8 cm); capture radius 0.85 * 3.9 = 3.3 cm
-  pocketDiameterCm: 7.8,
-  pocketRadiusCm: 3.9,
-  pocketRadiusPx: 3.9 * PX_PER_CM, // 39.0 px
-  pocketCaptureRadiusCm: 3.3,
-  pocketCaptureRadiusPx: 3.3 * PX_PER_CM, // 33.0 px
+  // Pocket: visible hole radius 0.043 B; capture radius 0.85 * visible radius
+  pocketDiameterCm: (0.086 * BOARD_PX) / PX_PER_CM,
+  pocketRadiusCm: (0.043 * BOARD_PX) / PX_PER_CM,
+  pocketRadiusPx: 0.043 * BOARD_PX, // 31.82 px
+  pocketCaptureRadiusCm: (0.043 * BOARD_PX * 0.85) / PX_PER_CM,
+  pocketCaptureRadiusPx: 0.043 * BOARD_PX * 0.85, // 27.047 px
 
   // Wall / Cushion: >= 5 cm thick outside playing surface
   wallThicknessCm: 5.0,
-  wallThicknessPx: 5.0 * PX_PER_CM, // 50.0 px
+  wallThicknessPx: 5.0 * PX_PER_CM, // 62.9 px
 } as const;
 
 // 3. Masses (in relative units, ratio 3:1)
@@ -172,5 +180,18 @@ export const PHYSICS_CONFIG = {
     angularRestThreshold: SPEEDS.angularRestThresholdRadS,
     settledCooldownMs: SIMULATION.settledCooldownMs,
     maxShotDurationMs: SIMULATION.maxShotDurationMs,
+  },
+} as const;
+
+// 9. Configurable Piece Counts, Formation & Scoring Defaults (Phase 1.3b Reference)
+export const DEFAULT_PIECE_CONFIG = {
+  whiteCount: 6,
+  blackCount: 6,
+  queenCount: 1,
+  totalPieces: 13,
+  points: {
+    queen: 50,
+    white: 20,
+    black: 10,
   },
 } as const;

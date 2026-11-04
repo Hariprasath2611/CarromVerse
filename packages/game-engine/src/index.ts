@@ -16,6 +16,7 @@ export * from './events/GameEngineEvents.js';
 // Board Configuration & Geometry
 export * from './board/BoardConfig.js';
 export * from './board/BoardThemes.js';
+export * from './board/LayoutConfig.js';
 export * from './config/board.config.js';
 export * from './config/coin.config.js';
 export * from './config/striker.config.js';
