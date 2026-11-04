@@ -1182,7 +1182,7 @@ ${PHASER_MIN_JS}
           var scene = this;
 
           this.input.on('pointerdown', function(pointer) {
-            if (scene.isShotActive || scene.currentTurnState === 'OPPONENT_TURN' || currentSeat !== 0) return;
+            if (scene.isShotActive) return;
 
             var px = scene.strikerBody.position.x;
             var py = scene.strikerBody.position.y;
