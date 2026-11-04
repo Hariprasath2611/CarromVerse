@@ -1,15 +1,26 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SQLite from 'expo-sqlite';
+import type { SQLiteDatabase } from 'expo-sqlite';
 import { GameResult, SyncRecord } from '@carromverse/shared-types';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
+function loadSQLiteModule(): any {
+  if (Platform.OS === 'web') return null;
+  try {
+    // Dynamic require so module evaluation never throws if native context is closed
+    return require('expo-sqlite');
+  } catch (err) {
+    console.warn('[LocalDatabaseService] expo-sqlite unavailable, using AsyncStorage:', err);
+    return null;
+  }
+}
+
 export class LocalDatabaseService {
-  private static dbInstance: SQLite.SQLiteDatabase | null = null;
-  private static initPromise: Promise<SQLite.SQLiteDatabase | null> | null = null;
+  private static dbInstance: SQLiteDatabase | null = null;
+  private static initPromise: Promise<SQLiteDatabase | null> | null = null;
   private static isWebOrFallback: boolean = Platform.OS === 'web';
 
-  public static async getDb(): Promise<SQLite.SQLiteDatabase | null> {
+  public static async getDb(): Promise<SQLiteDatabase | null> {
     if (this.isWebOrFallback) {
       return null;
     }
@@ -21,7 +32,12 @@ export class LocalDatabaseService {
     if (!this.initPromise) {
       this.initPromise = (async () => {
         try {
-          if (Platform.OS === 'web' || !SQLite || typeof SQLite.openDatabaseAsync !== 'function') {
+          if (Platform.OS === 'web') {
+            this.isWebOrFallback = true;
+            return null;
+          }
+          const SQLite = loadSQLiteModule();
+          if (!SQLite || typeof SQLite.openDatabaseAsync !== 'function') {
             this.isWebOrFallback = true;
             return null;
           }
@@ -29,8 +45,8 @@ export class LocalDatabaseService {
           await this.runMigrations(db);
           this.dbInstance = db;
           return db;
-        } catch {
-          // Gracefully switch to AsyncStorage for 100% reliable offline persistence
+        } catch (err) {
+          console.warn('[LocalDatabaseService] SQLite init failed, falling back to AsyncStorage:', err);
           this.isWebOrFallback = true;
           return null;
         }
@@ -40,7 +56,7 @@ export class LocalDatabaseService {
     return this.initPromise;
   }
 
-  private static async runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
+  private static async runMigrations(db: SQLiteDatabase): Promise<void> {
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
 
