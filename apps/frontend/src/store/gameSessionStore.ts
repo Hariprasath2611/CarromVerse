@@ -115,7 +115,7 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
 
     // Check if player changed and handover modal should show
     const config = get().savedConfig;
-    const handoverEnabled = config?.handoverConfirmationEnabled !== false;
+    const handoverEnabled = !!config?.handoverConfirmationEnabled;
     const playerSwitched =
       !evalResult.isMatchOver &&
       prevTurn &&
@@ -177,7 +177,7 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
 
     // Check if player switched
     const config = get().savedConfig;
-    const handoverEnabled = config?.handoverConfirmationEnabled !== false;
+    const handoverEnabled = !!config?.handoverConfirmationEnabled;
     const playerSwitched =
       !evalResult.isMatchOver &&
       prevTurn &&
