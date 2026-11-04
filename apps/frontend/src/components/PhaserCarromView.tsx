@@ -53,6 +53,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       strikerSkin = 'royal',
       activeSeat = 0,
       strikerOffset = 0,
+      turnState,
       soundEnabled = true,
       soundVolume = 0.8,
       onEngineReady,
