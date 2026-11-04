@@ -25,6 +25,7 @@ import { useSettingsStore } from '../src/store/settingsStore';
 import { AudioManager } from '../src/services/audio/AudioManager';
 import { Player, PlayerSeat } from '@carromverse/shared-types';
 import { createDefaultGameConfig } from '@carromverse/game-logic';
+import { LAYOUT_CONFIG, DEFAULT_PIECE_CONFIG } from '@carromverse/game-engine';
 
 export default function GameBoardScreen() {
   const router = useRouter();
@@ -38,7 +39,6 @@ export default function GameBoardScreen() {
     processSettledShot,
     scores,
     currentTurn,
-    queenStatus,
     activePlayers,
     isHandoverPending,
     nextPlayerToHandover,
@@ -52,17 +52,32 @@ export default function GameBoardScreen() {
   } = useGameSessionStore();
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  // Maximized board size preserving strict 1:1 aspect ratio with Carrom Pool layout
-  const availableBoardHeight = screenHeight - 230;
-  const BOARD_SIZE = Math.floor(Math.min(screenWidth - 16, availableBoardHeight, 480));
-  const sliderTrackWidth = Math.min(BOARD_SIZE * 0.74, screenWidth - 64);
+
+  // Reference coordinate scaling factor s = screenWidth / 390
+  const s = Math.min(screenWidth / LAYOUT_CONFIG.DESIGN_FRAME.width, 1.4);
+
+  // Derive board dimensions: strictly square, centered with at least 8 units margin
+  const reservedHudHeight = Math.round(240 * s);
+  const reservedBottomHeight = Math.round(180 * s);
+  const availableBoardHeight = screenHeight - reservedHudHeight - reservedBottomHeight - 16;
+  const availableBoardWidth = screenWidth - 8;
+  const BOARD_SIZE = Math.floor(
+    Math.min(LAYOUT_CONFIG.BOARD.frameWidth * s, availableBoardHeight, availableBoardWidth)
+  );
+
+  // Slider geometry matching LayoutConfig.ts
+  const sliderTrackWidth = Math.round(LAYOUT_CONFIG.SLIDER.trackWidth * s);
+  const sliderTrackHeight = Math.round(LAYOUT_CONFIG.SLIDER.trackHeight * s);
+  const knobRadius = Math.round(LAYOUT_CONFIG.SLIDER.knobRadius * s);
+  const maxKnobTravel = LAYOUT_CONFIG.SLIDER.knobMaxOffset * s;
 
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showStickersModal, setShowStickersModal] = useState(false);
   const [activeReaction, setActiveReaction] = useState<StickerItem | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(turnTimeLimitSec || 25);
   const [isShotActive, setIsShotActive] = useState(false);
-  const [, setPowerRatio] = useState(0.55);
+  const [isAiming, setIsAiming] = useState(false);
+  const [powerRatio, setPowerRatio] = useState(0);
   const [, setAimAngle] = useState(-Math.PI / 2);
   const [strikerOffsetRatio, setStrikerOffsetRatio] = useState(0);
   const [isStrikerOverlapping, setIsStrikerOverlapping] = useState(false);
@@ -107,15 +122,25 @@ export default function GameBoardScreen() {
       const config = {
         ...baseConfig,
         boardTheme: boardTheme || 'classic',
-        targetScore: targetPoints || 25,
+        targetScore: targetPoints || 115,
         turnTimeLimitSeconds: turnTimeLimitSec || 15,
       };
       startSession(config, defaultPlayers);
     }
   }, [stateMachine, startSession, selectedMode, boardTheme, targetPoints, turnTimeLimitSec, teamAName, teamBName]);
 
-  // Active player lookup
+  // Active player seat lookup
   const activeSeat: PlayerSeat = (currentTurn?.activeSeat as PlayerSeat) ?? 0;
+
+  // Turn state derived for bridge & visuals
+  const turnState: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN' =
+    activeSeat !== 0
+      ? 'OPPONENT_TURN'
+      : isShotActive
+        ? 'SHOT_IN_PROGRESS'
+        : isAiming
+          ? 'AIMING'
+          : 'MY_TURN';
 
   // Turn timer countdown (reset on turn change)
   useEffect(() => {
@@ -135,7 +160,7 @@ export default function GameBoardScreen() {
     return () => clearInterval(interval);
   }, [currentTurn?.turnNumber, turnTimeLimitSec, isPaused, isHandoverPending, isShotActive]);
 
-  // Handle turn timeout foul safely in an effect outside render
+  // Handle turn timeout foul
   useEffect(() => {
     if (turnTimeLimitSec > 0 && secondsRemaining === 0 && !isPaused && !isHandoverPending && !isShotActive) {
       showToast('Time expired! Turn passed');
@@ -152,6 +177,8 @@ export default function GameBoardScreen() {
     restartSession();
     setStrikerOffsetRatio(0);
     setIsStrikerOverlapping(false);
+    setIsAiming(false);
+    setPowerRatio(0);
     carromRef.current?.resetBoard();
     showToast('Match restarted!');
   };
@@ -181,12 +208,15 @@ export default function GameBoardScreen() {
     AudioManager.getInstance().playSound('BUTTON_CLICK', 0.6);
   };
 
+  // Slider touch handling linearly mapped to striker lane
   const handleSliderTouch = (evt: GestureResponderEvent) => {
-    if (isShotActive || isHandoverPending || isPaused) return;
+    if (isShotActive || isHandoverPending || isPaused || activeSeat !== 0) return;
     const { locationX } = evt.nativeEvent;
-    const normalized = Math.max(0, Math.min(1, locationX / sliderTrackWidth));
-    const newOffset = (normalized - 0.5) * 1.84;
-    setStrikerOffsetRatio(Math.max(-0.92, Math.min(0.92, newOffset)));
+    const centerTrack = sliderTrackWidth / 2;
+    const diff = locationX - centerTrack;
+    const clampedDiff = Math.max(-maxKnobTravel, Math.min(maxKnobTravel, diff));
+    const newRatio = clampedDiff / maxKnobTravel;
+    setStrikerOffsetRatio(newRatio);
   };
 
   const showToast = (msg: string) => {
@@ -194,15 +224,24 @@ export default function GameBoardScreen() {
     setTimeout(() => setPocketToast(null), 2500);
   };
 
-  // Dynamic turn timer color (green -> amber -> red)
+  // Turn timer ring color
   const timerRingColor =
-    secondsRemaining > 10 ? '#2BD67B' : secondsRemaining > 5 ? '#E9B949' : '#EF4444';
+    secondsRemaining > 10 ? '#2BD67B' : secondsRemaining > 5 ? '#FFD84A' : '#EF4444';
 
   const p1 = activePlayers.find((p) => p.seat === 0);
   const p2 = activePlayers.find((p) => p.seat === 2);
   const p1Score = scores[p1?.id ?? '']?.points ?? 0;
   const p2Score = scores[p2?.id ?? '']?.points ?? 0;
-  const maxScore = targetPoints || 25;
+  const targetTotal = targetPoints || 115;
+
+  // Knob left position inside track
+  const knobCenterTrack = sliderTrackWidth / 2;
+  const knobLeft = knobCenterTrack - knobRadius + strikerOffsetRatio * maxKnobTravel;
+
+  // Value legend points from piece config
+  const queenPoints = DEFAULT_PIECE_CONFIG.queenPoints || 50;
+  const blackPoints = DEFAULT_PIECE_CONFIG.blackPoints || 10;
+  const whitePoints = DEFAULT_PIECE_CONFIG.whitePoints || 20;
 
   return (
     <ScreenContainer
@@ -210,73 +249,191 @@ export default function GameBoardScreen() {
       edges={['top', 'left', 'right', 'bottom']}
       contentContainerStyle={styles.container}
     >
-      {/* 1. TOP HEADER BAR: CARROM POOL PLAYERS & CENTER GOLD COINS (Images 1 & 2) */}
-      <View style={styles.topHeaderBar}>
+      {/* 1. HUD SECTION (React Native - Reference Layout) */}
+      <View style={[styles.hudContainer, { height: reservedHudHeight }]}>
         {/* Left Player (Hari) */}
-        <View style={styles.playerProfileCol}>
+        <View style={[styles.playerAvatarContainer, { left: 16 * s, top: 20 * s }]}>
           <View
             style={[
-              styles.playerAvatarBox,
-              activeSeat === 0 && styles.playerAvatarBoxActive,
-              activeSeat === 0 && { borderColor: timerRingColor },
+              styles.avatarBox,
+              {
+                width: 55 * s,
+                height: 55 * s,
+                borderRadius: 6 * s,
+                borderWidth: 2.4 * s,
+                borderColor: activeSeat === 0 ? '#2BD67B' : '#FFD84A',
+              },
             ]}
           >
-            <Text style={styles.playerAvatarEmoji}>{p1?.avatarUrl || '👑'}</Text>
+            <Text style={[styles.avatarEmoji, { fontSize: 26 * s }]}>
+              {p1?.avatarUrl || '👑'}
+            </Text>
           </View>
-          <Text style={styles.playerProfileName} numberOfLines={1}>
+          <Text
+            style={[styles.playerName, { fontSize: 11 * s, marginTop: 4 * s }]}
+            numberOfLines={1}
+          >
             {p1?.name || 'Hari'}
           </Text>
-          <Text style={styles.playerProfileScore}>
-            {p1Score}/{maxScore}
-          </Text>
+          <View style={styles.scoreRow}>
+            <Text style={[styles.scoreValue, { fontSize: 19 * s }]}>{p1Score}</Text>
+            <Text style={[styles.scoreTotal, { fontSize: 14 * s }]}>/{targetTotal}</Text>
+          </View>
         </View>
 
-        {/* Center 3D Gold Coins Stack & Pot Amount (Screenshot 3 & 4: 400) */}
-        <View style={styles.centerPotBlock}>
-          <View style={styles.goldCoinsStackGraphic}>
-            <Text style={styles.goldCoinsStackEmoji}>🪙</Text>
+        {/* Center Pot: 3D Stack of Gold Medallions & Amount (400) */}
+        <View style={[styles.centerPotWrapper, { top: 12 * s }]}>
+          <View style={[styles.goldCoinPile, { width: 58 * s, height: 44 * s }]}>
+            {/* Background Soft Brass Glow */}
+            <View style={styles.potGlowHalo} />
+            {/* Coin 1: Bottom Left */}
+            <View
+              style={[
+                styles.pileCoin,
+                {
+                  left: 6 * s,
+                  top: 14 * s,
+                  width: 28 * s,
+                  height: 28 * s,
+                  borderRadius: 14 * s,
+                },
+              ]}
+            >
+              <Text style={{ fontSize: 13 * s }}>👑</Text>
+            </View>
+            {/* Coin 2: Top Left */}
+            <View
+              style={[
+                styles.pileCoin,
+                {
+                  left: 6 * s,
+                  top: 2 * s,
+                  width: 28 * s,
+                  height: 28 * s,
+                  borderRadius: 14 * s,
+                },
+              ]}
+            >
+              <Text style={{ fontSize: 13 * s }}>👑</Text>
+            </View>
+            {/* Coin 3: Right Stack Head */}
+            <View
+              style={[
+                styles.pileCoin,
+                styles.pileCoinRight,
+                {
+                  left: 22 * s,
+                  top: 6 * s,
+                  width: 30 * s,
+                  height: 30 * s,
+                  borderRadius: 15 * s,
+                },
+              ]}
+            >
+              <Text style={{ fontSize: 14 * s }}>👑</Text>
+            </View>
           </View>
-          <Text style={styles.centerPotAmount}>400</Text>
+          <Text style={[styles.potAmountText, { fontSize: 26 * s, marginTop: 2 * s }]}>
+            400
+          </Text>
         </View>
 
         {/* Right Player (Ramesh Mendis) */}
-        <View style={styles.playerProfileCol}>
+        <View style={[styles.playerAvatarContainer, { right: 16 * s, top: 20 * s }]}>
           <View
             style={[
-              styles.playerAvatarBox,
-              activeSeat === 2 && styles.playerAvatarBoxActive,
-              activeSeat === 2 && { borderColor: timerRingColor },
+              styles.avatarBox,
+              {
+                width: 55 * s,
+                height: 55 * s,
+                borderRadius: 6 * s,
+                borderWidth: 2.4 * s,
+                borderColor: activeSeat === 2 ? '#2BD67B' : '#FFD84A',
+              },
             ]}
           >
-            <Text style={styles.playerAvatarEmoji}>{p2?.avatarUrl || '🐯'}</Text>
+            <Text style={[styles.avatarEmoji, { fontSize: 26 * s }]}>
+              {p2?.avatarUrl || '🐯'}
+            </Text>
           </View>
-          <Text style={styles.playerProfileName} numberOfLines={1}>
+          <Text
+            style={[styles.playerName, { fontSize: 11 * s, marginTop: 4 * s }]}
+            numberOfLines={1}
+          >
             {p2?.name || 'Ramesh Mendis'}
           </Text>
-          <Text style={styles.playerProfileScore}>
-            {p2Score}/{maxScore}
-          </Text>
+          <View style={styles.scoreRow}>
+            <Text style={[styles.scoreValue, { fontSize: 19 * s }]}>{p2Score}</Text>
+            <Text style={[styles.scoreTotal, { fontSize: 14 * s }]}>/{targetTotal}</Text>
+          </View>
+        </View>
+
+        {/* Value Legend Row (Queen 50 · Black 10 · White 20) */}
+        <View style={[styles.valueLegendRow, { top: 185 * s }]}>
+          {/* Queen 50 */}
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.legendCoin,
+                styles.legendCoinQueen,
+                { width: 19 * s, height: 19 * s, borderRadius: 9.5 * s },
+              ]}
+            >
+              <View
+                style={[
+                  styles.legendCoinInner,
+                  styles.legendCoinInnerQueen,
+                  { width: 7 * s, height: 7 * s, borderRadius: 3.5 * s },
+                ]}
+              />
+            </View>
+            <Text style={[styles.legendValueText, { fontSize: 16 * s }]}>{queenPoints}</Text>
+          </View>
+
+          {/* Black 10 */}
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.legendCoin,
+                styles.legendCoinBlack,
+                { width: 19 * s, height: 19 * s, borderRadius: 9.5 * s },
+              ]}
+            >
+              <View
+                style={[
+                  styles.legendCoinInner,
+                  styles.legendCoinInnerBlack,
+                  { width: 7 * s, height: 7 * s, borderRadius: 3.5 * s },
+                ]}
+              />
+            </View>
+            <Text style={[styles.legendValueText, { fontSize: 16 * s }]}>{blackPoints}</Text>
+          </View>
+
+          {/* White 20 */}
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.legendCoin,
+                styles.legendCoinWhite,
+                { width: 19 * s, height: 19 * s, borderRadius: 9.5 * s },
+              ]}
+            >
+              <View
+                style={[
+                  styles.legendCoinInner,
+                  styles.legendCoinInnerWhite,
+                  { width: 7 * s, height: 7 * s, borderRadius: 3.5 * s },
+                ]}
+              />
+            </View>
+            <Text style={[styles.legendValueText, { fontSize: 16 * s }]}>{whitePoints}</Text>
+          </View>
         </View>
       </View>
 
-      {/* 2. COIN POINT VALUES PILL ROW (Official SGFI: 3 Queen · 1 Black · 1 White) */}
-      <View style={styles.pointValuesRow}>
-        <View style={styles.pointValItem}>
-          <View style={[styles.coinPointDot, styles.coinPointDotRed]} />
-          <Text style={styles.pointValNum}>3</Text>
-        </View>
-        <View style={styles.pointValItem}>
-          <View style={[styles.coinPointDot, styles.coinPointDotBlack]} />
-          <Text style={styles.pointValNum}>1</Text>
-        </View>
-        <View style={styles.pointValItem}>
-          <View style={[styles.coinPointDot, styles.coinPointDotWhite]} />
-          <Text style={styles.pointValNum}>1</Text>
-        </View>
-      </View>
-
-      {/* 3. CENTER CARROM BOARD (Maximized, Perfectly Centered, 1:1 Aspect Ratio) */}
-      <View style={styles.boardWrapper}>
+      {/* 2. BOARD SECTION (Phaser 3 Canvas - Centered Square) */}
+      <View style={[styles.boardWrapper, { width: BOARD_SIZE, height: BOARD_SIZE }]}>
         <FloatingReaction
           sticker={activeReaction}
           onDismiss={() => setActiveReaction(null)}
@@ -303,6 +460,7 @@ export default function GameBoardScreen() {
           strikerSkin="royal"
           activeSeat={activeSeat}
           strikerOffset={strikerOffsetRatio}
+          turnState={turnState}
           soundEnabled={settings.soundEnabled}
           soundVolume={settings.soundVolume}
           onStrikerDragged={(offset, isOverlapping) => {
@@ -311,33 +469,40 @@ export default function GameBoardScreen() {
               setIsStrikerOverlapping(isOverlapping);
             }
           }}
-          onShotStarted={() => setIsShotActive(true)}
-          onAimChanged={(details) => {
-            setPowerRatio(details.powerRatio);
-            setAimAngle(details.angle);
+          onShotStarted={() => {
+            setIsShotActive(true);
+            setIsAiming(false);
+            setPowerRatio(0);
+          }}
+          onAimChanged={(details: any) => {
+            setPowerRatio(details?.powerRatio ?? 0);
+            setAimAngle(details?.angle ?? -Math.PI / 2);
+            setIsAiming(!!details?.isAiming && (details?.powerRatio ?? 0) > 0.02);
           }}
           onObjectPocketed={(details) => {
             if (details.type === 'white') {
               AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-              triggerFloatingScore('⚪ +1', '#FFFFFF');
+              triggerFloatingScore(`⚪ +${whitePoints}`, '#FFFFFF');
               showToast('⚪ White Coin Pocketed!');
             } else if (details.type === 'black') {
               AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
-              triggerFloatingScore('⚫ +1', '#E9B949');
+              triggerFloatingScore(`⚫ +${blackPoints}`, '#FFD84A');
               showToast('⚫ Black Coin Pocketed!');
             } else if (details.type === 'queen') {
               AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-              triggerFloatingScore('👑 QUEEN +3', '#EF4444');
+              triggerFloatingScore(`👑 QUEEN +${queenPoints}`, '#EF4444');
               showToast('👑 QUEEN Pocketed!');
             }
           }}
           onStrikerPocketed={() => {
             AudioManager.getInstance().playSound('FOUL', 0.9);
-            triggerFloatingScore('⚠️ FOUL (-1 Due)', '#EF4444');
+            triggerFloatingScore('⚠️ FOUL (Striker Pocketed)', '#EF4444');
             showToast('⚠️ Striker Pocketed (Scratch Foul)');
           }}
           onShotSettled={(details: any) => {
             setIsShotActive(false);
+            setIsAiming(false);
+            setPowerRatio(0);
             const evalResult = processSettledShot({
               pocketedCoins: details?.pocketed ?? [],
               strikerPocketed: !!details?.strikerPocketed,
@@ -345,7 +510,6 @@ export default function GameBoardScreen() {
             });
 
             if (evalResult) {
-              // Return any coins to center circle that rules dictate (Queen returned, foul penalty, dues, etc.)
               if (evalResult.coinsToReturnToBoard && evalResult.coinsToReturnToBoard.length > 0) {
                 carromRef.current?.returnCoinsToBoard(evalResult.coinsToReturnToBoard);
               }
@@ -357,8 +521,8 @@ export default function GameBoardScreen() {
                 );
               } else if (evalResult.queenCoveredThisShot) {
                 AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
-                triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
-                showToast('👑 QUEEN COVERED! +3 Points');
+                triggerFloatingScore(`👑 QUEEN COVERED! +${queenPoints}`, '#FFD84A');
+                showToast(`👑 QUEEN COVERED! +${queenPoints} Points`);
               } else if (evalResult.queenStatusAfter === 'pending_cover') {
                 AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
                 showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
@@ -382,86 +546,181 @@ export default function GameBoardScreen() {
             }
           }}
         />
-      </View>
 
-      {/* 4. RECESSED DARK MAHOGANY WOODEN BASELINE SLIDER (Carrom Pool Style!) */}
-      <View style={styles.baselineArea}>
+        {/* Right-Edge Vertical Power Bar (Mirrors Phaser power) */}
         <View
           style={[
-            styles.recessedWoodenTrack,
-            { width: sliderTrackWidth },
-            isStrikerOverlapping && styles.recessedWoodenTrackOverlap,
+            styles.rightPowerBarContainer,
+            {
+              width: Math.max(4, Math.round(4 * s)),
+              height: Math.round(24 * s),
+              right: 6 * s,
+              bottom: 24 * s,
+              opacity: isAiming ? 0.95 : 0.4,
+            },
           ]}
-          onStartShouldSetResponder={() => true}
-          onResponderGrant={handleSliderTouch}
-          onResponderMove={handleSliderTouch}
         >
-          {/* Inner Trough Guide Line */}
-          <View style={styles.recessedInnerGuide} />
-
-          {/* Draggable Mini Striker Medallion inside the track */}
           <View
             style={[
-              styles.miniStrikerKnob,
+              styles.rightPowerBarFill,
               {
-                left: `${((strikerOffsetRatio + 0.92) / 1.84) * 86 + 2}%`,
+                height: `${Math.min(100, Math.round(powerRatio * 100))}%`,
               },
-              isStrikerOverlapping && styles.miniStrikerKnobOverlap,
             ]}
-          >
-            <View style={styles.miniStrikerGearRim} />
-            <View style={styles.miniStrikerCore} />
-          </View>
+          />
         </View>
-
-        {isStrikerOverlapping && (
-          <View style={styles.overlapWarningPill}>
-            <Text style={styles.overlapWarningText}>
-              ⚠️ Striker blocked · Slide away from coin
-            </Text>
-          </View>
-        )}
       </View>
 
-      {/* 5. BOTTOM ACTIONS ROW: CIRCULAR GLOWING GOLD BUTTONS (Chat & Menu) */}
-      <View style={styles.bottomBarRow}>
-        {/* Bottom Left: Circular Glowing Gold Button (Chat) */}
-        <TouchableOpacity
-          style={styles.circleGoldBtn}
-          activeOpacity={0.8}
-          onPress={() => {
-            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-            setShowStickersModal(true);
-          }}
+      {/* 3. RECESSED WOODEN SLIDER TRACK & BOTTOM CONTROLS */}
+      <View style={[styles.bottomControlsSection, { height: reservedBottomHeight }]}>
+        {/* Recessed Wooden Baseline Slider Track */}
+        <View
+          style={[
+            styles.sliderArea,
+            {
+              opacity: activeSeat !== 0 ? 0.35 : isAiming ? 0.55 : 1.0,
+            },
+          ]}
+          pointerEvents={activeSeat !== 0 ? 'none' : 'auto'}
         >
-          <View style={styles.circleGoldBtnInner}>
-            <Text style={styles.circleGoldBtnIcon}>💬</Text>
-          </View>
-        </TouchableOpacity>
+          <View
+            style={[
+              styles.woodenSliderTrack,
+              {
+                width: sliderTrackWidth,
+                height: sliderTrackHeight,
+                borderRadius: sliderTrackHeight / 2,
+              },
+              isStrikerOverlapping && styles.woodenSliderTrackOverlap,
+            ]}
+            onStartShouldSetResponder={() => true}
+            onResponderGrant={handleSliderTouch}
+            onResponderMove={handleSliderTouch}
+          >
+            {/* Inner Trough Guide Line */}
+            <View style={styles.innerTroughLine} />
 
-        {/* Turn Countdown Display */}
-        <View style={styles.bottomTurnPill}>
-          <Text style={[styles.bottomTurnText, { color: timerRingColor }]}>
-            {activeSeat === 0 ? 'YOUR TURN' : "OPPONENT'S TURN"} · 0:
-            {secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
-          </Text>
+            {/* Draggable Striker Knob */}
+            <View
+              style={[
+                styles.strikerKnob,
+                {
+                  left: knobLeft,
+                  width: knobRadius * 2,
+                  height: knobRadius * 2,
+                  borderRadius: knobRadius,
+                  opacity: isAiming ? 0.45 : 1.0,
+                },
+                isStrikerOverlapping && styles.strikerKnobOverlap,
+              ]}
+            >
+              {/* Emerald Rim */}
+              <View
+                style={[
+                  styles.strikerKnobRim,
+                  {
+                    width: knobRadius * 1.6,
+                    height: knobRadius * 1.6,
+                    borderRadius: knobRadius * 0.8,
+                  },
+                ]}
+              >
+                {/* Brass Center Pip */}
+                <View
+                  style={[
+                    styles.strikerKnobCenter,
+                    {
+                      width: knobRadius * 0.7,
+                      height: knobRadius * 0.7,
+                      borderRadius: knobRadius * 0.35,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          </View>
+
+          {isStrikerOverlapping && (
+            <View style={styles.overlapWarningBadge}>
+              <Text style={styles.overlapWarningBadgeText}>
+                ⚠️ Striker blocked · Slide away from coin
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Bottom Right: Circular Glowing Gold Button (Menu) */}
-        <TouchableOpacity
-          style={styles.circleGoldBtn}
-          activeOpacity={0.8}
-          onPress={() => {
-            AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
-            pauseSession();
-            carromRef.current?.pauseGame();
-            setShowPauseModal(true);
-          }}
-        >
-          <View style={styles.circleGoldBtnInner}>
-            <Text style={styles.circleGoldBtnIcon}>☰</Text>
+        {/* Bottom Actions Row: Chat (left), Turn Timer (center), Menu (right) */}
+        <View style={styles.bottomButtonsRow}>
+          {/* Circular Glowing Gold Chat Button */}
+          <TouchableOpacity
+            style={[
+              styles.goldCircleButton,
+              {
+                width: Math.max(44, Math.round(50 * s)),
+                height: Math.max(44, Math.round(50 * s)),
+                borderRadius: Math.max(22, Math.round(25 * s)),
+              },
+            ]}
+            activeOpacity={0.8}
+            onPress={() => {
+              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+              setShowStickersModal(true);
+            }}
+          >
+            <View
+              style={[
+                styles.goldCircleButtonInner,
+                {
+                  width: Math.max(34, Math.round(38 * s)),
+                  height: Math.max(34, Math.round(38 * s)),
+                  borderRadius: Math.max(17, Math.round(19 * s)),
+                },
+              ]}
+            >
+              <Text style={[styles.goldCircleButtonIcon, { fontSize: 20 * s }]}>💬</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Turn Countdown Display Pill */}
+          <View style={styles.turnTimerPill}>
+            <Text style={[styles.turnTimerText, { color: timerRingColor, fontSize: 12 * s }]}>
+              {activeSeat === 0 ? 'YOUR TURN' : "OPPONENT'S TURN"} · 0:
+              {secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
+            </Text>
           </View>
-        </TouchableOpacity>
+
+          {/* Circular Glowing Gold Menu Button */}
+          <TouchableOpacity
+            style={[
+              styles.goldCircleButton,
+              {
+                width: Math.max(44, Math.round(50 * s)),
+                height: Math.max(44, Math.round(50 * s)),
+                borderRadius: Math.max(22, Math.round(25 * s)),
+              },
+            ]}
+            activeOpacity={0.8}
+            onPress={() => {
+              AudioManager.getInstance().playSound('BUTTON_CLICK', 0.5);
+              pauseSession();
+              carromRef.current?.pauseGame();
+              setShowPauseModal(true);
+            }}
+          >
+            <View
+              style={[
+                styles.goldCircleButtonInner,
+                {
+                  width: Math.max(34, Math.round(38 * s)),
+                  height: Math.max(34, Math.round(38 * s)),
+                  borderRadius: Math.max(17, Math.round(19 * s)),
+                },
+              ]}
+            >
+              <Text style={[styles.goldCircleButtonIcon, { fontSize: 20 * s }]}>☰</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* PASS-AND-PLAY TURN HANDOVER MODAL */}
@@ -473,6 +732,7 @@ export default function GameBoardScreen() {
           confirmHandover();
           setStrikerOffsetRatio(0);
           setIsStrikerOverlapping(false);
+          setIsAiming(false);
         }}
       />
 
@@ -504,117 +764,138 @@ const styles = StyleSheet.create({
     backgroundColor: '#260805', // Deep rich wine red / burgundy
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
   },
-  topHeaderBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  hudContainer: {
     width: '100%',
-    paddingHorizontal: 16,
-    marginTop: 4,
-  },
-  playerProfileCol: {
+    position: 'relative',
     alignItems: 'center',
-    width: 95,
   },
-  playerAvatarBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
+  playerAvatarContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: 80,
+  },
+  avatarBox: {
     backgroundColor: '#3D150B',
-    borderWidth: 2.5,
-    borderColor: '#D4892A',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#D4892A',
-    shadowOpacity: 0.35,
+    shadowColor: '#FFD84A',
+    shadowOpacity: 0.45,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
+    elevation: 5,
+  },
+  avatarEmoji: {
+    textAlign: 'center',
+  },
+  playerName: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 1,
+  },
+  scoreValue: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  scoreTotal: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+  },
+  centerPotWrapper: {
+    position: 'absolute',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  potGlowHalo: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 216, 74, 0.18)',
+    top: -8,
+    left: -1,
+  },
+  goldCoinPile: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pileCoin: {
+    position: 'absolute',
+    backgroundColor: '#E9B949',
+    borderWidth: 1.8,
+    borderColor: '#FFEC8B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FFD84A',
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
     elevation: 4,
   },
-  playerAvatarBoxActive: {
-    borderColor: '#F59E0B',
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 7,
+  pileCoinRight: {
+    backgroundColor: '#FFD84A',
+    borderColor: '#FFF8DC',
+    zIndex: 2,
   },
-  playerAvatarEmoji: {
-    fontSize: 24,
-  },
-  playerProfileName: {
+  potAmountText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-    marginTop: 5,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  playerProfileScore: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 1,
-    textAlign: 'center',
-  },
-  centerPotBlock: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  goldCoinsStackGraphic: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  goldCoinsStackEmoji: {
-    fontSize: 34,
-  },
-  centerPotAmount: {
-    color: '#FFFFFF',
-    fontSize: 22,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
-  pointValuesRow: {
+  valueLegendRow: {
+    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    backgroundColor: 'rgba(25, 6, 4, 0.75)',
-    paddingHorizontal: 20,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 137, 42, 0.35)',
-    marginVertical: 4,
+    gap: 18,
+    alignSelf: 'center',
   },
-  pointValItem: {
+  legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  coinPointDot: {
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
+  legendCoin: {
     borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  coinPointDotRed: {
-    backgroundColor: '#DC2626',
-    borderColor: '#FFA0A0',
+  legendCoinQueen: {
+    backgroundColor: '#E23B5A',
+    borderColor: '#FFA0B0',
   },
-  coinPointDotBlack: {
-    backgroundColor: '#1E2320',
+  legendCoinBlack: {
+    backgroundColor: '#1B2420',
     borderColor: '#4A524D',
   },
-  coinPointDotWhite: {
+  legendCoinWhite: {
     backgroundColor: '#F5ECD2',
     borderColor: '#FFFFFF',
   },
-  pointValNum: {
+  legendCoinInner: {
+    borderWidth: 1,
+  },
+  legendCoinInnerQueen: {
+    backgroundColor: '#8E162D',
+    borderColor: '#FFD84A',
+  },
+  legendCoinInnerBlack: {
+    backgroundColor: '#0A0D0C',
+    borderColor: '#2BD67B',
+  },
+  legendCoinInnerWhite: {
+    backgroundColor: '#D4C5A3',
+    borderColor: '#2BD67B',
+  },
+  legendValueText: {
     color: '#FFFFFF',
-    fontSize: 13,
     fontWeight: '800',
   },
   boardWrapper: {
@@ -623,148 +904,128 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 'auto',
   },
-  baselineArea: {
+  rightPowerBarContainer: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  rightPowerBarFill: {
     width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 2,
+  },
+  bottomControlsSection: {
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 10,
+  },
+  sliderArea: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 6,
+    width: '100%',
   },
-  recessedWoodenTrack: {
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#240D07',
-    borderWidth: 1.8,
-    borderColor: '#4E2214',
+  woodenSliderTrack: {
+    backgroundColor: '#5A3012',
+    borderWidth: 2,
+    borderColor: '#8B5226',
     position: 'relative',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOpacity: 0.6,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowRadius: 5,
     elevation: 4,
   },
-  recessedWoodenTrackOverlap: {
+  woodenSliderTrackOverlap: {
     borderColor: '#EF4444',
     backgroundColor: '#3D0D0D',
   },
-  recessedInnerGuide: {
+  innerTroughLine: {
     height: 2,
-    width: '92%',
+    width: '88%',
     alignSelf: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
-  miniStrikerKnob: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#4A126D',
-    borderWidth: 2,
-    borderColor: '#E9B949',
+  strikerKnob: {
     position: 'absolute',
-    top: -3,
+    backgroundColor: '#FFF8E7',
+    borderWidth: 2,
+    borderColor: '#2BD67B',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#00FFFF',
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowColor: '#2BD67B',
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  miniStrikerKnobOverlap: {
+  strikerKnobOverlap: {
     borderColor: '#EF4444',
     shadowColor: '#EF4444',
   },
-  miniStrikerGearRim: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+  strikerKnobRim: {
     borderWidth: 1.5,
-    borderColor: '#F59E0B',
+    borderColor: '#FFD84A',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  miniStrikerCore: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#DC2626',
-    position: 'absolute',
+  strikerKnobCenter: {
+    backgroundColor: '#FFD84A',
   },
-  overlapWarningPill: {
+  overlapWarningBadge: {
     marginTop: 4,
-    backgroundColor: 'rgba(80, 10, 10, 0.85)',
+    backgroundColor: 'rgba(80, 10, 10, 0.88)',
     borderColor: '#EF4444',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 2,
   },
-  overlapWarningText: {
+  overlapWarningBadgeText: {
     color: '#FF8888',
     fontSize: 10,
     fontWeight: '800',
   },
-  bottomBarRow: {
+  bottomButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: 20,
-    paddingBottom: 8,
   },
-  circleGoldBtn: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#D97706',
-    borderWidth: 2.5,
-    borderColor: '#FDE68A',
+  goldCircleButton: {
+    backgroundColor: '#FFD84A',
+    borderWidth: 2.4,
+    borderColor: '#FFE27A',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#F59E0B',
+    shadowColor: '#FFD84A',
     shadowOpacity: 0.65,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
     elevation: 6,
   },
-  circleGoldBtnInner: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  goldCircleButtonInner: {
     backgroundColor: '#B45309',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circleGoldBtnIcon: {
-    fontSize: 20,
+  goldCircleButtonIcon: {
     color: '#FFFFFF',
   },
-  bottomTurnPill: {
-    backgroundColor: 'rgba(25, 6, 4, 0.8)',
+  turnTimerPill: {
+    backgroundColor: 'rgba(25, 6, 4, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(212, 137, 42, 0.4)',
+    borderColor: 'rgba(255, 216, 74, 0.35)',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
   },
-  bottomTurnText: {
-    fontSize: 12,
+  turnTimerText: {
     fontWeight: '800',
     letterSpacing: 0.5,
-  },
-  reactionBubble: {
-    position: 'absolute',
-    top: 20,
-    right: 25,
-    zIndex: 20,
-    backgroundColor: '#F5ECD2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#07261C',
-  },
-  reactionText: {
-    color: '#07261C',
-    fontWeight: '900',
-    fontSize: 14,
   },
   toastBubble: {
     position: 'absolute',
@@ -775,7 +1036,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E9B949',
+    borderColor: '#FFD84A',
   },
   toastText: {
     color: '#FFFFFF',
