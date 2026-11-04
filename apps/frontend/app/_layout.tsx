@@ -52,6 +52,8 @@ export default function RootLayout() {
         <Stack.Screen name="lobby" />
         <Stack.Screen name="game-board" options={{ animation: 'fade' }} />
         <Stack.Screen name="game-result" options={{ animation: 'fade' }} />
+        <Stack.Screen name="match-history" />
+        <Stack.Screen name="edit-profile" />
         <Stack.Screen name="settings/index" />
       </Stack>
     </SafeAreaProvider>
