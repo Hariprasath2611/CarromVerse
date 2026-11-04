@@ -14,7 +14,6 @@ import {
   PauseModal,
   PhaserCarromView,
   PhaserCarromViewRef,
-  PlayerHandoverModal,
   ScreenContainer,
   StickerItem,
   StickersModal,
@@ -40,9 +39,6 @@ export default function GameBoardScreen() {
     scores,
     currentTurn,
     activePlayers,
-    isHandoverPending,
-    nextPlayerToHandover,
-    confirmHandover,
     restartSession,
     abandonSession,
     endSession,
@@ -124,6 +120,7 @@ export default function GameBoardScreen() {
         boardTheme: boardTheme || 'classic',
         targetScore: targetPoints || 115,
         turnTimeLimitSeconds: turnTimeLimitSec || 15,
+        handoverConfirmationEnabled: false,
       };
       startSession(config, defaultPlayers);
     }
@@ -144,7 +141,7 @@ export default function GameBoardScreen() {
 
   // Turn timer countdown (reset on turn change)
   useEffect(() => {
-    if (turnTimeLimitSec <= 0 || isPaused || isHandoverPending || isShotActive) return;
+    if (turnTimeLimitSec <= 0 || isPaused || isShotActive) return;
 
     setSecondsRemaining(turnTimeLimitSec);
     const interval = setInterval(() => {
@@ -158,11 +155,11 @@ export default function GameBoardScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentTurn?.turnNumber, turnTimeLimitSec, isPaused, isHandoverPending, isShotActive]);
+  }, [currentTurn?.turnNumber, turnTimeLimitSec, isPaused, isShotActive]);
 
   // Handle turn timeout foul
   useEffect(() => {
-    if (turnTimeLimitSec > 0 && secondsRemaining === 0 && !isPaused && !isHandoverPending && !isShotActive) {
+    if (turnTimeLimitSec > 0 && secondsRemaining === 0 && !isPaused && !isShotActive) {
       showToast('Time expired! Turn passed');
       processSettledShot({
         pocketedCoins: [],
@@ -170,7 +167,7 @@ export default function GameBoardScreen() {
         durationMs: (turnTimeLimitSec || 25) * 1000,
       });
     }
-  }, [secondsRemaining, turnTimeLimitSec, isPaused, isHandoverPending, isShotActive]);
+  }, [secondsRemaining, turnTimeLimitSec, isPaused, isShotActive]);
 
   const handleRestartMatch = () => {
     setShowPauseModal(false);
@@ -210,7 +207,7 @@ export default function GameBoardScreen() {
 
   // Slider touch handling linearly mapped to striker lane
   const handleSliderTouch = (evt: GestureResponderEvent) => {
-    if (isShotActive || isHandoverPending || isPaused || activeSeat !== 0) return;
+    if (isShotActive || isPaused) return;
     const { locationX } = evt.nativeEvent;
     const centerTrack = sliderTrackWidth / 2;
     const diff = locationX - centerTrack;
