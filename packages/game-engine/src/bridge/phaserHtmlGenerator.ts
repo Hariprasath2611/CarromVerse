@@ -84,26 +84,23 @@ ${PHASER_MIN_JS}
 
   <script>
     (function() {
-      // 1. PHYSICAL CONSTANTS (Single Source of Truth)
-      var BOARD_PX = 740;
-      var BOARD_CM = 74;
-      var PX_PER_CM = BOARD_PX / BOARD_CM; // 10.0 px per cm
+      // 1. PHYSICAL CONSTANTS (Calibrated to B = 382 reference layout)
+      var B = 382;
+      var BOARD_PX = ${canvasSize};
+      var SCALE_B = BOARD_PX / B;
+      var PX_PER_CM = 0.017 * BOARD_PX; // 0.017 * boardFrameWidthPx
 
-      var COIN_RADIUS_CM = 2.10; // Increased coin size for rich mobile visibility
-      var COIN_RADIUS_PX = COIN_RADIUS_CM * PX_PER_CM; // 21.0 px
+      var COIN_RADIUS_PX = 10 * SCALE_B; // 0.02618 B (diameter 20)
       var COIN_MASS = 5.0;
 
-      var STRIKER_RADIUS_CM = 2.75; // Increased striker size
-      var STRIKER_RADIUS_PX = STRIKER_RADIUS_CM * PX_PER_CM; // 27.5 px
+      var STRIKER_RADIUS_PX = 14.8 * SCALE_B; // 0.03874 B (diameter 29.6)
       var STRIKER_MASS = 15.0; // 3:1 mass ratio
 
-      var POCKET_RADIUS_CM = 4.5;
-      var POCKET_RADIUS_PX = POCKET_RADIUS_CM * PX_PER_CM; // 45.0 px (visible hole radius)
-      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 38.25 px capture radius
-      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.22; // 54.9 px suction zone
+      var POCKET_RADIUS_PX = 16.4 * SCALE_B; // 0.04293 B (~0.043 B)
+      var POCKET_CAPTURE_RADIUS = POCKET_RADIUS_PX * 0.85; // 0.85 * visible radius
+      var POCKET_SUCTION_RADIUS = POCKET_RADIUS_PX * 1.20;
 
-      var WALL_THICKNESS_CM = 5.0;
-      var WALL_THICKNESS_PX = WALL_THICKNESS_CM * PX_PER_CM; // 50.0 px
+      var WALL_THICKNESS_PX = 5.0 * PX_PER_CM;
 
       var STRIKER_MIN_SPEED_CM_S = 25.0;
       var STRIKER_MAX_SPEED_CM_S = 180.0;
@@ -139,18 +136,17 @@ ${PHASER_MIN_JS}
       var BOARD_THEMES = {
         classic: {
           id: 'classic',
-          frameColor: '#38160E',
-          frameAccent: '#C9943B',
-          frameInnerCushion: '#220D07',
-          surfaceBg: '#E5CBA7',
-          surfaceGrain: '#CEAF85',
-          markingsColor: '#5C2807',
-          pocketRimColor: '#A87C28',
-          cornerBracketColor: '#E87A1E',
-          cornerBracketHighlight: '#FFB04D',
-          baselineDiscColor: '#D97706',
-          baselineDiscOutline: '#4A1E06',
-          arrowColor: '#FF9800'
+          frameColor: '#8B5226',
+          frameAccent: '#5A3012',
+          frameInnerCushion: '#5A3012',
+          surfaceBg: '#EBCB93',
+          surfaceGrain: '#C8A97A',
+          markingsColor: '#6B3A1A',
+          cornerCapColor: '#2BD67B',
+          endMarkerFillColor: '#2BD67B',
+          endMarkerRingColor: '#FFD84A',
+          pocketRimColor: '#FFD84A',
+          arrowColor: '#FF7A00'
         },
         mahogany: {
           id: 'mahogany',
@@ -501,217 +497,161 @@ ${PHASER_MIN_JS}
       function generateTextures(scene, theme) {
         var dpr = typeof window !== 'undefined' && window.devicePixelRatio ? Math.min(3, Math.max(1, Math.round(window.devicePixelRatio))) : 2;
 
-        // 1. Coins Helper (Carrom Pool Tournament Ivory & Ebony & Ruby Queen)
-        function drawCoinCanvas(ctx, w, h, s, type) {
-          var cx = w / 2;
-          var faceCy = 110 * s;
-          var thickCy = 122 * s;
-          var rFace = 100 * s;
+        // 1. Coins Helper (Flat top-down discs per reference sheet)
+        function drawCoinCanvas(ctx, size, dpr, type) {
+          var cx = size / 2;
+          var cy = size / 2;
+          var r = (size / 2) - 2 * dpr;
 
           var isWhite = type === 'white';
           var isBlack = type === 'black';
 
-          var colThickness = isWhite ? '#B29E72' : (isBlack ? '#070908' : '#7A0E1C');
-          var colFaceInner = isWhite ? '#FFFFFF' : (isBlack ? '#3B4340' : '#FF4D6D');
-          var colFaceOuter = isWhite ? '#E5D6B6' : (isBlack ? '#131815' : '#B81D39');
-          var colGrooves = isWhite ? '#CBB890' : (isBlack ? '#28302C' : '#FFC2CC');
-          var colEmblemDot = isWhite ? '#C2AF84' : (isBlack ? '#D97706' : '#FFD0D8');
-          var highlightAlpha = isWhite ? 0.60 : (isBlack ? 0.22 : 0.55);
+          var faceCol = isWhite ? '#F5ECD2' : (isBlack ? '#1B2420' : '#E23B5A');
+          var ringCol = isWhite ? '#D4C5A3' : (isBlack ? '#2E3A34' : '#FF7894');
+          var emblemCol = isWhite ? '#B8A57E' : (isBlack ? '#3D4C44' : '#FFD84A');
 
-          // 1. Edge-thickness disc
-          ctx.fillStyle = colThickness;
+          // 1. Face disc
+          ctx.fillStyle = faceCol;
           ctx.beginPath();
-          ctx.arc(cx, thickCy, rFace, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
 
-          // 2. Face disc with radial gradient
-          var faceGrad = ctx.createRadialGradient(cx - 12 * s, faceCy - 15 * s, 8 * s, cx, faceCy, rFace);
-          faceGrad.addColorStop(0, colFaceInner);
-          if (isBlack) faceGrad.addColorStop(0.4, '#262D29');
-          faceGrad.addColorStop(1, colFaceOuter);
-          ctx.fillStyle = faceGrad;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, rFace, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Outer face border
-          ctx.strokeStyle = colGrooves;
-          ctx.lineWidth = 1.5 * s;
+          // 2. Fine outer edge stroke
+          ctx.strokeStyle = ringCol;
+          ctx.lineWidth = 1.2 * dpr;
           ctx.stroke();
 
-          // 3. Concentric rings r84 & r66
-          ctx.lineWidth = 2.5 * s;
+          // 3. Inner concentric ring
           ctx.beginPath();
-          ctx.arc(cx, faceCy, 84 * s, 0, Math.PI * 2);
-          ctx.stroke();
-
-          ctx.lineWidth = 1.8 * s;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, 66 * s, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r * 0.72, 0, Math.PI * 2);
+          ctx.lineWidth = 1.6 * dpr;
           ctx.stroke();
 
           // 4. Center emblem
-          ctx.strokeStyle = colGrooves;
-          ctx.lineWidth = 2 * s;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, 30 * s, 0, Math.PI * 2);
-          ctx.stroke();
+          if (type === 'queen') {
+            ctx.fillStyle = emblemCol;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * 0.30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1 * dpr;
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = emblemCol;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * 0.20, 0, Math.PI * 2);
+            ctx.fill();
+          }
 
-          ctx.fillStyle = colEmblemDot;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, 8 * s, 0, Math.PI * 2);
-          ctx.fill();
-
-          // 5. Specular highlight
+          // 5. Small specular highlight
           ctx.save();
-          ctx.translate(72 * s, 60 * s);
-          ctx.rotate(-35 * Math.PI / 180);
-          ctx.fillStyle = 'rgba(255, 255, 255, ' + highlightAlpha + ')';
+          ctx.translate(cx - r * 0.35, cy - r * 0.35);
+          ctx.rotate(-40 * Math.PI / 180);
+          ctx.fillStyle = isWhite ? 'rgba(255, 255, 255, 0.45)' : (isBlack ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.55)');
           ctx.beginPath();
           if (ctx.ellipse) {
-            ctx.ellipse(0, 0, 20 * s, 8 * s, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, r * 0.30, r * 0.12, 0, 0, Math.PI * 2);
           } else {
-            ctx.arc(0, 0, 15 * s, 0, Math.PI * 2);
+            ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
           }
           ctx.fill();
           ctx.restore();
         }
 
-        var coinW = Math.round(74 * dpr);
-        var coinH = Math.round(74 * (236 / 220) * dpr);
-        var coinS = coinW / 220;
+        var coinSize = Math.round(48 * dpr);
 
-        createCanvasTexture(scene, 'tex_coin_white', coinW, coinH, function(ctx) {
-          drawCoinCanvas(ctx, coinW, coinH, coinS, 'white');
+        createCanvasTexture(scene, 'tex_coin_white', coinSize, coinSize, function(ctx) {
+          drawCoinCanvas(ctx, coinSize, dpr, 'white');
         });
 
-        createCanvasTexture(scene, 'tex_coin_black', coinW, coinH, function(ctx) {
-          drawCoinCanvas(ctx, coinW, coinH, coinS, 'black');
+        createCanvasTexture(scene, 'tex_coin_black', coinSize, coinSize, function(ctx) {
+          drawCoinCanvas(ctx, coinSize, dpr, 'black');
         });
 
-        createCanvasTexture(scene, 'tex_coin_queen', coinW, coinH, function(ctx) {
-          drawCoinCanvas(ctx, coinW, coinH, coinS, 'queen');
+        createCanvasTexture(scene, 'tex_coin_queen', coinSize, coinSize, function(ctx) {
+          drawCoinCanvas(ctx, coinSize, dpr, 'queen');
         });
 
-        // Standalone Non-Rotating Coin Shadow
-        createCanvasTexture(scene, 'tex_coin_shadow', coinW, Math.round(coinW * 0.45), function(ctx) {
-          var sw = coinW;
-          var sh = Math.round(coinW * 0.45);
-          var grad = ctx.createRadialGradient(sw / 2, sh / 2, 2 * dpr, sw / 2, sh / 2, 0.45 * sw);
-          grad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
-          grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.20)');
+        // Standalone Non-Rotating Coin Shadow (offset 0.7, 1.4)
+        createCanvasTexture(scene, 'tex_coin_shadow', coinSize, coinSize, function(ctx) {
+          var cx = coinSize / 2;
+          var r = (coinSize / 2) - 2 * dpr;
+          var grad = ctx.createRadialGradient(cx, cx, 1 * dpr, cx, cx, r);
+          grad.addColorStop(0, 'rgba(0, 0, 0, 0.40)');
+          grad.addColorStop(0.70, 'rgba(0, 0, 0, 0.15)');
           grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
-          if (ctx.ellipse) {
-            ctx.ellipse(sw / 2, sh / 2, 0.42 * sw, 0.22 * sh, 0, 0, Math.PI * 2);
-          } else {
-            ctx.arc(sw / 2, sh / 2, 0.35 * sw, 0, Math.PI * 2);
-          }
+          ctx.arc(cx, cx, r, 0, Math.PI * 2);
           ctx.fill();
         });
 
-        // 2. Striker Textures (Carrom Pool Signature Royal Purple Medallion with Gold Mandala & Ruby Gem)
-        var strikerW = Math.round(98 * dpr);
-        var strikerH = Math.round(98 * (276 / 260) * dpr);
-        var strikerS = strikerW / 260;
+        // 2. Striker Texture (Emerald rim, cream face, brass ring, emerald dashed ring, brass center)
+        var strikerSize = Math.round(68 * dpr);
 
-        function drawStrikerCanvas(ctx, w, h, s, skinKey) {
-          var cx = w / 2;
-          var faceCy = 130 * s;
-          var thickCy = 144 * s;
-          var rFace = 120 * s;
+        function drawStrikerCanvas(ctx, size, dpr) {
+          var cx = size / 2;
+          var cy = size / 2;
+          var r = (size / 2) - 2 * dpr;
 
-          // 1. Thickness disc (dark rich violet base)
-          ctx.fillStyle = '#2A0740';
+          // 1. Emerald outer rim (#2BD67B)
+          ctx.fillStyle = '#2BD67B';
           ctx.beginPath();
-          ctx.arc(cx, thickCy, rFace, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
-
-          // 2. Royal Purple outer rim with radial gradient
-          var rimGrad = ctx.createRadialGradient(cx - 15 * s, faceCy - 20 * s, 15 * s, cx, faceCy, rFace);
-          rimGrad.addColorStop(0, '#6B1B9A');
-          rimGrad.addColorStop(0.5, '#4A126D');
-          rimGrad.addColorStop(0.85, '#3B0957');
-          rimGrad.addColorStop(1, '#2E0644');
-          ctx.fillStyle = rimGrad;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, rFace, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#2A0740';
-          ctx.lineWidth = 2 * s;
+          ctx.strokeStyle = '#1FA85E';
+          ctx.lineWidth = 1.5 * dpr;
           ctx.stroke();
 
-          // 3. Golden Gear/Mandala Ring r100
-          ctx.fillStyle = '#F59E0B';
+          // 2. Cream face (#FFF8E7)
+          ctx.fillStyle = '#FFF8E7';
           ctx.beginPath();
-          ctx.arc(cx, faceCy, 100 * s, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r * 0.82, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#B45309';
-          ctx.lineWidth = 2 * s;
+
+          // 3. Brass ring (#FFD84A)
+          ctx.strokeStyle = '#FFD84A';
+          ctx.lineWidth = 2 * dpr;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.72, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Mandala gear notches (12 teeth around r100)
-          ctx.fillStyle = '#D97706';
+          // 4. Emerald dashed ring (#2BD67B)
+          ctx.fillStyle = '#2BD67B';
           for (var gi = 0; gi < 12; gi++) {
             var gAng = (gi * Math.PI * 2) / 12;
-            var gnx = cx + Math.cos(gAng) * 94 * s;
-            var gny = faceCy + Math.sin(gAng) * 94 * s;
+            var gnx = cx + Math.cos(gAng) * (r * 0.52);
+            var gny = cy + Math.sin(gAng) * (r * 0.52);
             ctx.beginPath();
-            ctx.arc(gnx, gny, 5 * s, 0, Math.PI * 2);
+            ctx.arc(gnx, gny, 2.2 * dpr, 0, Math.PI * 2);
             ctx.fill();
           }
 
-          // 4. Inner Royal Purple Medallion r84
-          var medGrad = ctx.createRadialGradient(cx - 10 * s, faceCy - 10 * s, 10 * s, cx, faceCy, 84 * s);
-          medGrad.addColorStop(0, '#5C1687');
-          medGrad.addColorStop(0.8, '#430D63');
-          medGrad.addColorStop(1, '#33084C');
-          ctx.fillStyle = medGrad;
+          // 5. Brass center (#FFD84A)
+          ctx.fillStyle = '#FFD84A';
           ctx.beginPath();
-          ctx.arc(cx, faceCy, 84 * s, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r * 0.28, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#E9B949';
-          ctx.lineWidth = 2.5 * s;
+          ctx.strokeStyle = '#D4892A';
+          ctx.lineWidth = 1.2 * dpr;
           ctx.stroke();
 
-          // 5. Gold Inlay Star / Ring r55
-          ctx.strokeStyle = '#FDE68A';
-          ctx.lineWidth = 2 * s;
+          // Center emerald jewel dot
+          ctx.fillStyle = '#2BD67B';
           ctx.beginPath();
-          ctx.arc(cx, faceCy, 55 * s, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // 6. Central Ruby Jewel r24 with 3D glass dome
-          var rubyGrad = ctx.createRadialGradient(cx - 5 * s, faceCy - 6 * s, 2 * s, cx, faceCy, 24 * s);
-          rubyGrad.addColorStop(0, '#FF4D6D');
-          rubyGrad.addColorStop(0.4, '#DC2626');
-          rubyGrad.addColorStop(0.85, '#991B1B');
-          rubyGrad.addColorStop(1, '#5C0808');
-          ctx.fillStyle = rubyGrad;
-          ctx.beginPath();
-          ctx.arc(cx, faceCy, 24 * s, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#E9B949';
-          ctx.lineWidth = 2 * s;
-          ctx.stroke();
-
-          // Center jewel glint
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-          ctx.beginPath();
-          ctx.arc(cx - 6 * s, faceCy - 6 * s, 4 * s, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r * 0.10, 0, Math.PI * 2);
           ctx.fill();
 
-          // 7. Top curved specular highlight (Carrom Pool 3D look)
+          // 6. Specular curved dome glint
           ctx.save();
-          ctx.translate(cx - 28 * s, faceCy - 48 * s);
+          ctx.translate(cx - r * 0.32, cy - r * 0.32);
           ctx.rotate(-35 * Math.PI / 180);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
           ctx.beginPath();
           if (ctx.ellipse) {
-            ctx.ellipse(0, 0, 28 * s, 10 * s, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, r * 0.30, r * 0.10, 0, 0, Math.PI * 2);
           } else {
-            ctx.arc(0, 0, 20 * s, 0, Math.PI * 2);
+            ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
           }
           ctx.fill();
           ctx.restore();
@@ -719,26 +659,25 @@ ${PHASER_MIN_JS}
 
         var strikerKeys = ['emerald', 'classic', 'royal', 'gold', 'default'];
         strikerKeys.forEach(function(sKey) {
-          createCanvasTexture(scene, 'tex_striker_' + sKey, strikerW, strikerH, function(ctx) {
-            drawStrikerCanvas(ctx, strikerW, strikerH, strikerS, sKey);
+          createCanvasTexture(scene, 'tex_striker_' + sKey, strikerSize, strikerSize, function(ctx) {
+            drawStrikerCanvas(ctx, strikerSize, dpr);
           });
         });
+        createCanvasTexture(scene, 'tex_striker', strikerSize, strikerSize, function(ctx) {
+          drawStrikerCanvas(ctx, strikerSize, dpr);
+        });
 
-        // Standalone Non-Rotating Striker Shadow
-        createCanvasTexture(scene, 'tex_striker_shadow', strikerW, Math.round(strikerW * 0.45), function(ctx) {
-          var sw = strikerW;
-          var sh = Math.round(strikerW * 0.45);
-          var grad = ctx.createRadialGradient(sw / 2, sh / 2, 4 * dpr, sw / 2, sh / 2, 0.45 * sw);
-          grad.addColorStop(0, 'rgba(0, 0, 0, 0.48)');
-          grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.22)');
+        // Standalone Non-Rotating Striker Shadow (offset 0.7, 1.4)
+        createCanvasTexture(scene, 'tex_striker_shadow', strikerSize, strikerSize, function(ctx) {
+          var cx = strikerSize / 2;
+          var r = (strikerSize / 2) - 2 * dpr;
+          var grad = ctx.createRadialGradient(cx, cx, 2 * dpr, cx, cx, r);
+          grad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
+          grad.addColorStop(0.70, 'rgba(0, 0, 0, 0.18)');
           grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
-          if (ctx.ellipse) {
-            ctx.ellipse(sw / 2, sh / 2, 0.45 * sw, 0.24 * sh, 0, 0, Math.PI * 2);
-          } else {
-            ctx.arc(sw / 2, sh / 2, 0.40 * sw, 0, Math.PI * 2);
-          }
+          ctx.arc(cx, cx, r, 0, Math.PI * 2);
           ctx.fill();
         });
 
@@ -842,180 +781,125 @@ ${PHASER_MIN_JS}
 
         renderBoardGraphics: function(theme) {
           var s = this.canvasSize;
-          var fw = (s - BOARD_PX) / 2; // Frame width (50px on 840 canvas)
-          var surfSize = BOARD_PX;
-          var center = s / 2;
-          var scale = BOARD_PX / 528;
-
-          var bo = 74 * scale; // Baseline center line offset from cushion
-          var halfBl = 156 * scale; // Distance from center to baseline discs
-          var pillLen = 336 * scale; // Full length of baseline pill
-          var pillH = 24 * scale; // Thickness of baseline pill
-          var pillRx = 12 * scale; // Corner radius of baseline pill
-          var discR = 9.5 * scale; // Radius of amber baseline discs
-          var cornerDiscR = 11.5 * scale; // Radius of 4 corner discs
+          var scale = s / 382;
 
           this.boardGraphics.clear();
           this.pocketsGroup.clear(true, true);
 
-          // 1. Frame: Rounded rect r32 with rich mahogany wood
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameColor || '#38160E').color, 1);
-          this.boardGraphics.fillRoundedRect(0, 0, s, s, 32 * (s / 640));
+          // 1. Frame: 382 x 381, radius 12, wood gradient #8B5226 -> #5A3012
+          this.boardGraphics.fillStyle(0x8B5226, 1);
+          this.boardGraphics.fillRoundedRect(0, 0, s, s, 12 * scale);
 
-          // Brass Inlay Line inset 8 (2 units, 70% opacity)
-          var brassCol = Phaser.Display.Color.HexStringToColor(theme.frameAccent || '#C9943B').color;
-          this.boardGraphics.lineStyle(2, brassCol, 0.70);
-          this.boardGraphics.strokeRoundedRect(8 * (s / 640), 8 * (s / 640), s - 16 * (s / 640), s - 16 * (s / 640), 24 * (s / 640));
+          // Inner frame bevel for rich wooden depth
+          this.boardGraphics.lineStyle(3 * scale, 0x5A3012, 0.95);
+          this.boardGraphics.strokeRoundedRect(1 * scale, 1 * scale, s - 2 * scale, s - 2 * scale, 12 * scale);
 
-          // 45 deg miter joints
-          this.boardGraphics.lineStyle(1.5, 0x1E0C06, 0.6);
-          this.boardGraphics.lineBetween(0, 0, fw, fw);
-          this.boardGraphics.lineBetween(s, 0, s - fw, fw);
-          this.boardGraphics.lineBetween(0, s, fw, s - fw);
-          this.boardGraphics.lineBetween(s, s, s - fw, s - fw);
+          // 2. Playing Surface: 368 x 366 at (7 * scale, 7.5 * scale), #EBCB93
+          var surfX = 7 * scale;
+          var surfY = 7.5 * scale;
+          var surfW = 368 * scale;
+          var surfH = 366 * scale;
 
-          // Inner Cushion Lip (Rect in #220D07)
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.frameInnerCushion || '#220D07').color, 1);
-          this.boardGraphics.fillRect(fw - 8, fw - 8, surfSize + 16, surfSize + 16);
-
-          // 2. Playing Surface (Birchwood #E5CBA7)
-          this.boardGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.surfaceBg || '#E5CBA7').color, 1);
-          this.boardGraphics.fillRoundedRect(fw, fw, surfSize, surfSize, 4);
+          this.boardGraphics.fillStyle(0xEBCB93, 1);
+          this.boardGraphics.fillRect(surfX, surfY, surfW, surfH);
 
           // Surface fine border
-          var grainCol = Phaser.Display.Color.HexStringToColor(theme.surfaceGrain || '#CEAF85').color;
-          this.boardGraphics.lineStyle(2, grainCol, 0.9);
-          this.boardGraphics.strokeRoundedRect(fw, fw, surfSize, surfSize, 4);
+          this.boardGraphics.lineStyle(1.5 * scale, 0x8B5226, 0.75);
+          this.boardGraphics.strokeRect(surfX, surfY, surfW, surfH);
 
-          // Horizontal Wood Grain Lines (Carrom Pool Style!)
-          this.boardGraphics.lineStyle(1, grainCol, 0.18);
-          var grainStep = 14 * scale;
-          for (var gy = fw + grainStep; gy < s - fw; gy += grainStep) {
-            this.boardGraphics.lineBetween(fw, gy, s - fw, gy);
+          // Vertical Wood Grain Lines at 30% opacity
+          this.boardGraphics.lineStyle(1 * scale, 0xC8A97A, 0.30);
+          var grainStep = 9 * scale;
+          for (var gx = surfX + grainStep; gx < surfX + surfW; gx += grainStep) {
+            this.boardGraphics.lineBetween(gx, surfY, gx, surfY + surfH);
           }
 
-          // 3. 4 Bright Amber/Orange Curved Corner Pocket Brackets (Carrom Pool Signature!)
-          var bracketCol = Phaser.Display.Color.HexStringToColor(theme.cornerBracketColor || '#E87A1E').color;
-          var bracketHi = Phaser.Display.Color.HexStringToColor(theme.cornerBracketHighlight || '#FFB04D').color;
-          var pocketOffset = 24 * scale;
-          var pr = POCKET_RADIUS_PX;
+          // 3. Emerald Corner Caps (#2BD67B) at all 4 corners (L-shaped, 6-unit thick, 41-unit arms)
+          var capCol = 0x2BD67B;
+          var capThick = 6 * scale;
+          var capArm = 41 * scale;
 
-          var corners = [
-            { cx: fw + pocketOffset, cy: fw + pocketOffset, start: Math.PI, end: Math.PI * 1.5 },
-            { cx: s - fw - pocketOffset, cy: fw + pocketOffset, start: Math.PI * 1.5, end: Math.PI * 2.0 },
-            { cx: s - fw - pocketOffset, cy: s - fw - pocketOffset, start: 0, end: Math.PI * 0.5 },
-            { cx: fw + pocketOffset, cy: s - fw - pocketOffset, start: Math.PI * 0.5, end: Math.PI }
+          this.boardGraphics.fillStyle(capCol, 1);
+          // Top-Left L-cap
+          this.boardGraphics.fillRect(0, 0, capArm, capThick);
+          this.boardGraphics.fillRect(0, 0, capThick, capArm);
+
+          // Top-Right L-cap
+          this.boardGraphics.fillRect(s - capArm, 0, capArm, capThick);
+          this.boardGraphics.fillRect(s - capThick, 0, capThick, capArm);
+
+          // Bottom-Left L-cap
+          this.boardGraphics.fillRect(0, s - capThick, capArm, capThick);
+          this.boardGraphics.fillRect(0, s - capArm, capThick, capArm);
+
+          // Bottom-Right L-cap
+          this.boardGraphics.fillRect(s - capArm, s - capThick, capArm, capThick);
+          this.boardGraphics.fillRect(s - capThick, s - capArm, capThick, capArm);
+
+          // 4. Center Circle: (190.5 * scale, 189.7 * scale), r 63.5 * scale (0.166 B), 1.2 stroke
+          var centerX = 190.5 * scale;
+          var centerY = 189.7 * scale;
+          var centerR = 63.5 * scale;
+
+          this.boardGraphics.lineStyle(1.2 * scale, 0x6B3A1A, 0.85);
+          this.boardGraphics.strokeCircle(centerX, centerY, centerR);
+
+          // Inner center circle & pinpoint dot
+          this.boardGraphics.lineStyle(1.0 * scale, 0x6B3A1A, 0.60);
+          this.boardGraphics.strokeCircle(centerX, centerY, 19 * scale);
+          this.boardGraphics.fillStyle(0xE23B5A, 0.95);
+          this.boardGraphics.fillCircle(centerX, centerY, 4 * scale);
+
+          // 5. Baselines: pill outlines, 1.6 stroke #6B3A1A, thickness 26.5 (0.069 B), length 228 (0.60 B)
+          var markCol = 0x6B3A1A;
+          this.boardGraphics.lineStyle(1.6 * scale, markCol, 0.90);
+
+          // Top pill: x 77, y 50.2, w 228, h 26.5
+          this.boardGraphics.strokeRoundedRect(77 * scale, 50.2 * scale, 228 * scale, 26.5 * scale, 13.25 * scale);
+          // Bottom pill: x 77, y 303.9, w 228, h 26.5
+          this.boardGraphics.strokeRoundedRect(77 * scale, 303.9 * scale, 228 * scale, 26.5 * scale, 13.25 * scale);
+          // Left pill: x 51.5, y 76.5, w 25.5, h 227.4
+          this.boardGraphics.strokeRoundedRect(51.5 * scale, 76.5 * scale, 25.5 * scale, 227.4 * scale, 12.75 * scale);
+          // Right pill: x 304.5, y 76.5, w 25.5, h 227.4
+          this.boardGraphics.strokeRoundedRect(304.5 * scale, 76.5 * scale, 25.5 * scale, 227.4 * scale, 12.75 * scale);
+
+          // End Markers: emerald circles r 11.5 with brass ring at end positions
+          var emR = 11.5 * scale;
+          var endMarkerCoords = [
+            { x: 90 * scale, y: 63.5 * scale },
+            { x: 292 * scale, y: 63.5 * scale },
+            { x: 90 * scale, y: 317.1 * scale },
+            { x: 292 * scale, y: 317.1 * scale },
+            { x: 64 * scale, y: 88.5 * scale },
+            { x: 64 * scale, y: 291.5 * scale },
+            { x: 317 * scale, y: 88.5 * scale },
+            { x: 317 * scale, y: 291.5 * scale }
           ];
 
-          corners.forEach(function(cDef) {
-            // Main amber/orange curved bracket
-            activeScene.boardGraphics.lineStyle(8 * scale, bracketCol, 1.0);
-            activeScene.boardGraphics.beginPath();
-            activeScene.boardGraphics.arc(cDef.cx, cDef.cy, pr + 11 * scale, cDef.start - 0.15, cDef.end + 0.15);
-            activeScene.boardGraphics.strokePath();
-
-            // 3D Highlight curve
-            activeScene.boardGraphics.lineStyle(2.5 * scale, bracketHi, 0.85);
-            activeScene.boardGraphics.beginPath();
-            activeScene.boardGraphics.arc(cDef.cx, cDef.cy, pr + 13 * scale, cDef.start - 0.08, cDef.end + 0.08);
-            activeScene.boardGraphics.strokePath();
+          endMarkerCoords.forEach(function(em) {
+            activeScene.boardGraphics.fillStyle(0x2BD67B, 1);
+            activeScene.boardGraphics.fillCircle(em.x, em.y, emR);
+            activeScene.boardGraphics.lineStyle(1.5 * scale, 0xFFD84A, 0.95);
+            activeScene.boardGraphics.strokeCircle(em.x, em.y, emR);
+            // Center brass pinpoint
+            activeScene.boardGraphics.fillStyle(0xFFD84A, 0.9);
+            activeScene.boardGraphics.fillCircle(em.x, em.y, 2.5 * scale);
           });
 
-          // 4. Diagonal Foul Lines (dashed fine lines)
-          var markCol = Phaser.Display.Color.HexStringToColor(theme.markingsColor || '#5C2807').color;
-          this.boardGraphics.lineStyle(1.5, markCol, 0.80);
-          var drawDashedLine = function(g, x1, y1, x2, y2, dLen, gLen) {
-            var dx = x2 - x1;
-            var dy = y2 - y1;
-            var tot = Math.hypot(dx, dy);
-            if (tot <= 0) return;
-            var ux = dx / tot;
-            var uy = dy / tot;
-            var cur = 0;
-            while (cur < tot) {
-              var endD = Math.min(cur + dLen, tot);
-              g.lineBetween(x1 + ux * cur, y1 + uy * cur, x1 + ux * endD, y1 + uy * endD);
-              cur += dLen + gLen;
-            }
-          };
-
-          drawDashedLine(this.boardGraphics, center - 96 * scale, center - 96 * scale, center - 200 * scale, center - 200 * scale, 6, 6);
-          drawDashedLine(this.boardGraphics, center + 96 * scale, center - 96 * scale, center + 200 * scale, center - 200 * scale, 6, 6);
-          drawDashedLine(this.boardGraphics, center - 96 * scale, center + 96 * scale, center - 200 * scale, center + 200 * scale, 6, 6);
-          drawDashedLine(this.boardGraphics, center + 96 * scale, center + 96 * scale, center + 200 * scale, center + 200 * scale, 6, 6);
-
-          // 5. Baselines: 4 Pill Outlines (stroke 2, no fill)
-          this.boardGraphics.lineStyle(2, markCol, 0.95);
-          // Top Baseline
-          this.boardGraphics.strokeRoundedRect(center - pillLen / 2, fw + bo - pillH / 2, pillLen, pillH, pillRx);
-          // Bottom Baseline
-          this.boardGraphics.strokeRoundedRect(center - pillLen / 2, s - fw - bo - pillH / 2, pillLen, pillH, pillRx);
-          // Left Baseline
-          this.boardGraphics.strokeRoundedRect(fw + bo - pillH / 2, center - pillLen / 2, pillH, pillLen, pillRx);
-          // Right Baseline
-          this.boardGraphics.strokeRoundedRect(s - fw - bo - pillH / 2, center - pillLen / 2, pillH, pillLen, pillRx);
-
-          // Solid Amber/Orange Circular Wooden Discs at Baseline Ends (Carrom Pool Style!)
-          var amberDiscCol = Phaser.Display.Color.HexStringToColor(theme.baselineDiscColor || '#D97706').color;
-          var discOutline = Phaser.Display.Color.HexStringToColor(theme.baselineDiscOutline || '#4A1E06').color;
-
-          var drawAmberDisc = function(g, dx, dy, rad) {
-            g.fillStyle(amberDiscCol, 1);
-            g.fillCircle(dx, dy, rad);
-            g.lineStyle(1.6, discOutline, 0.95);
-            g.strokeCircle(dx, dy, rad);
-            // Subtle 3D highlight dot
-            g.fillStyle(0xFFE8B2, 0.65);
-            g.fillCircle(dx - rad * 0.3, dy - rad * 0.3, rad * 0.3);
-          };
-
-          // 8 Baseline End Discs:
-          drawAmberDisc(this.boardGraphics, center - halfBl, fw + bo, discR);
-          drawAmberDisc(this.boardGraphics, center + halfBl, fw + bo, discR);
-          drawAmberDisc(this.boardGraphics, center - halfBl, s - fw - bo, discR);
-          drawAmberDisc(this.boardGraphics, center + halfBl, s - fw - bo, discR);
-          drawAmberDisc(this.boardGraphics, fw + bo, center - halfBl, discR);
-          drawAmberDisc(this.boardGraphics, fw + bo, center + halfBl, discR);
-          drawAmberDisc(this.boardGraphics, s - fw - bo, center - halfBl, discR);
-          drawAmberDisc(this.boardGraphics, s - fw - bo, center + halfBl, discR);
-
-          // 4 Corner Amber Discs (Carrom Pool Style!):
-          var cornerOffset = 136 * scale;
-          drawAmberDisc(this.boardGraphics, center - cornerOffset, center - cornerOffset, cornerDiscR);
-          drawAmberDisc(this.boardGraphics, center + cornerOffset, center - cornerOffset, cornerDiscR);
-          drawAmberDisc(this.boardGraphics, center - cornerOffset, center + cornerOffset, cornerDiscR);
-          drawAmberDisc(this.boardGraphics, center + cornerOffset, center + cornerOffset, cornerDiscR);
-
-          // 6. Center Concentric Wood-Etched Rings (Clean, authentic Carrom Pool style!)
-          // Outer coin cluster ring (fits 19 coins)
-          this.boardGraphics.lineStyle(2, markCol, 0.9);
-          this.boardGraphics.strokeCircle(center, center, 88 * scale);
-          this.boardGraphics.lineStyle(1, markCol, 0.45);
-          this.boardGraphics.strokeCircle(center, center, 84 * scale);
-
-          // Inner Queen circle (fits Queen coin)
-          this.boardGraphics.lineStyle(2, markCol, 0.9);
-          this.boardGraphics.strokeCircle(center, center, 24 * scale);
-          this.boardGraphics.lineStyle(1, markCol, 0.45);
-          this.boardGraphics.strokeCircle(center, center, 14 * scale);
-
-          // Center wood dot
-          this.boardGraphics.fillStyle(markCol, 0.85);
-          this.boardGraphics.fillCircle(center, center, 4 * scale);
-
-          // 7. Corner Pocket Sprites
+          // 6. 4 Pockets: black circles, radius 16.4 (0.086 B diameter)
+          var pr = 16.4 * scale;
           var pCoords = [
-            { x: fw + pocketOffset, y: fw + pocketOffset },
-            { x: s - fw - pocketOffset, y: fw + pocketOffset },
-            { x: s - fw - pocketOffset, y: s - fw - pocketOffset },
-            { x: fw + pocketOffset, y: s - fw - pocketOffset }
+            { x: 24 * scale, y: 22.5 * scale },
+            { x: 357.5 * scale, y: 22.5 * scale },
+            { x: 24 * scale, y: 356.5 * scale },
+            { x: 357.5 * scale, y: 356.5 * scale }
           ];
 
-          pCoords.forEach(function(coord) {
-            var p = activeScene.add.sprite(coord.x, coord.y, 'tex_pocket');
-            p.setDisplaySize(pr * 2, pr * 2);
-            p.setDepth(2);
-            activeScene.pocketsGroup.add(p);
+          pCoords.forEach(function(pPos) {
+            var pSprite = activeScene.add.sprite(pPos.x, pPos.y, 'tex_pocket');
+            pSprite.setDisplaySize(pr * 2, pr * 2);
+            pSprite.setDepth(2);
+            activeScene.pocketsGroup.add(pSprite);
           });
         },
 
@@ -1024,17 +908,18 @@ ${PHASER_MIN_JS}
           this.cushionBodies = [];
 
           var s = this.canvasSize;
-          var fw = (s - BOARD_PX) / 2; // 50px
-          var center = s / 2;
-          var thick = WALL_THICKNESS_PX; // 50px thick
+          var scale = s / 382;
+          var surfX = 7 * scale;
+          var surfY = 7.5 * scale;
+          var surfW = 368 * scale;
+          var surfH = 366 * scale;
+          var thick = 50 * scale;
 
-          // 4 Static Wall Rectangles placed OUTSIDE the 740px playable surface:
-          // Inner edges: Left x=fw, Right x=s-fw, Top y=fw, Bottom y=s-fw
           var wallDefs = [
-            { x: center, y: fw - thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'cushion_top' },
-            { x: center, y: s - fw + thick / 2, w: BOARD_PX + thick * 2, h: thick, label: 'cushion_bottom' },
-            { x: fw - thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'cushion_left' },
-            { x: s - fw + thick / 2, y: center, w: thick, h: BOARD_PX + thick * 2, label: 'cushion_right' }
+            { x: s / 2, y: surfY - thick / 2, w: s + thick * 2, h: thick, label: 'cushion_top' },
+            { x: s / 2, y: surfY + surfH + thick / 2, w: s + thick * 2, h: thick, label: 'cushion_bottom' },
+            { x: surfX - thick / 2, y: s / 2, w: thick, h: s + thick * 2, label: 'cushion_left' },
+            { x: surfX + surfW + thick / 2, y: s / 2, w: thick, h: s + thick * 2, label: 'cushion_right' }
           ];
 
           wallDefs.forEach(function(def) {
@@ -1055,15 +940,12 @@ ${PHASER_MIN_JS}
           this.pocketSensors = [];
 
           var s = this.canvasSize;
-          var fw = (s - BOARD_PX) / 2;
-          var scale = BOARD_PX / 528;
-          var pocketOffset = 24 * scale;
-
+          var scale = s / 382;
           var pCoords = [
-            { x: fw + pocketOffset, y: fw + pocketOffset, idx: 0 },
-            { x: s - fw - pocketOffset, y: fw + pocketOffset, idx: 1 },
-            { x: s - fw - pocketOffset, y: s - fw - pocketOffset, idx: 2 },
-            { x: fw + pocketOffset, y: s - fw - pocketOffset, idx: 3 }
+            { x: 24 * scale, y: 22.5 * scale, idx: 0 },
+            { x: 357.5 * scale, y: 22.5 * scale, idx: 1 },
+            { x: 24 * scale, y: 356.5 * scale, idx: 2 },
+            { x: 357.5 * scale, y: 356.5 * scale, idx: 3 }
           ];
 
           pCoords.forEach(function(coord) {
@@ -1086,20 +968,24 @@ ${PHASER_MIN_JS}
           this.coins = [];
 
           var s = this.canvasSize;
-          var cx = s / 2;
-          var cy = s / 2;
-          var rCoin = COIN_RADIUS_PX; // 15.5 px
+          var scale = s / 382;
+          var cx = 190.5 * scale;
+          var cy = 189.7 * scale;
+          var rCoin = COIN_RADIUS_PX; // 10 * scale (0.02618 B)
+          var shOffX = 0.7 * scale;
+          var shOffY = 1.4 * scale;
 
           var addCoin = function(scene, id, type, x, y) {
-            var shadow = scene.add.sprite(x + 2, y + 3, 'tex_coin_shadow');
+            // Standalone non-rotating soft shadow
+            var shadow = scene.add.sprite(x + shOffX, y + shOffY, 'tex_coin_shadow');
             shadow.setOrigin(0.5, 0.5);
             shadow.setDisplaySize(rCoin * 2.3, rCoin * 2.3);
             shadow.setDepth(8);
 
             var key = type === 'queen' ? 'tex_coin_queen' : (type === 'white' ? 'tex_coin_white' : 'tex_coin_black');
             var coinSprite = scene.add.sprite(x, y, key);
-            coinSprite.setOrigin(0.5, 110 / 236);
-            coinSprite.setDisplaySize(2 * rCoin * (220 / 200), 2 * rCoin * (236 / 200));
+            coinSprite.setOrigin(0.5, 0.5);
+            coinSprite.setDisplaySize(2 * rCoin, 2 * rCoin);
             coinSprite.setDepth(10);
 
             var body = scene.matter.add.circle(x, y, rCoin, {
@@ -1118,25 +1004,36 @@ ${PHASER_MIN_JS}
             scene.coins.push(body.coinRef);
           };
 
-          // Queen (swappable texture slot ready)
+          // 1. Queen at center (0, 0)
           addCoin(this, 'queen', 'queen', cx, cy);
 
-          // Ring 1 (6 coins)
-          var d1 = 2 * rCoin * 1.01;
-          var r1Types = ['white', 'black', 'white', 'black', 'white', 'black'];
-          for (var i = 0; i < 6; i++) {
-            var ang = (i * Math.PI) / 3;
-            addCoin(this, 'r1_' + i, r1Types[i], cx + Math.cos(ang) * d1, cy + Math.sin(ang) * d1);
+          // 2. 6 Whites on inner ring (~0.055 B, 60° apart) scaled by 1.045
+          var sFit = 1.045 * scale;
+          var whiteOffsets = [
+            [-11.1, -16.5],
+            [9.5, -18.1],
+            [-20.1, 2.0],
+            [20.5, -1.2],
+            [-9.0, 18.4],
+            [10.5, 17.3]
+          ];
+          for (var wIdx = 0; wIdx < whiteOffsets.length; wIdx++) {
+            var wo = whiteOffsets[wIdx];
+            addCoin(this, 'w_' + wIdx, 'white', cx + wo[0] * sFit, cy + wo[1] * sFit);
           }
 
-          // Ring 2 (12 coins)
-          var d2Axis = 4 * rCoin * 1.01;
-          var d2Inter = 2 * Math.sqrt(3) * rCoin * 1.01;
-          var r2Types = ['black', 'white', 'black', 'white', 'black', 'white', 'black', 'white', 'black', 'white', 'black', 'white'];
-          for (var j = 0; j < 12; j++) {
-            var a2 = (j * Math.PI) / 6;
-            var dist = j % 2 === 0 ? d2Axis : d2Inter;
-            addCoin(this, 'r2_' + j, r2Types[j], cx + Math.cos(a2) * dist, cy + Math.sin(a2) * dist);
+          // 3. 6 Blacks on outer ring (~0.09 B) scaled by 1.045
+          var blackOffsets = [
+            [-1.5, -34.5],
+            [-30.7, -14.9],
+            [29.5, -19.1],
+            [-29.1, 19.5],
+            [31.7, 16.3],
+            [2.6, 34.8]
+          ];
+          for (var bIdx = 0; bIdx < blackOffsets.length; bIdx++) {
+            var bo = blackOffsets[bIdx];
+            addCoin(this, 'b_' + bIdx, 'black', cx + bo[0] * sFit, cy + bo[1] * sFit);
           }
         },
 
@@ -1148,23 +1045,23 @@ ${PHASER_MIN_JS}
           if (this.strikerShadow) this.strikerShadow.destroy();
 
           var s = this.canvasSize;
-          var fw = (s - BOARD_PX) / 2;
-          var scale = BOARD_PX / 528;
-          var bo = 74 * scale;
-          var sr = STRIKER_RADIUS_PX; // 20.5 px
-
+          var scale = s / 382;
+          var sr = STRIKER_RADIUS_PX; // 14.8 * scale (0.03874 B)
           this.strikerRadius = sr;
-          var px = s / 2;
-          var py = s - fw - bo;
 
-          this.strikerShadow = this.add.sprite(px + 3, py + 4, 'tex_striker_shadow');
+          var px = 191.0 * scale;
+          var py = 317.1 * scale;
+          var shOffX = 0.7 * scale;
+          var shOffY = 1.4 * scale;
+
+          this.strikerShadow = this.add.sprite(px + shOffX, py + shOffY, 'tex_striker_shadow');
           this.strikerShadow.setOrigin(0.5, 0.5);
-          this.strikerShadow.setDisplaySize(sr * 2.4, sr * 2.4);
+          this.strikerShadow.setDisplaySize(sr * 2.3, sr * 2.3);
           this.strikerShadow.setDepth(12);
 
-          this.strikerSprite = this.add.sprite(px, py, 'tex_striker_' + currentStrikerSkin);
-          this.strikerSprite.setOrigin(0.5, 130 / 276);
-          this.strikerSprite.setDisplaySize(2 * sr * (260 / 240), 2 * sr * (276 / 240));
+          this.strikerSprite = this.add.sprite(px, py, 'tex_striker');
+          this.strikerSprite.setOrigin(0.5, 0.5);
+          this.strikerSprite.setDisplaySize(2 * sr, 2 * sr);
           this.strikerSprite.setDepth(20);
 
           this.strikerBody = this.matter.add.circle(px, py, sr, {
@@ -1188,33 +1085,36 @@ ${PHASER_MIN_JS}
           if (!this.strikerBody || this.isShotActive) return;
 
           var s = this.canvasSize;
-          var fw = (s - BOARD_PX) / 2;
-          var scale = BOARD_PX / 528;
-          var bo = 74 * scale;
-          var halfBl = 156 * scale;
-          var center = s / 2;
+          var scale = s / 382;
+          var sr = this.strikerRadius || STRIKER_RADIUS_PX;
+
+          var centerX = 191.0 * scale;
+          var travelHalf = 101.0 * scale; // Travel range: 90 to 292 (end-markers)
 
           var clampedOffset = Math.max(-1.0, Math.min(1.0, currentOffsetRatio));
-          var px = center;
-          var py = center;
+          var px = centerX + clampedOffset * travelHalf;
+          var py = 317.1 * scale;
 
           if (currentSeat === 0) {
-            px = center + clampedOffset * halfBl;
-            py = s - fw - bo;
-          } else if (currentSeat === 1) {
-            px = s - fw - bo;
-            py = center + clampedOffset * halfBl;
+            // Bottom baseline (My Turn)
+            px = centerX + clampedOffset * travelHalf;
+            py = 317.1 * scale;
           } else if (currentSeat === 2) {
-            px = center + clampedOffset * halfBl;
-            py = fw + bo;
+            // Top baseline (Opponent Turn)
+            px = centerX + clampedOffset * travelHalf;
+            py = 63.5 * scale;
+          } else if (currentSeat === 1) {
+            // Right baseline
+            px = 317.0 * scale;
+            py = centerX + clampedOffset * travelHalf;
           } else if (currentSeat === 3) {
-            px = fw + bo;
-            py = center + clampedOffset * halfBl;
+            // Left baseline
+            px = 64.0 * scale;
+            py = centerX + clampedOffset * travelHalf;
           }
 
           // Coin overlap check on baseline
           var overlapping = false;
-          var sr = this.strikerRadius;
           for (var i = 0; i < this.coins.length; i++) {
             var c = this.coins[i];
             if (c.isPocketed || !c.body) continue;
@@ -1227,7 +1127,7 @@ ${PHASER_MIN_JS}
 
           this.isStrikerOverlapping = overlapping;
           if (overlapping) {
-            this.strikerSprite.setTint(0xFF4444); // Red flag on illegal overlap
+            this.strikerSprite.setTint(0xFF4444);
           } else {
             this.strikerSprite.clearTint();
           }
@@ -1237,250 +1137,174 @@ ${PHASER_MIN_JS}
           this.matter.body.setAngularVelocity(this.strikerBody, 0);
 
           this.strikerSprite.setPosition(px, py);
-          this.strikerShadow.setPosition(px + 4, py + 5);
+          this.strikerShadow.setPosition(px + 0.7 * scale, py + 1.4 * scale);
+
+          this.updateStrikerAura();
+        },
+
+        updateStrikerAura: function(forceState) {
+          this.strikerAura.clear();
+          if (this.isShotActive || this.strikerIsPocketed || !this.strikerBody) return;
+
+          var state = forceState || this.currentTurnState || (currentSeat === 0 ? 'MY_TURN' : 'OPPONENT_TURN');
+          var px = this.strikerBody.position.x;
+          var py = this.strikerBody.position.y;
+          var sr = this.strikerRadius || STRIKER_RADIUS_PX;
+          var scale = this.canvasSize / 382;
+
+          if (state === 'MY_TURN' || state === 'AIMING') {
+            // Emerald glow
+            this.strikerAura.lineStyle(2.4 * scale, 0x2BD67B, 0.90);
+            this.strikerAura.strokeCircle(px, py, sr * 1.22);
+            this.strikerAura.lineStyle(4.8 * scale, 0x2BD67B, 0.35);
+            this.strikerAura.strokeCircle(px, py, sr * 1.45);
+          } else if (state === 'OPPONENT_TURN') {
+            // Gold glow (#FFD84A)
+            this.strikerAura.lineStyle(2.4 * scale, 0xFFD84A, 0.90);
+            this.strikerAura.strokeCircle(px, py, sr * 1.22);
+            this.strikerAura.lineStyle(4.8 * scale, 0xFFD84A, 0.35);
+            this.strikerAura.strokeCircle(px, py, sr * 1.45);
+          }
+        },
+
+        setTurnState: function(state) {
+          this.currentTurnState = state;
+          if (state === 'SHOT_IN_PROGRESS') {
+            this.isShotActive = true;
+            this.strikerAura.clear();
+          } else {
+            this.isShotActive = false;
+            this.updateStrikerAura(state);
+          }
         },
 
         setupInputHandlers: function() {
           var scene = this;
 
           this.input.on('pointerdown', function(pointer) {
-            if (scene.isShotActive) return;
+            if (scene.isShotActive || scene.currentTurnState === 'OPPONENT_TURN' || currentSeat !== 0) return;
 
             var px = scene.strikerBody.position.x;
             var py = scene.strikerBody.position.y;
             var dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, px, py);
-            var s = scene.canvasSize;
-            var fw = (s - BOARD_PX) / 2;
-            var scale = BOARD_PX / 528;
-            var bo = 74 * scale;
 
-            // 1. Direct Slingshot Touch on Striker (Carrom Pool Style!)
-            if (dist <= scene.strikerRadius * 2.8) {
+            // Slingshot touch directly on striker
+            if (dist <= scene.strikerRadius * 2.6) {
               if (scene.isStrikerOverlapping) return;
-              scene.inputMode = 'slingshot';
               scene.isAiming = true;
-              scene.aimStartPoint = { x: px, y: py };
               scene.updateAim(pointer.x, pointer.y);
-              return;
-            }
-
-            // 2. Baseline Horizontal Slider Touch Zone (near bottom baseline)
-            var baselineY = s - fw - bo;
-            if (currentSeat === 0 && Math.abs(pointer.y - baselineY) < 55) {
-              scene.inputMode = 'baseline_drag';
-              scene.handleBaselinePointer(pointer);
-              return;
-            }
-
-            // 3. Direct Board Touch-To-Aim (touching anywhere else on playing surface)
-            if (!scene.isStrikerOverlapping) {
-              scene.inputMode = 'touch_aim';
-              scene.isAiming = true;
-              scene.aimStartPoint = { x: px, y: py };
-              var aimAngle = Math.atan2(pointer.y - py, pointer.x - px);
-              scene.aimAngle = aimAngle;
-              scene.aimPowerRatio = 0.70; // Sweet-spot default power
-              scene.renderAimGuide(aimAngle, scene.aimPowerRatio);
             }
           });
 
           this.input.on('pointermove', function(pointer) {
-            if (!pointer.isDown || scene.isShotActive) return;
-
-            if (scene.inputMode === 'slingshot') {
-              scene.updateAim(pointer.x, pointer.y);
-            } else if (scene.inputMode === 'touch_aim') {
-              var px = scene.strikerBody.position.x;
-              var py = scene.strikerBody.position.y;
-              var aimAngle = Math.atan2(pointer.y - py, pointer.x - px);
-              scene.aimAngle = aimAngle;
-              scene.renderAimGuide(aimAngle, scene.aimPowerRatio || 0.70);
-            } else if (scene.inputMode === 'baseline_drag') {
-              scene.handleBaselinePointer(pointer);
-            }
+            if (!pointer.isDown || scene.isShotActive || !scene.isAiming) return;
+            scene.updateAim(pointer.x, pointer.y);
           });
 
           this.input.on('pointerup', function() {
-            if (scene.inputMode === 'slingshot') {
+            if (scene.isAiming) {
               scene.isAiming = false;
               scene.aimGraphics.clear();
+
+              sendToReactNative({
+                type: 'AIM_CHANGED',
+                payload: { angle: scene.aimAngle || 0, powerRatio: 0, isAiming: false },
+                timestamp: Date.now()
+              });
 
               if (!scene.isStrikerOverlapping && scene.aimPowerRatio >= 0.05) {
                 scene.executeShot(scene.aimAngle, scene.aimPowerRatio);
               }
             }
-            scene.inputMode = null;
-          });
-        },
-
-        handleBaselinePointer: function(pointer) {
-          var s = this.canvasSize;
-          var bl = BOARD_PX * 0.54;
-          var halfBl = bl / 2;
-          var center = s / 2;
-
-          var off = 0;
-          if (currentSeat === 0 || currentSeat === 2) {
-            off = (pointer.x - center) / halfBl;
-          } else {
-            off = (pointer.y - center) / halfBl;
-          }
-
-          currentOffsetRatio = Math.max(-0.95, Math.min(0.95, off));
-          this.updateStrikerPosition();
-
-          sendToReactNative({
-            type: 'STRIKER_DRAGGED',
-            payload: { offset: currentOffsetRatio, isOverlapping: this.isStrikerOverlapping },
-            timestamp: Date.now()
           });
         },
 
         updateAim: function(curX, curY) {
           var px = this.strikerBody.position.x;
           var py = this.strikerBody.position.y;
+          var scale = this.canvasSize / 382;
 
           // Slingshot pull vector: pulling backward from striker aims forward
           var pullDx = px - curX;
           var pullDy = py - curY;
           var pullDist = Math.hypot(pullDx, pullDy);
 
-          // If finger is within 15px of striker center, cancel zone
-          if (pullDist < 16) {
+          // Aim zone radius = 0.20 B (76.6 units)
+          var maxDragDist = 76.6 * scale;
+          var deadzone = 8 * scale;
+
+          var clampedDist = Math.min(pullDist, maxDragDist);
+          var angle = Math.atan2(pullDy, pullDx);
+          var powerRatio = clampedDist <= deadzone ? 0 : (clampedDist - deadzone) / (maxDragDist - deadzone);
+
+          this.aimAngle = angle;
+          this.aimPowerRatio = powerRatio;
+
+          if (clampedDist <= deadzone) {
             this.aimGraphics.clear();
-            this.aimPowerRatio = 0;
-            // Soft red cancel zone ring
-            this.aimGraphics.fillStyle(0xEF4444, 0.25);
-            this.aimGraphics.fillCircle(px, py, this.strikerRadius + 6);
-            this.aimGraphics.lineStyle(2, 0xEF4444, 0.85);
-            this.aimGraphics.strokeCircle(px, py, this.strikerRadius + 6);
+            sendToReactNative({
+              type: 'AIM_CHANGED',
+              payload: { angle: angle, powerRatio: 0, isAiming: true },
+              timestamp: Date.now()
+            });
             return;
           }
 
-          var angle = Math.atan2(pullDy, pullDx);
-          var maxPullPx = 130;
-          var clampedPull = Math.min(pullDist, maxPullPx);
-          this.aimPowerRatio = Math.max(0.05, Math.min(1.0, (clampedPull - 16) / (maxPullPx - 16)));
-          this.aimAngle = angle;
+          this.renderAimGuide(angle, powerRatio, clampedDist);
 
-          this.renderAimGuide(angle, this.aimPowerRatio, curX, curY);
+          sendToReactNative({
+            type: 'AIM_CHANGED',
+            payload: {
+              angle: angle,
+              powerRatio: powerRatio,
+              isAiming: true,
+              speed_cm_s: STRIKER_MIN_SPEED_CM_S + powerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S)
+            },
+            timestamp: Date.now()
+          });
         },
 
-        renderAimGuide: function(angle, powerRatio, pullX, pullY) {
-          var px = this.strikerBody.position.x;
-          var py = this.strikerBody.position.y;
-          var sr = this.strikerRadius;
-          var cosA = Math.cos(angle);
-          var sinA = Math.sin(angle);
-          var s = this.canvasSize;
-          var scale = BOARD_PX / 528;
-
+        renderAimGuide: function(angle, powerRatio, clampedDist) {
           this.aimGraphics.clear();
 
-          // 1. Translucent Dashed Touch Boundary Circle centered on striker (Carrom Pool Screenshot 5!)
-          var boundaryR = 95 * scale;
-          this.aimGraphics.fillStyle(0xFFFFFF, 0.035);
-          this.aimGraphics.fillCircle(px, py, boundaryR);
+          var s = this.canvasSize;
+          var scale = s / 382;
+          var px = this.strikerBody.position.x;
+          var py = this.strikerBody.position.y;
+          var sr = this.strikerRadius || STRIKER_RADIUS_PX;
 
-          // Dashed border (28 segments)
-          var nDashes = 28;
-          var dStep = (Math.PI * 2) / nDashes;
-          this.aimGraphics.lineStyle(1.6, 0xFFFFFF, 0.26);
-          for (var b = 0; b < nDashes; b += 2) {
+          var cosA = Math.cos(angle);
+          var sinA = Math.sin(angle);
+
+          var maxDragDist = 76.6 * scale; // 0.20 B
+
+          // 1. Aim Zone: faint dotted circle centered on striker, r = 0.20 B (76.6), fill black 12%, stroke white 30%
+          this.aimGraphics.fillStyle(0x000000, 0.12);
+          this.aimGraphics.fillCircle(px, py, maxDragDist);
+
+          var segCount = 28;
+          var segAngle = (Math.PI * 2) / segCount;
+          for (var si = 0; si < segCount; si += 2) {
+            var aStart = si * segAngle;
+            var aEnd = (si + 1) * segAngle;
+            this.aimGraphics.lineStyle(1.2 * scale, 0xFFFFFF, 0.30);
             this.aimGraphics.beginPath();
-            this.aimGraphics.arc(px, py, boundaryR, b * dStep, (b + 1) * dStep);
+            this.aimGraphics.arc(px, py, maxDragDist, aStart, aEnd);
             this.aimGraphics.strokePath();
           }
 
-          // 2. Back-Trace Dotted Line to Touch Pointer (Screenshot 5!)
-          if (typeof pullX === 'number' && typeof pullY === 'number') {
-            var backDx = pullX - px;
-            var backDy = pullY - py;
-            var backDist = Math.hypot(backDx, backDy);
-            if (backDist > sr) {
-              var bDirX = backDx / backDist;
-              var bDirY = backDy / backDist;
-              for (var bd = sr + 8; bd < backDist; bd += 11) {
-                this.aimGraphics.fillStyle(0xFFFFFF, 0.55);
-                this.aimGraphics.fillCircle(px + bDirX * bd, py + bDirY * bd, 2.4);
-              }
-            }
+          // 2. Pull-back trail: grey-white dotted line behind striker, opposite shot direction, 60 units long, 45% opacity
+          var trailLen = Math.min(60 * scale, clampedDist || maxDragDist);
+          var trailSpacing = 6.5 * scale;
+          for (var td = sr + 4 * scale; td <= trailLen + sr; td += trailSpacing) {
+            var trX = px - cosA * td;
+            var trY = py - sinA * td;
+            this.aimGraphics.fillStyle(0xFFFFFF, 0.45);
+            this.aimGraphics.fillCircle(trX, trY, 1.6 * scale);
           }
 
-          // 3. Tapered Gradient Power Arrow (Originates at striker edge and points FORWARD along angle!)
-          var bodyLen = 22 + powerRatio * 62;
-          var headLen = 18;
-          var arrowTotalLen = bodyLen + headLen;
-
-          var arrowStartX = px + cosA * sr;
-          var arrowStartY = py + sinA * sr;
-
-          // Normal perpendicular unit vector for width
-          var normX = -sinA;
-          var normY = cosA;
-
-          var baseW = 15; // Width at striker base
-          var neckW = 11; // Width before arrowhead
-          var headW = 23; // Arrowhead wings width
-
-          var neckX = arrowStartX + cosA * bodyLen;
-          var neckY = arrowStartY + sinA * bodyLen;
-          var tipX = arrowStartX + cosA * arrowTotalLen;
-          var tipY = arrowStartY + sinA * arrowTotalLen;
-
-          // Arrow Body polygon (Tapered trapezoid)
-          var p1x = arrowStartX + normX * (baseW / 2);
-          var p1y = arrowStartY + normY * (baseW / 2);
-          var p2x = arrowStartX - normX * (baseW / 2);
-          var p2y = arrowStartY - normY * (baseW / 2);
-          var p3x = neckX - normX * (neckW / 2);
-          var p3y = neckY - normY * (neckW / 2);
-          var p4x = neckX + normX * (neckW / 2);
-          var p4y = neckY + normY * (neckW / 2);
-
-          // Arrow Head polygon (Triangular point)
-          var h1x = neckX + normX * (headW / 2);
-          var h1y = neckY + normY * (headW / 2);
-          var h2x = neckX - normX * (headW / 2);
-          var h2y = neckY - normY * (headW / 2);
-
-          // Render Arrow Body: Warm Yellow (#F59E0B) with bright gold core
-          this.aimGraphics.fillStyle(0xF59E0B, 0.95);
-          this.aimGraphics.fillPoints([
-            { x: p1x, y: p1y },
-            { x: p2x, y: p2y },
-            { x: p3x, y: p3y },
-            { x: p4x, y: p4y }
-          ], true);
-
-          // Yellow inner core
-          this.aimGraphics.fillStyle(0xFDE047, 0.85);
-          this.aimGraphics.fillPoints([
-            { x: arrowStartX + normX * (baseW * 0.3), y: arrowStartY + normY * (baseW * 0.3) },
-            { x: arrowStartX - normX * (baseW * 0.3), y: arrowStartY - normY * (baseW * 0.3) },
-            { x: neckX - normX * (neckW * 0.3), y: neckY - normY * (neckW * 0.3) },
-            { x: neckX + normX * (neckW * 0.3), y: neckY + normY * (neckW * 0.3) }
-          ], true);
-
-          // Render Arrow Head: Fiery Red (#EF4444 / #DC2626) with sharp point
-          this.aimGraphics.fillStyle(0xEF4444, 0.98);
-          this.aimGraphics.fillTriangle(h1x, h1y, h2x, h2y, tipX, tipY);
-
-          // Crisp dark outline around entire arrow
-          this.aimGraphics.lineStyle(1.6, 0x7F1D1D, 0.95);
-          this.aimGraphics.strokePoints([
-            { x: p1x, y: p1y },
-            { x: p2x, y: p2y },
-            { x: p3x, y: p3y },
-            { x: h2x, y: h2y },
-            { x: tipX, y: tipY },
-            { x: h1x, y: h1y },
-            { x: p4x, y: p4y },
-            { x: p1x, y: p1y }
-          ], true);
-
-          // 4. Forward Raycasting to find nearest collision (Coins & Cushions)
-          var nearestDist = 800;
+          // 3. Raycast: Find first obstacle (coin or cushion) along shot ray
+          var nearestDist = 800 * scale;
           var hitType = 'none';
           var hitCoin = null;
 
@@ -1504,97 +1328,123 @@ ${PHASER_MIN_JS}
             }
           }
 
-          var fw = (s - BOARD_PX) / 2;
-          var boardMin = fw + sr;
-          var boardMax = s - fw - sr;
+          var surfX = 7 * scale;
+          var surfY = 7.5 * scale;
+          var surfW = 368 * scale;
+          var surfH = 366 * scale;
+          var bMinX = surfX + sr;
+          var bMaxX = surfX + surfW - sr;
+          var bMinY = surfY + sr;
+          var bMaxY = surfY + surfH - sr;
           var wallHitSide = null;
 
           if (cosA > 0.001) {
-            var dRight = (boardMax - px) / cosA;
+            var dRight = (bMaxX - px) / cosA;
             if (dRight < nearestDist) { nearestDist = dRight; hitType = 'wall'; wallHitSide = 'right'; }
           } else if (cosA < -0.001) {
-            var dLeft = (boardMin - px) / cosA;
+            var dLeft = (bMinX - px) / cosA;
             if (dLeft < nearestDist) { nearestDist = dLeft; hitType = 'wall'; wallHitSide = 'left'; }
           }
           if (sinA > 0.001) {
-            var dBottom = (boardMax - py) / sinA;
+            var dBottom = (bMaxY - py) / sinA;
             if (dBottom < nearestDist) { nearestDist = dBottom; hitType = 'wall'; wallHitSide = 'bottom'; }
           } else if (sinA < -0.001) {
-            var dTop = (boardMin - py) / sinA;
+            var dTop = (bMinY - py) / sinA;
             if (dTop < nearestDist) { nearestDist = dTop; hitType = 'wall'; wallHitSide = 'top'; }
           }
 
           var contactX = px + cosA * nearestDist;
           var contactY = py + sinA * nearestDist;
 
-          // 5. Crisp Pure White Dotted Trajectory Line from arrow tip to contact point
-          var arrowTipDist = sr + arrowTotalLen;
-          var dotSpacing = 11.5;
-          for (var td = arrowTipDist; td < nearestDist; td += dotSpacing) {
-            var dotX = px + cosA * td;
-            var dotY = py + sinA * td;
-            this.aimGraphics.fillStyle(0xFFFFFF, 0.95);
-            this.aimGraphics.fillCircle(dotX, dotY, 2.7);
+          // 4. Aim Arrow: 5-unit stroke with orange-to-yellow gradient (#FF7A00 -> #FFD84A) and 13-unit arrowhead
+          var arrowStartX = px + cosA * sr;
+          var arrowStartY = py + sinA * sr;
+          var arrowLen = Math.max(0, nearestDist - sr);
+          var headLen = 13 * scale;
+          var headHalfW = 6.5 * scale;
+
+          var shaftLen = Math.max(0, arrowLen - headLen);
+          var steps = 14;
+          var stepDist = shaftLen / steps;
+
+          for (var st = 0; st < steps; st++) {
+            var t1 = st / steps;
+            var p1x = arrowStartX + cosA * (st * stepDist);
+            var p1y = arrowStartY + sinA * (st * stepDist);
+            var p2x = arrowStartX + cosA * ((st + 1) * stepDist);
+            var p2y = arrowStartY + sinA * ((st + 1) * stepDist);
+
+            var colInterp = Phaser.Display.Color.Interpolate.ColorWithColor(
+              { r: 255, g: 122, b: 0 },
+              { r: 255, g: 216, b: 74 },
+              100,
+              Math.round(t1 * 100)
+            );
+            var colHex = Phaser.Display.Color.GetColor(colInterp.r, colInterp.g, colInterp.b);
+            var brightnessAlpha = 0.70 + 0.30 * powerRatio;
+
+            this.aimGraphics.lineStyle(5 * scale, colHex, brightnessAlpha);
+            this.aimGraphics.lineBetween(p1x, p1y, p2x, p2y);
           }
 
-          // 6. Ghost Striker at Contact Point (Screenshot 5!)
-          this.aimGraphics.lineStyle(1.8, 0xFFFFFF, 0.85);
-          this.aimGraphics.strokeCircle(contactX, contactY, sr);
-          this.aimGraphics.fillStyle(0xFFFFFF, 0.12);
-          this.aimGraphics.fillCircle(contactX, contactY, sr);
+          // Arrowhead at contact point
+          var perpX = -sinA;
+          var perpY = cosA;
+          var hBaseX = contactX - cosA * headLen;
+          var hBaseY = contactY - sinA * headLen;
+          var h1x = hBaseX + perpX * headHalfW;
+          var h1y = hBaseY + perpY * headHalfW;
+          var h2x = hBaseX - perpX * headHalfW;
+          var h2y = hBaseY - perpY * headHalfW;
 
-          // 7. If Target is a Coin -> Render Deflection Trajectory & Ghost Coin!
+          this.aimGraphics.fillStyle(0xFFD84A, 0.85 + 0.15 * powerRatio);
+          this.aimGraphics.fillTriangle(h1x, h1y, h2x, h2y, contactX, contactY);
+          this.aimGraphics.lineStyle(1.2 * scale, 0xFF7A00, 0.9);
+          this.aimGraphics.strokeTriangle(h1x, h1y, h2x, h2y, contactX, contactY);
+
+          // 5. Ghost striker at contact point
+          this.aimGraphics.lineStyle(1.5 * scale, 0xFFFFFF, 0.40);
+          this.aimGraphics.strokeCircle(contactX, contactY, sr);
+
+          // 6. Post-contact path: white dotted line (round 3.2 dots, 7.5 spacing)
           if (hitType === 'coin' && hitCoin && hitCoin.body) {
             var targetX = hitCoin.body.position.x;
             var targetY = hitCoin.body.position.y;
-            var normX2 = targetX - contactX;
-            var normY2 = targetY - contactY;
-            var normDist = Math.hypot(normX2, normY2) || 1;
-            var deflDirX = normX2 / normDist;
-            var deflDirY = normY2 / normDist;
-            var deflDist = Math.min(140, 45 + powerRatio * 85);
+            var deflDx = targetX - contactX;
+            var deflDy = targetY - contactY;
+            var deflDistTot = Math.hypot(deflDx, deflDy) || 1;
+            var deflUx = deflDx / deflDistTot;
+            var deflUy = deflDy / deflDistTot;
+            var pathLen = 85 * scale;
+            var dotSpacing = 7.5 * scale;
+            var dotRadius = 1.6 * scale; // diameter 3.2
 
-            for (var dd = 0; dd < deflDist; dd += dotSpacing) {
-              var cDotX = targetX + deflDirX * dd;
-              var cDotY = targetY + deflDirY * dd;
-              this.aimGraphics.fillStyle(0xFFFFFF, 0.95);
-              this.aimGraphics.fillCircle(cDotX, cDotY, 2.7);
+            for (var pd = 0; pd < pathLen; pd += dotSpacing) {
+              var pDotX = targetX + deflUx * pd;
+              var pDotY = targetY + deflUy * pd;
+              this.aimGraphics.fillStyle(0xFFFFFF, 0.90);
+              this.aimGraphics.fillCircle(pDotX, pDotY, dotRadius);
             }
-
-            // Target rollout ghost coin
-            this.aimGraphics.lineStyle(1.8, 0xFFFFFF, 0.90);
-            this.aimGraphics.strokeCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX);
-            this.aimGraphics.fillStyle(0xFFFFFF, 0.18);
-            this.aimGraphics.fillCircle(targetX + deflDirX * deflDist, targetY + deflDirY * deflDist, COIN_RADIUS_PX);
           } else if (hitType === 'wall') {
-            // Cushion rebound reflection angle
-            var reflAngle = angle;
+            var reflA = angle;
             if (wallHitSide === 'left' || wallHitSide === 'right') {
-              reflAngle = Math.PI - angle;
+              reflA = Math.PI - angle;
             } else {
-              reflAngle = -angle;
+              reflA = -angle;
             }
-            var rCos = Math.cos(reflAngle);
-            var rSin = Math.sin(reflAngle);
-            var reboundDist = Math.min(110, 35 + powerRatio * 75);
+            var rUx = Math.cos(reflA);
+            var rUy = Math.sin(reflA);
+            var rPathLen = 75 * scale;
+            var rDotSpacing = 7.5 * scale;
+            var rDotRadius = 1.6 * scale;
 
-            for (var rd = 0; rd < reboundDist; rd += dotSpacing) {
-              var rDotX = contactX + rCos * rd;
-              var rDotY = contactY + rSin * rd;
+            for (var rpd = 0; rpd < rPathLen; rpd += rDotSpacing) {
+              var rdX = contactX + rUx * rpd;
+              var rdY = contactY + rUy * rpd;
               this.aimGraphics.fillStyle(0xFFFFFF, 0.75);
-              this.aimGraphics.fillCircle(rDotX, rDotY, 2.5);
+              this.aimGraphics.fillCircle(rdX, rdY, rDotRadius);
             }
           }
-
-          sendToReactNative({
-            type: 'AIM_CHANGED',
-            payload: {
-              angle: angle,
-              powerRatio: powerRatio,
-              speed_cm_s: STRIKER_MIN_SPEED_CM_S + powerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S)
-            },
-            timestamp: Date.now()
-          });
         },
 
         executeShot: function(angle, powerRatio) {
@@ -1605,16 +1455,16 @@ ${PHASER_MIN_JS}
           this.hasReportedSettled = false;
           this.shotStartTime = Date.now();
           this.pocketedInCurrentShot = [];
+          this.strikerAura.clear();
 
-          var speedCmS = STRIKER_MIN_SPEED_CM_S + powerRatio * (STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S);
+          var spRange = STRIKER_MAX_SPEED_CM_S - STRIKER_MIN_SPEED_CM_S;
+          var speedCmS = STRIKER_MIN_SPEED_CM_S + powerRatio * spRange;
           var vStep = speedCmSToStepVelocity(speedCmS, BASE_DT_SEC);
           var vxStep = Math.cos(angle) * vStep;
           var vyStep = Math.sin(angle) * vStep;
 
-          // Direct physical velocity setting (no raw impulses)
           this.matter.body.setVelocity(this.strikerBody, { x: vxStep, y: vyStep });
 
-          // Audio & Animation Feedback
           playShootSound(powerRatio);
           createShotBlastRing(this, this.strikerBody.position.x, this.strikerBody.position.y);
 
@@ -2174,6 +2024,11 @@ ${PHASER_MIN_JS}
             case 'SET_PLAYER_SEAT':
               if (msg.payload && typeof msg.payload.seat === 'number') {
                 activeScene.setSeat(msg.payload.seat);
+              }
+              break;
+            case 'SET_TURN_STATE':
+              if (msg.payload && msg.payload.state) {
+                activeScene.setTurnState(msg.payload.state);
               }
               break;
             case 'SET_STRIKER_OFFSET':

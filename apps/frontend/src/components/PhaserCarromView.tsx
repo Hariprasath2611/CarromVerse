@@ -20,6 +20,7 @@ export interface PhaserCarromViewRef {
   resumeGame: () => void;
   setAudioConfig: (soundEnabled: boolean, soundVolume: number) => void;
   returnCoinsToBoard: (coins: { id?: string; type: string }[]) => void;
+  setTurnState: (state: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN') => void;
 }
 
 export interface PhaserCarromViewProps {
@@ -28,6 +29,7 @@ export interface PhaserCarromViewProps {
   strikerSkin?: string;
   activeSeat?: number;
   strikerOffset?: number;
+  turnState?: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN';
   soundEnabled?: boolean;
   soundVolume?: number;
   onEngineReady?: () => void;
@@ -135,6 +137,9 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       returnCoinsToBoard: (coins: { id?: string; type: string }[]) => {
         sendToPhaser('RETURN_COINS', { coins });
       },
+      setTurnState: (state: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN') => {
+        sendToPhaser('SET_TURN_STATE', { state });
+      },
     }));
 
     // Sync audio settings
@@ -144,6 +149,13 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
         soundVolume,
       });
     }, [soundEnabled, soundVolume, isReady]);
+
+    // Sync turn state
+    useEffect(() => {
+      if (turnState) {
+        sendToPhaser('SET_TURN_STATE', { state: turnState });
+      }
+    }, [turnState, isReady]);
 
     // Sync theme changes
     useEffect(() => {
