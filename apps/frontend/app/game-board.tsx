@@ -682,8 +682,10 @@ export default function GameBoardScreen() {
           {/* Turn Countdown Display Pill */}
           <View style={styles.turnTimerPill}>
             <Text style={[styles.turnTimerText, { color: timerRingColor, fontSize: 12 * s }]}>
-              {activeSeat === 0 ? 'YOUR TURN' : "OPPONENT'S TURN"} · 0:
-              {secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
+              {activeSeat === 0
+                ? `${(p1?.name || 'Hari').toUpperCase()}'S TURN`
+                : `${(p2?.name || 'Ramesh Mendis').toUpperCase()}'S TURN`}{' '}
+              · 0:{secondsRemaining < 10 ? `0${secondsRemaining}` : secondsRemaining}
             </Text>
           </View>
 
@@ -720,19 +722,6 @@ export default function GameBoardScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* PASS-AND-PLAY TURN HANDOVER MODAL */}
-      <PlayerHandoverModal
-        visible={isHandoverPending}
-        nextPlayer={nextPlayerToHandover}
-        onConfirm={() => {
-          AudioManager.getInstance().playSound('HANDOVER', 0.7);
-          confirmHandover();
-          setStrikerOffsetRatio(0);
-          setIsStrikerOverlapping(false);
-          setIsAiming(false);
-        }}
-      />
 
       {/* PAUSE MODAL */}
       <PauseModal
