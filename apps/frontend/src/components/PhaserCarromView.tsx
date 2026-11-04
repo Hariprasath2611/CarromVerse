@@ -19,6 +19,7 @@ export interface PhaserCarromViewRef {
   pauseGame: () => void;
   resumeGame: () => void;
   setAudioConfig: (soundEnabled: boolean, soundVolume: number) => void;
+  returnCoinsToBoard: (coins: { id?: string; type: string }[]) => void;
 }
 
 export interface PhaserCarromViewProps {
@@ -68,18 +69,23 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
     const iframeRef = useRef<any>(null);
     const [isReady, setIsReady] = useState(false);
 
+    // Store initial seat so HTML template is generated once and NOT regenerated when activeSeat changes
+    const initialSeatRef = useRef(activeSeat);
+
     // Generate self-contained HTML for Phaser 3
+    // Do NOT include activeSeat in dependency array - activeSeat changes are dispatched via postMessage ('SET_PLAYER_SEAT')
+    // This completely prevents the iframe / WebView from reloading and rearranging coins after every shot!
     const htmlContent = React.useMemo(() => {
       return generateCarromPhaserHtml({
         themeId,
         strikerSkin,
-        activeSeat,
+        activeSeat: initialSeatRef.current,
         canvasSize: 840,
       });
-    }, [themeId, strikerSkin, activeSeat]);
+    }, [themeId, strikerSkin]);
 
-    // Mounting key forces React to discard any stale in-memory cached frames
-    const contentKey = `carrom_${themeId}_${strikerSkin}_${htmlContent.length}`;
+    // Stable mounting key so iframe / WebView is never re-mounted or reloaded during match
+    const contentKey = `carrom_${themeId}_${strikerSkin}`;
 
     const sendToPhaser = (type: string, payload?: any) => {
       if (!isReady) return;
@@ -126,6 +132,9 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       setAudioConfig: (soundEnabled: boolean, soundVolume: number) => {
         sendToPhaser('SET_AUDIO_CONFIG', { soundEnabled, soundVolume });
       },
+      returnCoinsToBoard: (coins: { id?: string; type: string }[]) => {
+        sendToPhaser('RETURN_COINS', { coins });
+      },
     }));
 
     // Sync audio settings
@@ -149,7 +158,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
     // Sync active player seat
     useEffect(() => {
       sendToPhaser('SET_PLAYER_SEAT', { seat: activeSeat });
-    }, [activeSeat]);
+    }, [activeSeat, isReady]);
 
     // Sync striker offset position
     useEffect(() => {

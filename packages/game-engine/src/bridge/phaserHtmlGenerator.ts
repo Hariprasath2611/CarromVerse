@@ -2102,6 +2102,47 @@ ${PHASER_MIN_JS}
           this.restStartTime = 0;
           this.hasReportedSettled = false;
           this.pocketedInCurrentShot = [];
+        },
+
+        returnCoinsToCenter: function(coinsToReturn) {
+          if (!Array.isArray(coinsToReturn) || coinsToReturn.length === 0) return;
+          var scene = this;
+          var cx = this.canvasSize / 2;
+          var cy = this.canvasSize / 2;
+          var rCoin = COIN_RADIUS_PX;
+
+          coinsToReturn.forEach(function(item, idx) {
+            var targetCoin = null;
+            if (item.id) {
+              targetCoin = scene.coins.find(function(c) { return c.id === item.id && c.isPocketed; });
+            }
+            if (!targetCoin && item.type) {
+              targetCoin = scene.coins.find(function(c) { return c.type === item.type && c.isPocketed; });
+            }
+            if (!targetCoin) return;
+
+            var posX = cx + (idx > 0 ? (idx * rCoin * 2.1) : 0);
+            var posY = cy;
+
+            targetCoin.isPocketed = false;
+            scene.matter.body.setPosition(targetCoin.body, { x: posX, y: posY });
+            scene.matter.body.setVelocity(targetCoin.body, { x: 0, y: 0 });
+            scene.matter.body.setAngularVelocity(targetCoin.body, 0);
+
+            try {
+              scene.matter.world.add(targetCoin.body);
+            } catch(e) {}
+
+            targetCoin.sprite.setPosition(posX, posY);
+            targetCoin.sprite.setScale(1);
+            targetCoin.sprite.setAlpha(1);
+            targetCoin.sprite.setVisible(true);
+
+            targetCoin.shadow.setPosition(posX + 2, posY + 3);
+            targetCoin.shadow.setScale(1);
+            targetCoin.shadow.setAlpha(1);
+            targetCoin.shadow.setVisible(true);
+          });
         }
       });
 
@@ -2165,6 +2206,11 @@ ${PHASER_MIN_JS}
               break;
             case 'RESET_BOARD':
               activeScene.resetBoard();
+              break;
+            case 'RETURN_COINS':
+              if (msg.payload && Array.isArray(msg.payload.coins)) {
+                activeScene.returnCoinsToCenter(msg.payload.coins);
+              }
               break;
             case 'SET_AUDIO_CONFIG':
               if (msg.payload) {
