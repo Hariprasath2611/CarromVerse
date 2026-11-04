@@ -315,3 +315,4 @@ export function getLayoutScale(screenWidth: number) {
     scaleValue: (val: number) => Math.round(val * s),
   };
 }
+
