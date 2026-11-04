@@ -155,7 +155,6 @@ export default function EditProfileScreen() {
         } else {
           await updateAvatar({
             avatarUrl: selectedAvatar,
-            format: 'url',
           });
         }
       }
@@ -256,7 +255,7 @@ export default function EditProfileScreen() {
             />
             <Button
               title="Apply"
-              size="small"
+              size="sm"
               variant="secondary"
               onPress={handleApplyCustomUrl}
               style={styles.applyBtn}
