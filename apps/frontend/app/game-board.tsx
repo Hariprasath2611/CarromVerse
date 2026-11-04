@@ -345,6 +345,11 @@ export default function GameBoardScreen() {
             });
 
             if (evalResult) {
+              // Return any coins to center circle that rules dictate (Queen returned, foul penalty, dues, etc.)
+              if (evalResult.coinsToReturnToBoard && evalResult.coinsToReturnToBoard.length > 0) {
+                carromRef.current?.returnCoinsToBoard(evalResult.coinsToReturnToBoard);
+              }
+
               if (evalResult.foulOccurred) {
                 AudioManager.getInstance().playSound('FOUL', 0.9);
                 showToast(
@@ -353,7 +358,7 @@ export default function GameBoardScreen() {
               } else if (evalResult.queenCoveredThisShot) {
                 AudioManager.getInstance().playSound('QUEEN_POCKET', 1.0);
                 triggerFloatingScore('👑 QUEEN COVERED!', '#E9B949');
-                showToast('👑 QUEEN COVERED! +50 Points');
+                showToast('👑 QUEEN COVERED! +3 Points');
               } else if (evalResult.queenStatusAfter === 'pending_cover') {
                 AudioManager.getInstance().playSound('QUEEN_POCKET', 0.9);
                 showToast('👑 Queen Pocketed! Pocket assigned coin to cover');
