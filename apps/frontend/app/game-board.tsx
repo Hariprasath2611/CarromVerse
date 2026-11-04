@@ -239,9 +239,9 @@ export default function GameBoardScreen() {
   const knobLeft = knobCenterTrack - knobRadius + strikerOffsetRatio * maxKnobTravel;
 
   // Value legend points from piece config
-  const queenPoints = DEFAULT_PIECE_CONFIG.queenPoints || 50;
-  const blackPoints = DEFAULT_PIECE_CONFIG.blackPoints || 10;
-  const whitePoints = DEFAULT_PIECE_CONFIG.whitePoints || 20;
+  const queenPoints = DEFAULT_PIECE_CONFIG.points?.queen || 50;
+  const blackPoints = DEFAULT_PIECE_CONFIG.points?.black || 10;
+  const whitePoints = DEFAULT_PIECE_CONFIG.points?.white || 20;
 
   return (
     <ScreenContainer
