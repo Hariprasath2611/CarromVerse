@@ -98,3 +98,4 @@ CarromVerse maintains an intentional dual-identity model:
 - **Debounced Username Checker:** Live debounced (450ms) validation against `GET /api/v1/usernames/:username/availability`:
   - Instant visual feedback: green checkmark if available, red warning if taken or reserved.
 - **Linked Account Email:** Read-only reference for account security.
+

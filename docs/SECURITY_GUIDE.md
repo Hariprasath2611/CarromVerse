@@ -56,3 +56,4 @@ To prevent impersonation, injection, and offensive names:
    - `X-Frame-Options: DENY`
    - `X-XSS-Protection: 1; mode=block`
 3. **Graceful Offline Mode:** If backend services or networks become unreachable, client applications fallback to local SQLite storage and cached memory stores, preventing cascading application crashes.
+

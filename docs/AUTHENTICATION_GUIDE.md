@@ -85,3 +85,4 @@ if (currentUser) {
 - Supported via `sendPasswordReset(email)` in `firebase.auth.ts`.
 - Firebase dispatches an official password reset link directly to the verified email address.
 - Reset state is managed entirely through secure OOB (out-of-band) Firebase handlers.
+

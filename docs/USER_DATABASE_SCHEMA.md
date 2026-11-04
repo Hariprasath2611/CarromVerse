@@ -122,3 +122,4 @@ CREATE TRIGGER trg_users_last_updated
     FOR EACH ROW
     EXECUTE FUNCTION update_timestamp_column();
 ```
+
