@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
   TextStyle,
@@ -25,7 +26,7 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
 }
 
