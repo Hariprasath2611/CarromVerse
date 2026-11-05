@@ -163,6 +163,25 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
     return this.foulManager;
   }
 
+  public getRemainingCoinsCount(): { white: number; black: number; queen: number; total: number } {
+    let white = 0;
+    let black = 0;
+    let queen = 0;
+    for (const c of this.coins) {
+      if (c.state === 'on_board') {
+        if (c.type === 'white') white++;
+        else if (c.type === 'black') black++;
+        else if (c.type === 'queen') queen++;
+      }
+    }
+    return {
+      white,
+      black,
+      queen,
+      total: white + black + queen,
+    };
+  }
+
   public getScoringEngine(): ScoringEngine {
     return this.scoringEngine;
   }
