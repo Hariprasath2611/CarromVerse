@@ -49,6 +49,7 @@ export interface SettledShotEvaluation {
   isMatchOver: boolean;
   matchResult?: GameResult;
   nextTurn?: PlayerTurn;
+  remainingCoins?: { white: number; black: number; queen: number; total: number };
 }
 
 export interface RulesEngineEvents {
