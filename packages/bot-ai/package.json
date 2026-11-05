@@ -2,11 +2,12 @@
   "name": "@carromverse/bot-ai",
   "version": "1.0.0",
   "description": "Intelligent Carrom Bot AI System with Easy, Medium, and Hard Difficulties",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "node --test dist/**/*.test.js",
+    "test": "node --test test/bot-ai.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

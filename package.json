@@ -13,7 +13,7 @@
     "ios": "npm --workspace=@carromverse/frontend run ios",
     "web": "npm --workspace=@carromverse/frontend run web",
     "backend": "npm --workspace=@carromverse/backend run dev",
-    "build": "npm --workspace=@carromverse/shared-types run build && npm --workspace=@carromverse/shared-utils run build && npm --workspace=@carromverse/game-logic run build && npm --workspace=@carromverse/multiplayer run build && npm --workspace=@carromverse/game-engine run build && npm --workspace=@carromverse/backend run build",
+    "build": "npm --workspace=@carromverse/shared-types run build && npm --workspace=@carromverse/shared-utils run build && npm --workspace=@carromverse/game-logic run build && npm --workspace=@carromverse/bot-ai run build && npm --workspace=@carromverse/multiplayer run build && npm --workspace=@carromverse/game-engine run build && npm --workspace=@carromverse/backend run build",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
