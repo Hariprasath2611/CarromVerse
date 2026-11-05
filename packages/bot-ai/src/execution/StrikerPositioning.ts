@@ -36,3 +36,4 @@ export class StrikerPositioning {
     return clampedOffset;
   }
 }
+

@@ -59,3 +59,4 @@ export interface CandidateShot {
   estimatedSuccessProbability: number;
   foulRisk: number;
 }
+

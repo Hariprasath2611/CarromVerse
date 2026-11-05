@@ -60,3 +60,4 @@ export const BOT_PERSONALITIES: Record<BotDifficulty, BotPersonality> = {
 export function getBotPersonality(difficulty: BotDifficulty): BotPersonality {
   return BOT_PERSONALITIES[difficulty] || BOT_PERSONALITIES.MEDIUM;
 }
+

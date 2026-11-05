@@ -20,3 +20,4 @@ export class EasyBot {
     return Math.floor(min + Math.random() * (max - min));
   }
 }
+

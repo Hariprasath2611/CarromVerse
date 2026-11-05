@@ -20,3 +20,4 @@ export class HardBot {
     return Math.floor(min + Math.random() * (max - min));
   }
 }
+

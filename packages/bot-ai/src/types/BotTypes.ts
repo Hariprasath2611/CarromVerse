@@ -64,3 +64,4 @@ export interface OverallPracticeStats {
   hard: PracticeDifficultyStats;
   lastPlayedAt: number;
 }
+

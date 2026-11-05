@@ -95,3 +95,4 @@ export class ShotEvaluator {
     return x - Math.floor(x);
   }
 }
+

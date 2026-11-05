@@ -63,3 +63,4 @@ export class ShootingController {
     return x - Math.floor(x);
   }
 }
+

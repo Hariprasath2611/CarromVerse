@@ -35,3 +35,4 @@ export * from './evaluation/BoardStateEvaluator.js';
 export * from './core/BotDecisionEngine.js';
 export * from './core/BotController.js';
 export * from './core/BotSessionManager.js';
+

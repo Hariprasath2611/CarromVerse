@@ -87,3 +87,4 @@ export class PocketAnalyzer {
     return { isClear: true };
   }
 }
+

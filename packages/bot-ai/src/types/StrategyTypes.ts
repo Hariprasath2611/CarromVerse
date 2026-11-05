@@ -14,3 +14,4 @@ export interface ShotEvaluationWeights {
   foulRiskPenalty: number;
   defenseWeight: number;
 }
+

@@ -20,3 +20,4 @@ export class MediumBot {
     return Math.floor(min + Math.random() * (max - min));
   }
 }
+
