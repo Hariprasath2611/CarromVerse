@@ -336,8 +336,8 @@ describe('CARROMVERSE – FREE STYLE MODE & GAMEPLAY IMPROVEMENTS TEST SUITE', (
       assert.strictEqual(evalResult.isMatchOver, true);
       assert.ok(evalResult.matchResult);
       assert.strictEqual(evalResult.matchResult.winnerId, 'player_1');
-      assert.strictEqual(evalResult.matchResult.scores['player_1'].points, 180);
-      assert.strictEqual(engine.getIsMatchOver(), true);
+      assert.strictEqual(evalResult.matchResult.finalScores['player_1'].points, 180);
+      assert.strictEqual(engine.isMatchFinished(), true);
     });
 
     it('does not declare win when player is below target score', () => {

@@ -253,9 +253,11 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       }
 
       // Find matching coin on board and check if not already pocketed
-      const boardCoin = this.coins.find((c) => c.id === p.id);
+      const boardCoin = this.coins.find(
+        (c) => c.id === p.id || (p.type === 'queen' && c.type === 'queen') || (p.id && c.id === 'coin_' + p.id)
+      );
       if (boardCoin && boardCoin.state !== 'pocketed') {
-        validPocketedCoins.push(p);
+        validPocketedCoins.push({ ...p, id: boardCoin.id });
       } else if (!boardCoin) {
         // Fallback if coins are dynamically identified by type
         validPocketedCoins.push(p);
@@ -353,7 +355,9 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       }
       // SGFI Law 89a: If striker is pocketed along with own coin, own coin must return to center circle!
       if (strikerPocketed && this.ruleset.isAssignedCoin(shooter, p.type as CoinType)) {
-        const match = this.coins.find((c) => c.id === p.id);
+        const match = this.coins.find(
+          (c) => c.id === p.id || (p.type === 'queen' && c.type === 'queen') || (p.id && c.id === 'coin_' + p.id)
+        );
         if (match) {
           match.state = 'on_board';
           match.position = { x: BOARD_CENTER.x, y: BOARD_CENTER.y };
@@ -363,7 +367,9 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
         continue;
       }
 
-      const match = this.coins.find((c) => c.id === p.id);
+      const match = this.coins.find(
+        (c) => c.id === p.id || (p.type === 'queen' && c.type === 'queen') || (p.id && c.id === 'coin_' + p.id)
+      );
       if (match) {
         match.state = 'pocketed';
         match.pocketedBy = shooter.id;
