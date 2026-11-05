@@ -1,3 +1,4 @@
+import { QueenStatus } from '@carromverse/shared-types';
 import { BoardSnapshot, CoinSnapshot } from '../types/ShotTypes.js';
 import { BoardAnalyzer } from '../analysis/BoardAnalyzer.js';
 import { CoinAnalyzer } from '../analysis/CoinAnalyzer.js';
@@ -18,7 +19,7 @@ export class BoardStateEvaluator {
   public static evaluateBoardState(
     snapshot: BoardSnapshot,
     botColor: 'white' | 'black',
-    queenStatus: 'unpocketed' | 'pending_cover' | 'covered' | 'returned_to_center'
+    queenStatus: QueenStatus
   ): BoardStateScore {
     const activeCoins = BoardAnalyzer.getActiveCoins(snapshot);
     const botCoins: CoinSnapshot[] = [];

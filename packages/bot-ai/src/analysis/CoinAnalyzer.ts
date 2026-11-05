@@ -1,4 +1,5 @@
 import { CoinSnapshot, Vector2D } from '../types/ShotTypes.js';
+import { QueenStatus } from '@carromverse/shared-types';
 
 export interface CoinAnalysisResult {
   targetCoins: CoinSnapshot[];
@@ -16,7 +17,7 @@ export class CoinAnalyzer {
   public static analyzeCoins(
     activeCoins: CoinSnapshot[],
     assignedCoinType: 'white' | 'black',
-    queenStatus: 'unpocketed' | 'pending_cover' | 'covered' | 'returned_to_center'
+    queenStatus: QueenStatus
   ): CoinAnalysisResult {
     const targetCoins: CoinSnapshot[] = [];
     const opponentCoins: CoinSnapshot[] = [];
@@ -35,7 +36,7 @@ export class CoinAnalyzer {
     }
 
     const isQueenAvailable =
-      queenCoin !== null && (queenStatus === 'unpocketed' || queenStatus === 'returned_to_center');
+      queenCoin !== null && (queenStatus === 'unpocketed' || queenStatus === 'returned_to_board');
 
     // A player can legally pocket the queen if they have at least one assigned coin to cover it
     const canPocketQueen = isQueenAvailable && targetCoins.length >= 1;

@@ -166,20 +166,20 @@ export default function GameBoardScreen() {
       }
 
       botControllerRef.current.setCallbacks({
-        onThinkingStart: (msg) => {
+        onThinkingStart: (msg: string) => {
           setBotStatusMessage(msg);
         },
-        onPositionStriker: (offset) => {
+        onPositionStriker: (offset: number) => {
           setStrikerOffsetRatio(offset);
           carromRef.current?.setStrikerOffset(offset);
         },
-        onAimReady: (angle, power) => {
+        onAimReady: (angle: number, power: number) => {
           setAimAngle(angle);
           setPowerRatio(power);
           setIsAiming(true);
           carromRef.current?.setAimPower(power);
         },
-        onShoot: (power, angle) => {
+        onShoot: (power: number, angle: number) => {
           setIsAiming(false);
           setIsShotActive(true);
           setBotStatusMessage(null);
@@ -638,7 +638,7 @@ export default function GameBoardScreen() {
                 AudioManager.getInstance().playSound('VICTORY', 1.0);
                 if (isPracticeMode) {
                   const durationSec = Math.round((Date.now() - matchStartTimeRef.current) / 1000);
-                  const humanWon = evalResult.matchResult?.winnerPlayerId === p1?.id;
+                  const humanWon = evalResult.matchResult?.winnerId === p1?.id;
                   LocalStorageService.getPracticeStats().then((currentStats) => {
                     const updated = BotSessionManager.recordMatchResult(
                       currentStats,

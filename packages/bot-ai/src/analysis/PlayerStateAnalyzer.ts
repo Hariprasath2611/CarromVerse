@@ -1,4 +1,4 @@
-import { Player, PlayerSeat } from '@carromverse/shared-types';
+import { Player, PlayerSeat, QueenStatus } from '@carromverse/shared-types';
 import { BotStrategyMode } from '../types/StrategyTypes.js';
 
 export interface PlayerStateAnalysis {
@@ -17,7 +17,7 @@ export class PlayerStateAnalyzer {
   public static analyze(
     activePlayers: Player[],
     activeSeat: PlayerSeat,
-    queenStatus: 'unpocketed' | 'pending_cover' | 'covered' | 'returned_to_center',
+    queenStatus: QueenStatus,
     scores: Record<string, { points: number }>
   ): PlayerStateAnalysis {
     const botPlayer = activePlayers.find((p) => p.type === 'bot') || activePlayers.find((p) => p.seat === 2) || null;
