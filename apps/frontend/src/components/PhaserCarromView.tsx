@@ -21,6 +21,8 @@ export interface PhaserCarromViewRef {
   setAudioConfig: (soundEnabled: boolean, soundVolume: number) => void;
   returnCoinsToBoard: (coins: { id?: string; type: string }[]) => void;
   setTurnState: (state: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN') => void;
+  getBoardSnapshot: () => void;
+  setStrikerOffset: (offset: number) => void;
 }
 
 export interface PhaserCarromViewProps {
@@ -34,6 +36,7 @@ export interface PhaserCarromViewProps {
   soundVolume?: number;
   onEngineReady?: () => void;
   onBoardRendered?: (details: any) => void;
+  onBoardSnapshot?: (snapshot: any) => void;
   onStrikerDragged?: (offset: number, isOverlapping?: boolean) => void;
   onShotStarted?: (details: any) => void;
   onAimChanged?: (details: { angle: number; powerRatio: number }) => void;
