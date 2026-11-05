@@ -147,3 +147,4 @@ CarromVerse uses the device's native sharing sheet (`Share.share` in React Nativ
 - `START_MATCH`: Host initiates match countdown.
 - `PLACE_STRIKER`: Authoritative striker baseline positioning.
 - `EXECUTE_SHOT`: Authoritative shot impulse with power ratio and aim angle.
+

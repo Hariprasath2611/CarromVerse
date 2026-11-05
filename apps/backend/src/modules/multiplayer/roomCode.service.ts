@@ -51,3 +51,4 @@ export class RoomCodeService {
     return this.CODE_REGEX.test(normalized);
   }
 }
+

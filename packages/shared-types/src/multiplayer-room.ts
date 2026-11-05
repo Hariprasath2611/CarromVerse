@@ -99,3 +99,4 @@ export type ClientMultiplayerMessage =
   | { type: 'KICK_PLAYER'; targetSessionId: string }
   | { type: 'START_MATCH' }
   | { type: 'LEAVE_ROOM' };
+

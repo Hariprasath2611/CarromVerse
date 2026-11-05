@@ -126,3 +126,4 @@ export class ColyseusClientService {
     this.send('START_MATCH');
   }
 }
+
