@@ -260,8 +260,32 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     const p3Token = authService.createTestToken('usr_player_3', { displayName: 'PlayerThree' });
     const p4Token = authService.createTestToken('usr_player_4', { displayName: 'PlayerFour' });
 
+    function createMockClient(sessionId) {
+      const sent = [];
+      const c = {
+        sessionId,
+        send: (type, data) => sent.push({ type, data }),
+        enqueueRaw: () => {},
+        raw: () => {},
+        leave: () => {},
+        sent,
+      };
+      return c;
+    }
+
+    function dispatchMessage(targetRoom, client, messageType, payload = {}) {
+      const handler = targetRoom.onMessageEvents?.events[messageType]?.[0];
+      if (handler) {
+        handler(client, payload);
+      }
+    }
+
     let room;
     let roomCode;
+    let clientHost;
+    let clientP2;
+    let clientP3;
+    let clientP4;
 
     await st.test('Host creates private password-protected room', () => {
       room = new CarromRoom();
@@ -284,7 +308,7 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('onAuth rejects client with incorrect room password', async () => {
-      const mockClient = { sessionId: 'client_bad_pwd' };
+      const mockClient = createMockClient('client_bad_pwd');
       await assert.rejects(
         async () => await room.onAuth(mockClient, { token: p2Token, password: 'incorrect_pass' }),
         /Incorrect room password/
@@ -292,7 +316,8 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('Host joins room and receives Seat 0 with Host status', async () => {
-      const clientHost = { sessionId: 'sess_host', send: () => {} };
+      clientHost = createMockClient('sess_host');
+      room.clients.push(clientHost);
       const authHost = await room.onAuth(clientHost, { token: hostToken, password: 'secure' });
       room.onJoin(clientHost, {}, authHost);
 
@@ -305,7 +330,7 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('onAuth rejects duplicate user join for already connected player', async () => {
-      const duplicateClient = { sessionId: 'sess_host_dup' };
+      const duplicateClient = createMockClient('sess_host_dup');
       await assert.rejects(
         async () => await room.onAuth(duplicateClient, { token: hostToken, password: 'secure' }),
         /User is already connected to this room/
@@ -313,7 +338,8 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('Player 2 joins with correct password, receives Seat 2', async () => {
-      const clientP2 = { sessionId: 'sess_p2', send: () => {} };
+      clientP2 = createMockClient('sess_p2');
+      room.clients.push(clientP2);
       const authP2 = await room.onAuth(clientP2, { token: p2Token, password: 'secure' });
       room.onJoin(clientP2, {}, authP2);
 
@@ -326,35 +352,24 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('Third player rejected when room capacity is 2', async () => {
-      const clientP3 = { sessionId: 'sess_p3', send: () => {} };
-      const authP3 = await room.onAuth(clientP3, { token: p3Token, password: 'secure' });
+      const clientRejected = createMockClient('sess_p3_rejected');
+      const authP3 = await room.onAuth(clientRejected, { token: p3Token, password: 'secure' });
       assert.throws(() => {
-        room.onJoin(clientP3, {}, authP3);
+        room.onJoin(clientRejected, {}, authP3);
       }, /Room is already full/);
     });
 
     await st.test('Non-host cannot perform host-only actions (START_MATCH / KICK)', () => {
-      let errorReceived = null;
-      const clientP2 = {
-        sessionId: 'sess_p2',
-        send: (type, data) => {
-          if (type === 'ERROR') errorReceived = data;
-        },
-      };
+      clientP2.sent.length = 0;
+      dispatchMessage(room, clientP2, 'START_MATCH');
 
-      // Trigger START_MATCH as non-host
-      const handler = room['onMessageHandlers']['START_MATCH'];
-      handler(clientP2, {});
-
-      assert.ok(errorReceived);
-      assert.equal(errorReceived.code, 'NOT_AUTHORIZED');
+      const err = clientP2.sent.find((m) => m.type === 'ERROR');
+      assert.ok(err);
+      assert.equal(err.data.code, 'NOT_AUTHORIZED');
     });
 
     await st.test('Host changes game mode to four_player_team (reallocates seats and expands capacity)', () => {
-      const clientHost = { sessionId: 'sess_host', send: () => {} };
-      const handler = room['onMessageHandlers']['CHANGE_GAME_MODE'];
-
-      handler(clientHost, { gameMode: 'four_player_team' });
+      dispatchMessage(room, clientHost, 'CHANGE_GAME_MODE', { gameMode: 'four_player_team' });
 
       assert.equal(room.state.gameMode, 'four_player_team');
       assert.equal(room.state.maxPlayers, 4);
@@ -370,11 +385,13 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('Player 3 and Player 4 join the 4-player team room', async () => {
-      const clientP3 = { sessionId: 'sess_p3', send: () => {} };
+      clientP3 = createMockClient('sess_p3');
+      room.clients.push(clientP3);
       const authP3 = await room.onAuth(clientP3, { token: p3Token, password: 'secure' });
       room.onJoin(clientP3, {}, authP3);
 
-      const clientP4 = { sessionId: 'sess_p4', send: () => {} };
+      clientP4 = createMockClient('sess_p4');
+      room.clients.push(clientP4);
       const authP4 = await room.onAuth(clientP4, { token: p4Token, password: 'secure' });
       room.onJoin(clientP4, {}, authP4);
 
@@ -389,66 +406,40 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('SWITCH_TEAM enforces 2-players-per-team constraint', () => {
-      let errorReceived = null;
-      const clientP3 = {
-        sessionId: 'sess_p3',
-        send: (type, data) => {
-          if (type === 'ERROR') errorReceived = data;
-        },
-      };
-
+      clientP3.sent.length = 0;
       // Player 3 (team_a) attempts to switch to team_b which already has p2 and p4 (2 players)
-      const handler = room['onMessageHandlers']['SWITCH_TEAM'];
-      handler(clientP3, { targetTeam: 'team_b' });
+      dispatchMessage(room, clientP3, 'SWITCH_TEAM', { targetTeam: 'team_b' });
 
-      assert.ok(errorReceived);
-      assert.equal(errorReceived.code, 'TEAM_FULL');
+      const err = clientP3.sent.find((m) => m.type === 'ERROR');
+      assert.ok(err);
+      assert.equal(err.data.code, 'TEAM_FULL');
     });
 
     await st.test('START_MATCH fails when players are not ready', () => {
-      let errorReceived = null;
-      const clientHost = {
-        sessionId: 'sess_host',
-        send: (type, data) => {
-          if (type === 'ERROR') errorReceived = data;
-        },
-      };
+      clientHost.sent.length = 0;
+      dispatchMessage(room, clientHost, 'START_MATCH');
 
-      const handler = room['onMessageHandlers']['START_MATCH'];
-      handler(clientHost, {});
-
-      assert.ok(errorReceived);
-      assert.equal(errorReceived.code, 'PLAYERS_NOT_READY');
+      const err = clientHost.sent.find((m) => m.type === 'ERROR');
+      assert.ok(err);
+      assert.equal(err.data.code, 'PLAYERS_NOT_READY');
     });
 
     await st.test('All players set ready -> room status becomes READY', () => {
-      const readyHandler = room['onMessageHandlers']['SET_READY'];
-      readyHandler({ sessionId: 'sess_host' }, { isReady: true });
-      readyHandler({ sessionId: 'sess_p2' }, { isReady: true });
-      readyHandler({ sessionId: 'sess_p3' }, { isReady: true });
-      readyHandler({ sessionId: 'sess_p4' }, { isReady: true });
+      dispatchMessage(room, clientHost, 'SET_READY', { isReady: true });
+      dispatchMessage(room, clientP2, 'SET_READY', { isReady: true });
+      dispatchMessage(room, clientP3, 'SET_READY', { isReady: true });
+      dispatchMessage(room, clientP4, 'SET_READY', { isReady: true });
 
       assert.equal(room.state.status, 'READY');
     });
 
     await st.test('Host kicks Player 4 -> player removed, readiness drops back to WAITING', async () => {
-      let kickSent = false;
-      const clientP4 = {
-        sessionId: 'sess_p4',
-        send: (type) => {
-          if (type === 'KICKED_FROM_ROOM') kickSent = true;
-        },
-        leave: () => {},
-      };
+      clientP4.sent.length = 0;
+      dispatchMessage(room, clientHost, 'KICK_PLAYER', { targetSessionId: 'sess_p4' });
 
-      // Register mock client in room.clients list
-      room.clients.push(clientP4);
+      const kickedMsg = clientP4.sent.find((m) => m.type === 'KICKED_FROM_ROOM');
+      assert.ok(kickedMsg, 'Player 4 should receive kicked notification');
 
-      const clientHost = { sessionId: 'sess_host', send: () => {} };
-      const kickHandler = room['onMessageHandlers']['KICK_PLAYER'];
-      kickHandler(clientHost, { targetSessionId: 'sess_p4' });
-
-      assert.ok(kickSent, 'Player 4 should receive kicked notification');
       await room.onLeave(clientP4, 4001);
 
       assert.equal(room.state.players.size, 3);
@@ -456,7 +447,6 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('Host disconnects -> host authority automatically transferred to Player 2', async () => {
-      const clientHost = { sessionId: 'sess_host' };
       await room.onLeave(clientHost, 1000);
 
       assert.equal(room.state.players.size, 2);
@@ -467,8 +457,8 @@ test('CarromVerse Phase 2.3 – Private Multiplayer Rooms & Room Code Management
     });
 
     await st.test('Remaining players leave -> room disposes and invalidates code', async () => {
-      await room.onLeave({ sessionId: 'sess_p2' }, 1000);
-      await room.onLeave({ sessionId: 'sess_p3' }, 1000);
+      await room.onLeave(clientP2, 1000);
+      await room.onLeave(clientP3, 1000);
 
       room.onDispose();
 

@@ -76,14 +76,16 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
     });
 
     this.setState(state);
-    this.setMetadata({
-      roomCode,
-      gameMode,
-      maxPlayers: maxClients,
-      status: 'WAITING',
-      hasPassword,
-      isPrivate: state.isPrivate,
-    });
+    if ((this as any)._listing) {
+      this.setMetadata({
+        roomCode,
+        gameMode,
+        maxPlayers: maxClients,
+        status: 'WAITING',
+        hasPassword,
+        isPrivate: state.isPrivate,
+      });
+    }
 
     // Register room in global active registry
     this.roomRegistry.registerRoom({
@@ -235,7 +237,11 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
 
       // If room is empty, clean it up
       if (this.state.players.size === 0) {
-        this.disconnect();
+        try {
+          this.disconnect();
+        } catch {
+          this.onDispose();
+        }
       } else {
         this.roomRegistry.updateRoom(this.roomId, {
           currentPlayers: this.state.players.size,
@@ -255,7 +261,9 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
   override onDispose(): void {
     Logger.info(`[CarromRoom] Disposing room ${this.state.roomCode} (${this.roomId})`);
     this.state.status = 'CLOSED';
-    this.setMetadata({ status: 'CLOSED' });
+    if ((this as any)._listing) {
+      this.setMetadata({ status: 'CLOSED' });
+    }
     this.roomRegistry.removeRoom(this.roomId);
   }
 
@@ -660,10 +668,12 @@ export class CarromRoom extends Room<{ state: CarromRoomState }> {
       this.state.status = 'WAITING';
     }
 
-    this.setMetadata({
-      status: this.state.status,
-      playerCount: this.state.players.size,
-      allReady,
-    });
+    if ((this as any)._listing) {
+      this.setMetadata({
+        status: this.state.status,
+        playerCount: this.state.players.size,
+        allReady,
+      });
+    }
   }
 }
