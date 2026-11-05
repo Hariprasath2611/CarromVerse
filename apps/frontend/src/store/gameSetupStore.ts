@@ -10,12 +10,15 @@ import {
   validatePlayerConfiguration,
   getSeatLayoutForMode,
 } from '@carromverse/game-logic';
+import { BotDifficulty, BotSessionManager } from '@carromverse/bot-ai';
 import { LocalStorageService } from '../services/storage/localStorageService';
 
 export interface GameSetupState {
   selectedMode: GameMode;
   playerCount: PlayerCount;
   players: Player[];
+  isPracticeMode: boolean;
+  botDifficulty: BotDifficulty;
   boardTheme: 'classic' | 'emerald' | 'mahogany';
   targetPoints: number;
   turnTimeLimitSec: number;
@@ -28,6 +31,14 @@ export interface GameSetupState {
 
   setGameMode: (mode: GameMode) => void;
   setPlayerCount: (count: PlayerCount) => void;
+  setIsPracticeMode: (isPractice: boolean) => void;
+  setBotDifficulty: (difficulty: BotDifficulty) => void;
+  setupPracticeMatch: (
+    difficulty: BotDifficulty,
+    humanName?: string,
+    humanAvatar?: string,
+    humanColor?: 'white' | 'black'
+  ) => void;
   updatePlayerName: (seat: PlayerSeat, name: string) => void;
   updatePlayerAvatar: (seat: PlayerSeat, avatar: string) => void;
   togglePlayerReady: (seat: PlayerSeat) => void;
@@ -49,6 +60,8 @@ export const useGameSetupStore = create<GameSetupState>((set, get) => ({
   selectedMode: 'two_player_individual',
   playerCount: 2,
   players: createInitialPlayersForMode('two_player_individual'),
+  isPracticeMode: false,
+  botDifficulty: 'MEDIUM',
   boardTheme: 'classic',
   targetPoints: 25,
   turnTimeLimitSec: 25,
@@ -58,6 +71,38 @@ export const useGameSetupStore = create<GameSetupState>((set, get) => ({
   teamAName: 'Team A',
   teamBName: 'Team B',
   recentNames: [],
+
+  setIsPracticeMode: (isPractice: boolean) => {
+    set({ isPracticeMode: isPractice });
+  },
+
+  setBotDifficulty: (difficulty: BotDifficulty) => {
+    set({ botDifficulty: difficulty });
+  },
+
+  setupPracticeMatch: (
+    difficulty: BotDifficulty,
+    humanName: string = 'Hari',
+    humanAvatar: string = '👑',
+    humanColor: 'white' | 'black' = 'white'
+  ) => {
+    const practicePlayers = BotSessionManager.createPracticePlayers(
+      humanName,
+      humanAvatar,
+      difficulty,
+      humanColor
+    );
+    set({
+      isPracticeMode: true,
+      botDifficulty: difficulty,
+      selectedMode: 'practice',
+      playerCount: 2,
+      players: practicePlayers,
+      handoverConfirmationEnabled: false,
+      targetPoints: 115,
+      turnTimeLimitSec: 20,
+    });
+  },
 
   loadRecentNames: async () => {
     const recent = await LocalStorageService.getRecentPlayerNames();

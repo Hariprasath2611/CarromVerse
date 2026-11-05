@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_GAME_SETTINGS, GameSettings, UserProfile } from '@carromverse/shared-types';
+import { DEFAULT_OVERALL_PRACTICE_STATS, OverallPracticeStats } from '@carromverse/bot-ai';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 export class LocalStorageService {
@@ -83,6 +84,27 @@ export class LocalStorageService {
       await AsyncStorage.setItem(STORAGE_KEYS.RECENT_PLAYER_NAMES, JSON.stringify(updated));
     } catch (error) {
       console.warn('[LocalStorage] Failed to save recent player name:', error);
+    }
+  }
+
+  public static async getPracticeStats(): Promise<OverallPracticeStats> {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEYS.PRACTICE_STATS);
+      if (raw) {
+        return { ...DEFAULT_OVERALL_PRACTICE_STATS, ...JSON.parse(raw) };
+      }
+      return DEFAULT_OVERALL_PRACTICE_STATS;
+    } catch (error) {
+      console.warn('[LocalStorage] Failed to load practice stats:', error);
+      return DEFAULT_OVERALL_PRACTICE_STATS;
+    }
+  }
+
+  public static async savePracticeStats(stats: OverallPracticeStats): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.PRACTICE_STATS, JSON.stringify(stats));
+    } catch (error) {
+      console.error('[LocalStorage] Failed to save practice stats:', error);
     }
   }
 

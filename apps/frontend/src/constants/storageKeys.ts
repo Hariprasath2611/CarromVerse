@@ -6,5 +6,6 @@ export const STORAGE_KEYS = {
   OFFLINE_MATCH_HISTORY: '@carromverse:offline_match_history',
   PENDING_SYNC_QUEUE: '@carromverse:pending_sync_queue',
   RECENT_PLAYER_NAMES: '@carromverse:recent_player_names',
+  PRACTICE_STATS: '@carromverse:practice_stats',
 } as const;
 
