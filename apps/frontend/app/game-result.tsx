@@ -11,7 +11,7 @@ import { THEME } from '../src/constants/theme';
 
 export default function GameResultScreen() {
   const router = useRouter();
-  const { players, selectedMode, targetPoints, turnTimeLimitSec, teamAName, teamBName, boardTheme } =
+  const { players, selectedMode, targetPoints, turnTimeLimitSec, teamAName, teamBName, boardTheme, isPracticeMode } =
     useGameSetupStore();
   const { gameResult, scores, startSession } = useGameSessionStore();
   const addCoins = useEconomyStore((state) => state.addCoins);
@@ -163,11 +163,19 @@ export default function GameResultScreen() {
       {/* BOTTOM ACTIONS */}
       <View style={styles.footer}>
         <Button
-          title="PLAY AGAIN (REMATCH)"
+          title={isPracticeMode ? 'PRACTICE AGAIN' : 'PLAY AGAIN (REMATCH)'}
           variant="primary"
           onPress={handleRematch}
           style={styles.actionBtn}
         />
+        {isPracticeMode && (
+          <Button
+            title="VIEW PRACTICE STATS 📊"
+            variant="secondary"
+            onPress={() => router.push('/practice/stats')}
+            style={[styles.actionBtn, { borderColor: '#2BD67B' }]}
+          />
+        )}
         <Button
           title="RETURN TO HOME"
           variant="secondary"
