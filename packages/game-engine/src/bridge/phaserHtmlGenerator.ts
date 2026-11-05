@@ -1036,8 +1036,11 @@ ${PHASER_MIN_JS}
             });
 
             scene.matter.body.setMass(body, COIN_MASS);
+            body.prevX = x;
+            body.prevY = y;
+            body.prevAngle = 0;
 
-            body.coinRef = { id: id, type: type, sprite: coinSprite, shadow: shadow, body: body, isPocketed: false };
+            body.coinRef = { id: id, type: type, sprite: coinSprite, shadow: shadow, body: body, isPocketed: false, isAnimatingPocket: false };
             scene.coins.push(body.coinRef);
           };
 
@@ -1112,6 +1115,9 @@ ${PHASER_MIN_JS}
           });
 
           this.matter.body.setMass(this.strikerBody, STRIKER_MASS);
+          this.strikerBody.prevX = px;
+          this.strikerBody.prevY = py;
+          this.strikerBody.prevAngle = 0;
           this.strikerBody.isStriker = true;
           this.strikerIsPocketed = false;
 
