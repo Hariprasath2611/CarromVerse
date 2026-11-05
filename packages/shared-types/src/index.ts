@@ -11,3 +11,4 @@ export * from './settings.js';
 export * from './user.js';
 export * from './sync.js';
 export * from './events.js';
+export * from './multiplayer-room.js';
