@@ -768,7 +768,11 @@ ${PHASER_MIN_JS}
 
           sendToReactNative({
             type: 'BOARD_RENDERED',
-            payload: { theme: currentThemeId, coinCount: this.coins.length },
+            payload: {
+              theme: currentThemeId,
+              coinCount: this.coins.length,
+              boardSnapshot: this.getBoardSnapshot()
+            },
             timestamp: Date.now()
           });
 
@@ -1823,7 +1827,8 @@ ${PHASER_MIN_JS}
                     pocketedCount: pocketed.length,
                     pocketed: pocketed,
                     duration_ms: duration,
-                    strikerPocketed: this.strikerIsPocketed
+                    strikerPocketed: this.strikerIsPocketed,
+                    boardSnapshot: this.getBoardSnapshot()
                   },
                   timestamp: now
                 });
