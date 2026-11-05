@@ -1,7 +1,12 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@carromverse/bot-ai": ["../../packages/bot-ai/src/index.ts"],
+      "@carromverse/bot-ai/*": ["../../packages/bot-ai/src/*"]
+    }
   },
   "include": [
     "**/*.ts",
