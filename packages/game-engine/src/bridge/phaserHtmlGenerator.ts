@@ -1176,6 +1176,9 @@ ${PHASER_MIN_JS}
           }
 
           this.matter.body.setPosition(this.strikerBody, { x: px, y: py });
+          this.strikerBody.prevX = px;
+          this.strikerBody.prevY = py;
+          this.strikerBody.prevAngle = 0;
           this.matter.body.setVelocity(this.strikerBody, { x: 0, y: 0 });
           this.matter.body.setAngularVelocity(this.strikerBody, 0);
 
@@ -2019,6 +2022,11 @@ ${PHASER_MIN_JS}
             var posY = cy;
 
             targetCoin.isPocketed = false;
+            targetCoin.isAnimatingPocket = false;
+            targetCoin.body.collisionFilter.mask = MASK_COIN;
+            targetCoin.body.prevX = posX;
+            targetCoin.body.prevY = posY;
+            targetCoin.body.prevAngle = 0;
             scene.matter.body.setPosition(targetCoin.body, { x: posX, y: posY });
             scene.matter.body.setVelocity(targetCoin.body, { x: 0, y: 0 });
             scene.matter.body.setAngularVelocity(targetCoin.body, 0);
