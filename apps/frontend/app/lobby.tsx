@@ -13,6 +13,7 @@ export default function LobbyScreen() {
   const router = useRouter();
   const {
     selectedMode,
+    selectedVariant,
     players,
     boardTheme,
     targetPoints,
@@ -29,10 +30,15 @@ export default function LobbyScreen() {
   const handleStartMatch = () => {
     AudioManager.getInstance().playSound('MATCH_START', 0.85);
     const baseConfig = createDefaultGameConfig(selectedMode);
+    const isFreeStyle = selectedVariant === 'freestyle_carrom';
     const config: GameConfiguration = {
       ...baseConfig,
+      variant: selectedVariant || baseConfig.variant,
       boardTheme,
       targetScore: targetPoints,
+      whiteCoinPoints: isFreeStyle ? 20 : baseConfig.whiteCoinPoints,
+      blackCoinPoints: isFreeStyle ? 10 : baseConfig.blackCoinPoints,
+      queenPoints: isFreeStyle ? 50 : baseConfig.queenPoints,
       turnTimeLimitSeconds: turnTimeLimitSec,
       handoverConfirmationEnabled,
       soundEnabled,
@@ -153,6 +159,13 @@ export default function LobbyScreen() {
       <Card style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>MATCH RULES SUMMARY</Text>
         <View style={styles.summaryGrid}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryItemLabel}>RULESET</Text>
+            <Text style={styles.summaryItemVal}>
+              {selectedVariant === 'freestyle_carrom' ? '⚡ Free Style' : '🏆 Classic'}
+            </Text>
+          </View>
+
           <View style={styles.summaryItem}>
             <Text style={styles.summaryItemLabel}>MODE</Text>
             <Text style={styles.summaryItemVal}>{modeTitle}</Text>

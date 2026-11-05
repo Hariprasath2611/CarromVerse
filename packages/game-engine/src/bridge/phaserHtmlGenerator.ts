@@ -1617,8 +1617,9 @@ ${PHASER_MIN_JS}
             this.physicsAccumulator -= FIXED_DT_MS;
           }
 
-          // Visual Sync
-          this.syncVisuals();
+          // Visual interpolation alpha (0..1) for buttery-smooth 60 FPS rendering
+          var alpha = Math.min(1, Math.max(0, this.physicsAccumulator / FIXED_DT_MS));
+          this.syncVisuals(alpha);
 
           // Motion & Settle Check
           this.checkSettled();
@@ -1633,14 +1634,20 @@ ${PHASER_MIN_JS}
           var scene = this;
           var dtSec = BASE_DT_SEC;
 
-          // 1. Gather all active moving bodies
+          // 1. Gather all active moving bodies and capture pre-step state for render interpolation
           var activeBodies = [];
           if (this.strikerBody && !this.strikerIsPocketed) activeBodies.push(this.strikerBody);
           this.coins.forEach(function(c) {
             if (c.body && !c.isPocketed) activeBodies.push(c.body);
           });
 
-          // 2. Surface Coulomb friction & viscous damping
+          activeBodies.forEach(function(b) {
+            b.prevX = b.position.x;
+            b.prevY = b.position.y;
+            b.prevAngle = b.angle;
+          });
+
+          // 2. Surface Coulomb friction & smooth exponential decay (prevents abrupt cutoff stutter)
           activeBodies.forEach(function(b) {
             var vx = b.velocity.x;
             var vy = b.velocity.y;
@@ -1648,21 +1655,21 @@ ${PHASER_MIN_JS}
             var spCmS = stepVelocityToSpeedCmS(stepSp, dtSec);
             var av = b.angularVelocity;
 
-            if (spCmS < REST_SPEED_THRESHOLD_CM_S && Math.abs(av) < ANGULAR_REST_THRESHOLD) {
+            if (spCmS < 0.25 && Math.abs(av) < 0.01) {
               if (stepSp > 0 || av !== 0) {
                 scene.matter.body.setVelocity(b, { x: 0, y: 0 });
                 scene.matter.body.setAngularVelocity(b, 0);
               }
-            } else if (spCmS >= REST_SPEED_THRESHOLD_CM_S) {
+            } else if (spCmS < REST_SPEED_THRESHOLD_CM_S * 1.5) {
+              // Smooth exponential decay into rest
+              var decay = Math.max(0, 1.0 - 15.0 * dtSec);
+              scene.matter.body.setVelocity(b, { x: vx * decay, y: vy * decay });
+            } else {
               var newSp = Math.max(0, spCmS - FRICTION_DECEL_CM_S2 * dtSec);
               newSp = newSp * Math.max(0, 1 - VISCOUS_DAMPING * dtSec);
 
-              if (newSp < REST_SPEED_THRESHOLD_CM_S) {
-                scene.matter.body.setVelocity(b, { x: 0, y: 0 });
-              } else {
-                var factor = (speedCmSToStepVelocity(newSp, dtSec)) / stepSp;
-                scene.matter.body.setVelocity(b, { x: vx * factor, y: vy * factor });
-              }
+              var factor = (speedCmSToStepVelocity(newSp, dtSec)) / stepSp;
+              scene.matter.body.setVelocity(b, { x: vx * factor, y: vy * factor });
             }
 
             if (Math.abs(av) >= ANGULAR_REST_THRESHOLD) {
@@ -1693,10 +1700,17 @@ ${PHASER_MIN_JS}
                 });
               }
 
-              // Hole capture
+              // Hole capture: mark pocketed, disable collision, queue removal with pocket coords
               if (distToHole <= POCKET_CAPTURE_RADIUS) {
                 b.isPocketed = true;
-                scene.queuedPocketRemovals.push({ body: b, pocketIndex: pIdx });
+                if (b.coinRef) {
+                  b.coinRef.isPocketed = true;
+                  b.coinRef.isAnimatingPocket = true;
+                }
+                b.collisionFilter.mask = 0;
+                scene.matter.body.setVelocity(b, { x: 0, y: 0 });
+                scene.matter.body.setAngularVelocity(b, 0);
+                scene.queuedPocketRemovals.push({ body: b, pocketIndex: pIdx, pX: pX, pY: pY });
               }
             }
           }
@@ -1718,21 +1732,25 @@ ${PHASER_MIN_JS}
           items.forEach(function(item) {
             var body = item.body;
             var pIdx = item.pocketIndex;
+            var pX = item.pX;
+            var pY = item.pY;
 
             if (body.isStriker) {
               scene.strikerIsPocketed = true;
               scene.pocketedInCurrentShot.push({ id: 'striker', type: 'striker', pocketIndex: pIdx });
 
               playPocketSound(false, true);
-              createFoulRipple(scene, body.position.x, body.position.y);
+              createFoulRipple(scene, pX, pY);
 
               scene.tweens.add({
                 targets: [scene.strikerSprite, scene.strikerShadow],
-                scaleX: 0.1,
-                scaleY: 0.1,
+                x: pX,
+                y: pY,
+                scaleX: 0.05,
+                scaleY: 0.05,
                 alpha: 0,
-                duration: 250,
-                ease: 'Back.easeIn',
+                duration: 320,
+                ease: 'Cubic.easeIn',
                 onComplete: function() {
                   scene.matter.body.setVelocity(body, { x: 0, y: 0 });
                   scene.strikerSprite.setVisible(false);
@@ -1753,22 +1771,29 @@ ${PHASER_MIN_JS}
               });
             } else if (body.coinRef) {
               var c = body.coinRef;
+              c.isAnimatingPocket = true;
               scene.pocketedInCurrentShot.push({ id: c.id, type: c.type, pocketIndex: pIdx });
+
+              createPocketSuctionEffect(scene, pX, pY, c.type);
 
               if (c.type === 'queen') {
                 playPocketSound(true, false);
-                createQueenStarburst(scene, body.position.x, body.position.y);
+                createQueenStarburst(scene, pX, pY);
               } else {
                 playPocketSound(false, false);
               }
 
+              var spin = c.sprite.rotation + (Math.random() > 0.5 ? 0.8 : -0.8);
               scene.tweens.add({
                 targets: [c.sprite, c.shadow],
-                scaleX: 0.1,
-                scaleY: 0.1,
+                x: pX,
+                y: pY,
+                scaleX: 0.05,
+                scaleY: 0.05,
                 alpha: 0,
-                duration: 250,
-                ease: 'Back.easeIn',
+                rotation: spin,
+                duration: 320,
+                ease: 'Cubic.easeIn',
                 onComplete: function() {
                   c.sprite.setVisible(false);
                   c.shadow.setVisible(false);
@@ -1785,17 +1810,24 @@ ${PHASER_MIN_JS}
           });
         },
 
-        syncVisuals: function() {
+        syncVisuals: function(alpha) {
+          if (alpha === undefined) alpha = 1;
+
           if (this.strikerBody && !this.strikerIsPocketed) {
-            this.strikerSprite.setPosition(this.strikerBody.position.x, this.strikerBody.position.y);
+            var sb = this.strikerBody;
+            var sX = sb.prevX !== undefined ? sb.prevX + (sb.position.x - sb.prevX) * alpha : sb.position.x;
+            var sY = sb.prevY !== undefined ? sb.prevY + (sb.position.y - sb.prevY) * alpha : sb.position.y;
+            var sAngle = sb.prevAngle !== undefined ? sb.prevAngle + (sb.angle - sb.prevAngle) * alpha : sb.angle;
+
+            this.strikerSprite.setPosition(sX, sY);
             if (this.isShotActive) {
-              this.strikerSprite.setRotation(this.strikerBody.angle);
+              this.strikerSprite.setRotation(sAngle);
             } else if (this.isAiming && this.aimAngle !== undefined) {
               this.strikerSprite.setRotation(this.aimAngle + Math.PI / 2);
             } else {
               this.strikerSprite.setRotation(0);
             }
-            this.strikerShadow.setPosition(this.strikerBody.position.x + 3, this.strikerBody.position.y + 4);
+            this.strikerShadow.setPosition(sX + 3, sY + 4);
             this.strikerShadow.setRotation(0); // Shadows stay fixed to light angle
 
             // Pulsing Cyan/Turquoise Radiant Aura Ring around Striker when resting/idle
@@ -1806,9 +1838,9 @@ ${PHASER_MIN_JS}
                 var auraAlpha = 0.45 + pulse * 0.45;
                 this.strikerAura.clear();
                 this.strikerAura.lineStyle(2.5, 0x00FFFF, auraAlpha);
-                this.strikerAura.strokeCircle(this.strikerBody.position.x, this.strikerBody.position.y, auraR);
+                this.strikerAura.strokeCircle(sX, sY, auraR);
                 this.strikerAura.lineStyle(5, 0x26E6D9, auraAlpha * 0.35);
-                this.strikerAura.strokeCircle(this.strikerBody.position.x, this.strikerBody.position.y, auraR + 2);
+                this.strikerAura.strokeCircle(sX, sY, auraR + 2);
               } else {
                 this.strikerAura.clear();
               }
@@ -1818,10 +1850,15 @@ ${PHASER_MIN_JS}
           }
 
           this.coins.forEach(function(c) {
-            if (c.isPocketed || !c.body) return;
-            c.sprite.setPosition(c.body.position.x, c.body.position.y);
-            c.sprite.setRotation(c.body.angle);
-            c.shadow.setPosition(c.body.position.x + 2, c.body.position.y + 3);
+            if (c.isPocketed || c.isAnimatingPocket || !c.body) return;
+            var cb = c.body;
+            var cX = cb.prevX !== undefined ? cb.prevX + (cb.position.x - cb.prevX) * alpha : cb.position.x;
+            var cY = cb.prevY !== undefined ? cb.prevY + (cb.position.y - cb.prevY) * alpha : cb.position.y;
+            var cAngle = cb.prevAngle !== undefined ? cb.prevAngle + (cb.angle - cb.prevAngle) * alpha : cb.angle;
+
+            c.sprite.setPosition(cX, cY);
+            c.sprite.setRotation(cAngle);
+            c.shadow.setPosition(cX + 2, cY + 3);
             c.shadow.setRotation(0); // Shadows stay fixed to light angle
           });
         },
@@ -2221,8 +2258,9 @@ ${PHASER_MIN_JS}
             matter: {
               gravity: { x: 0, y: 0 },
               autoUpdate: false,
-              positionIterations: 8,
-              velocityIterations: 6,
+              positionIterations: 12,
+              velocityIterations: 10,
+              constraintIterations: 4,
               debug: false
             }
           },

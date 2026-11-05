@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   GameMode,
+  GameVariant,
   Player,
   PlayerCount,
   PlayerSeat,
@@ -15,6 +16,7 @@ import { LocalStorageService } from '../services/storage/localStorageService';
 
 export interface GameSetupState {
   selectedMode: GameMode;
+  selectedVariant: GameVariant;
   playerCount: PlayerCount;
   players: Player[];
   isPracticeMode: boolean;
@@ -30,6 +32,7 @@ export interface GameSetupState {
   recentNames: string[];
 
   setGameMode: (mode: GameMode) => void;
+  setSelectedVariant: (variant: GameVariant) => void;
   setPlayerCount: (count: PlayerCount) => void;
   setIsPracticeMode: (isPractice: boolean) => void;
   setBotDifficulty: (difficulty: BotDifficulty) => void;
@@ -58,6 +61,7 @@ export interface GameSetupState {
 
 export const useGameSetupStore = create<GameSetupState>((set, get) => ({
   selectedMode: 'two_player_individual',
+  selectedVariant: 'classic_carrom',
   playerCount: 2,
   players: createInitialPlayersForMode('two_player_individual'),
   isPracticeMode: false,
@@ -119,6 +123,13 @@ export const useGameSetupStore = create<GameSetupState>((set, get) => ({
       selectedMode: mode,
       playerCount: count,
       players,
+    });
+  },
+
+  setSelectedVariant: (variant: GameVariant) => {
+    set({
+      selectedVariant: variant,
+      targetPoints: variant === 'freestyle_carrom' ? 180 : 25,
     });
   },
 
@@ -257,6 +268,7 @@ export const useGameSetupStore = create<GameSetupState>((set, get) => ({
   resetSetup: () => {
     set({
       selectedMode: 'two_player_individual',
+      selectedVariant: 'classic_carrom',
       playerCount: 2,
       players: createInitialPlayersForMode('two_player_individual'),
       boardTheme: 'classic',

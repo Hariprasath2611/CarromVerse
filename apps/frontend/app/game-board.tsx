@@ -36,6 +36,7 @@ export default function GameBoardScreen() {
   const {
     boardTheme,
     selectedMode,
+    selectedVariant,
     targetPoints,
     turnTimeLimitSec,
     teamAName,
@@ -92,6 +93,12 @@ export default function GameBoardScreen() {
   const [pocketToast, setPocketToast] = useState<string | null>(null);
   const [floatingScore, setFloatingScore] = useState<{ text: string; color: string } | null>(null);
   const [botStatusMessage, setBotStatusMessage] = useState<string | null>(null);
+  const [remainingCoins, setRemainingCoins] = useState({
+    white: 9,
+    black: 9,
+    queen: 1,
+    total: 19,
+  });
 
   const lastBoardSnapshotRef = useRef<any>(null);
   const botControllerRef = useRef<BotController | null>(null);
@@ -135,16 +142,21 @@ export default function GameBoardScreen() {
         },
       ];
       const baseConfig = createDefaultGameConfig(selectedMode);
+      const isFreeStyle = selectedVariant === 'freestyle_carrom';
       const config = {
         ...baseConfig,
+        variant: selectedVariant || baseConfig.variant,
         boardTheme: boardTheme || 'classic',
-        targetScore: targetPoints || 115,
+        targetScore: targetPoints || (isFreeStyle ? 180 : 25),
+        whiteCoinPoints: isFreeStyle ? 20 : baseConfig.whiteCoinPoints,
+        blackCoinPoints: isFreeStyle ? 10 : baseConfig.blackCoinPoints,
+        queenPoints: isFreeStyle ? 50 : baseConfig.queenPoints,
         turnTimeLimitSeconds: turnTimeLimitSec || 15,
         handoverConfirmationEnabled: false,
       };
       startSession(config, defaultPlayers);
     }
-  }, [stateMachine, startSession, selectedMode, boardTheme, targetPoints, turnTimeLimitSec, teamAName, teamBName]);
+  }, [stateMachine, startSession, selectedMode, selectedVariant, boardTheme, targetPoints, turnTimeLimitSec, teamAName, teamBName]);
 
   // Active player seat lookup
   const activeSeat: PlayerSeat = (currentTurn?.activeSeat as PlayerSeat) ?? 0;
@@ -199,6 +211,13 @@ export default function GameBoardScreen() {
       botControllerRef.current?.cancelPendingActions();
     };
   }, [currentTurn?.turnNumber, activeSeat, isBotActive, isPaused, isShotActive, queenStatus, stateMachine, botDifficulty]);
+
+  // Sync remaining coins count from state machine
+  useEffect(() => {
+    if (stateMachine) {
+      setRemainingCoins(stateMachine.getRemainingCoinsCount());
+    }
+  }, [stateMachine]);
 
   // Turn state derived for bridge & visuals
   const turnState: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN' =
@@ -300,7 +319,8 @@ export default function GameBoardScreen() {
   const p2 = activePlayers.find((p) => p.seat === 2);
   const p1Score = scores[p1?.id ?? '']?.points ?? 0;
   const p2Score = scores[p2?.id ?? '']?.points ?? 0;
-  const targetTotal = targetPoints || 115;
+  const isFreeStyle = selectedVariant === 'freestyle_carrom';
+  const targetTotal = targetPoints || (isFreeStyle ? 180 : 25);
 
   // Knob left position inside track
   const knobCenterTrack = sliderTrackWidth / 2;
@@ -320,119 +340,90 @@ export default function GameBoardScreen() {
       {/* 1. HUD SECTION (React Native - Reference Layout) */}
       <View style={[styles.hudContainer, { height: reservedHudHeight }]}>
         {/* Left Player (Hari) */}
-        <View style={[styles.playerAvatarContainer, { left: 16 * s, top: 20 * s }]}>
+        <View style={[styles.playerAvatarContainer, { left: 16 * s, top: 14 * s }]}>
+          <Text style={[styles.playerRoleTag, { fontSize: 9.5 * s }]}>PLAYER 1</Text>
           <View
             style={[
               styles.avatarBox,
               {
-                width: 55 * s,
-                height: 55 * s,
-                borderRadius: 6 * s,
+                width: 52 * s,
+                height: 52 * s,
+                borderRadius: 8 * s,
                 borderWidth: 2.4 * s,
                 borderColor: activeSeat === 0 ? '#2BD67B' : '#FFD84A',
               },
             ]}
           >
-            <Text style={[styles.avatarEmoji, { fontSize: 26 * s }]}>
+            <Text style={[styles.avatarEmoji, { fontSize: 24 * s }]}>
               {p1?.avatarUrl || '👑'}
             </Text>
           </View>
           <Text
-            style={[styles.playerName, { fontSize: 11 * s, marginTop: 4 * s }]}
+            style={[styles.playerName, { fontSize: 11 * s, marginTop: 3 * s }]}
             numberOfLines={1}
           >
-            {p1?.name || 'Hari'}
+            {p1?.name || 'Player 1'}
           </Text>
           <View style={styles.scoreRow}>
-            <Text style={[styles.scoreValue, { fontSize: 19 * s }]}>{p1Score}</Text>
-            <Text style={[styles.scoreTotal, { fontSize: 14 * s }]}>/{targetTotal}</Text>
+            <Text style={[styles.scoreLabel, { fontSize: 10 * s }]}>Score: </Text>
+            <Text style={[styles.scoreValue, { fontSize: 17 * s }]}>{p1Score}</Text>
+            <Text style={[styles.scoreTotal, { fontSize: 12.5 * s }]}>/{targetTotal}</Text>
           </View>
         </View>
 
-        {/* Center Pot: 3D Stack of Gold Medallions & Amount (400) */}
-        <View style={[styles.centerPotWrapper, { top: 12 * s }]}>
-          <View style={[styles.goldCoinPile, { width: 58 * s, height: 44 * s }]}>
-            {/* Background Soft Brass Glow */}
-            <View style={styles.potGlowHalo} />
-            {/* Coin 1: Bottom Left */}
-            <View
-              style={[
-                styles.pileCoin,
-                {
-                  left: 6 * s,
-                  top: 14 * s,
-                  width: 28 * s,
-                  height: 28 * s,
-                  borderRadius: 14 * s,
-                },
-              ]}
-            >
-              <Text style={{ fontSize: 13 * s }}>👑</Text>
+        {/* Center: Live Remaining Coin Counter Badge */}
+        <View style={[styles.centerRemainingWrapper, { top: 12 * s }]}>
+          <View style={styles.remainingPillCard}>
+            <Text style={[styles.remainingPillHeader, { fontSize: 9 * s }]}>REMAINING COINS</Text>
+            <View style={styles.remainingCoinsRow}>
+              <View style={styles.remainingMiniBadge}>
+                <Text style={{ fontSize: 10 * s }}>⚪</Text>
+                <Text style={[styles.remainingCountText, { fontSize: 11.5 * s }]}> {remainingCoins.white}</Text>
+              </View>
+              <View style={styles.remainingMiniBadge}>
+                <Text style={{ fontSize: 10 * s }}>⚫</Text>
+                <Text style={[styles.remainingCountText, { fontSize: 11.5 * s }]}> {remainingCoins.black}</Text>
+              </View>
+              <View style={styles.remainingMiniBadge}>
+                <Text style={{ fontSize: 10 * s }}>👑</Text>
+                <Text style={[styles.remainingCountText, { fontSize: 11.5 * s }]}> {remainingCoins.queen}</Text>
+              </View>
             </View>
-            {/* Coin 2: Top Left */}
-            <View
-              style={[
-                styles.pileCoin,
-                {
-                  left: 6 * s,
-                  top: 2 * s,
-                  width: 28 * s,
-                  height: 28 * s,
-                  borderRadius: 14 * s,
-                },
-              ]}
-            >
-              <Text style={{ fontSize: 13 * s }}>👑</Text>
-            </View>
-            {/* Coin 3: Right Stack Head */}
-            <View
-              style={[
-                styles.pileCoin,
-                styles.pileCoinRight,
-                {
-                  left: 22 * s,
-                  top: 6 * s,
-                  width: 30 * s,
-                  height: 30 * s,
-                  borderRadius: 15 * s,
-                },
-              ]}
-            >
-              <Text style={{ fontSize: 14 * s }}>👑</Text>
-            </View>
+            <Text style={[styles.remainingTotalText, { fontSize: 10 * s }]}>
+              Total: {remainingCoins.total} / 19
+            </Text>
           </View>
-          <Text style={[styles.potAmountText, { fontSize: 26 * s, marginTop: 2 * s }]}>
-            400
-          </Text>
         </View>
 
-        {/* Right Player (Ramesh Mendis) */}
-        <View style={[styles.playerAvatarContainer, { right: 16 * s, top: 20 * s }]}>
+        {/* Right Player (Ramesh Mendis / Bot) */}
+        <View style={[styles.playerAvatarContainer, { right: 16 * s, top: 14 * s }]}>
+          <Text style={[styles.playerRoleTag, { fontSize: 9.5 * s }]}>PLAYER 2</Text>
           <View
             style={[
               styles.avatarBox,
               {
-                width: 55 * s,
-                height: 55 * s,
-                borderRadius: 6 * s,
+                width: 52 * s,
+                height: 52 * s,
+                borderRadius: 8 * s,
                 borderWidth: 2.4 * s,
                 borderColor: activeSeat === 2 ? '#2BD67B' : '#FFD84A',
               },
             ]}
           >
-            <Text style={[styles.avatarEmoji, { fontSize: 26 * s }]}>
-              {p2?.avatarUrl || '🐯'}
+            <Text style={[styles.avatarEmoji, { fontSize: 24 * s }]}>
+              {p2?.avatarUrl || (isPracticeMode ? '🤖' : '🐯')}
             </Text>
           </View>
           <Text
-            style={[styles.playerName, { fontSize: 11 * s, marginTop: 4 * s }]}
+            style={[styles.playerName, { fontSize: 11 * s, marginTop: 3 * s }]}
             numberOfLines={1}
           >
-            {p2?.name || 'Ramesh Mendis'}
+            {p2?.name || (isPracticeMode ? `Bot (${botDifficulty})` : 'Player 2')}
           </Text>
           <View style={styles.scoreRow}>
-            <Text style={[styles.scoreValue, { fontSize: 19 * s }]}>{p2Score}</Text>
-            <Text style={[styles.scoreTotal, { fontSize: 14 * s }]}>/{targetTotal}</Text>
+            <Text style={[styles.scoreLabel, { fontSize: 10 * s }]}>Score: </Text>
+            <Text style={[styles.scoreValue, { fontSize: 17 * s }]}>{p2Score}</Text>
+            <Text style={[styles.scoreTotal, { fontSize: 12.5 * s }]}>/{targetTotal}</Text>
           </View>
         </View>
 
@@ -607,8 +598,18 @@ export default function GameBoardScreen() {
             });
 
             if (evalResult) {
+              if (evalResult.remainingCoins) {
+                setRemainingCoins(evalResult.remainingCoins);
+              } else if (stateMachine) {
+                setRemainingCoins(stateMachine.getRemainingCoinsCount());
+              }
+
               if (evalResult.coinsToReturnToBoard && evalResult.coinsToReturnToBoard.length > 0) {
                 carromRef.current?.returnCoinsToBoard(evalResult.coinsToReturnToBoard);
+              }
+
+              if (evalResult.playerScoreDelta > 0) {
+                triggerFloatingScore(`+${evalResult.playerScoreDelta} PTS`, '#2BD67B');
               }
 
               if (evalResult.foulOccurred) {
@@ -874,6 +875,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
   },
+  playerRoleTag: {
+    color: '#FFD84A',
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
   playerAvatarContainer: {
     position: 'absolute',
     alignItems: 'center',
@@ -903,6 +911,10 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     marginTop: 1,
   },
+  scoreLabel: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '600',
+  },
   scoreValue: {
     color: '#FFFFFF',
     fontWeight: '800',
@@ -910,6 +922,55 @@ const styles = StyleSheet.create({
   scoreTotal: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '600',
+  },
+  centerRemainingWrapper: {
+    position: 'absolute',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  remainingPillCard: {
+    backgroundColor: 'rgba(15, 51, 35, 0.92)',
+    borderColor: '#2BD67B',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignItems: 'center',
+    shadowColor: '#2BD67B',
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  remainingPillHeader: {
+    color: '#2BD67B',
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  remainingCoinsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  remainingMiniBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  remainingCountText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  remainingTotalText: {
+    color: '#E9B949',
+    fontWeight: '700',
+    marginTop: 2,
+    letterSpacing: 0.3,
   },
   centerPotWrapper: {
     position: 'absolute',

@@ -51,18 +51,23 @@ export default function GameConfigScreen() {
   const router = useRouter();
   const {
     boardTheme,
+    selectedVariant,
     targetPoints,
     turnTimeLimitSec,
     handoverConfirmationEnabled,
     soundEnabled,
     musicEnabled,
     setBoardTheme,
+    setSelectedVariant,
     setTargetPoints,
     setTurnTimeLimitSec,
     setHandoverConfirmationEnabled,
     setSoundEnabled,
     setMusicEnabled,
   } = useGameSetupStore();
+
+  const isFreeStyle = selectedVariant === 'freestyle_carrom';
+  const targetPointsList = isFreeStyle ? [120, 180, 240] : [15, 25, 29];
 
   const handleContinue = () => {
     router.push('/lobby');
@@ -124,11 +129,34 @@ export default function GameConfigScreen() {
         </View>
       </View>
 
+      {/* GAME RULESET VARIANT SECTION */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>RULESET & SCORING MODE</Text>
+        <View style={styles.chipsRow}>
+          <TouchableOpacity
+            style={[styles.chip, !isFreeStyle && styles.chipActive]}
+            onPress={() => setSelectedVariant('classic_carrom')}
+          >
+            <Text style={[styles.chipText, !isFreeStyle && styles.chipTextActive]}>
+              🏆 Classic Carrom (25 pts)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chip, isFreeStyle && styles.chipActive]}
+            onPress={() => setSelectedVariant('freestyle_carrom')}
+          >
+            <Text style={[styles.chipText, isFreeStyle && styles.chipTextActive]}>
+              ⚡ Free Style Mode (180 pts)
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* TARGET POINTS SECTION */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>TARGET POINTS TO WIN</Text>
         <View style={styles.chipsRow}>
-          {TARGET_POINTS_OPTIONS.map((pts) => {
+          {targetPointsList.map((pts) => {
             const isSelected = targetPoints === pts;
             return (
               <TouchableOpacity
