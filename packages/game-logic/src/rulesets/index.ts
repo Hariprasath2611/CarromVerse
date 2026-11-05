@@ -1,6 +1,7 @@
 import { GameConfiguration, GameMode } from '@carromverse/shared-types';
 import { FourPlayerIndividualRuleset } from './FourPlayerIndividualRuleset.js';
 import { FourPlayerTeamRuleset } from './FourPlayerTeamRuleset.js';
+import { FreeStyleRuleset } from './FreeStyleRuleset.js';
 import { IRuleset } from './Ruleset.js';
 import { StandardTwoPlayerRuleset } from './StandardTwoPlayerRuleset.js';
 import { ThreePlayerRuleset } from './ThreePlayerRuleset.js';
@@ -10,8 +11,13 @@ export * from './StandardTwoPlayerRuleset.js';
 export * from './ThreePlayerRuleset.js';
 export * from './FourPlayerIndividualRuleset.js';
 export * from './FourPlayerTeamRuleset.js';
+export * from './FreeStyleRuleset.js';
 
 export function createRulesetForMode(mode: GameMode, config?: Partial<GameConfiguration>): IRuleset {
+  if (config?.variant === 'freestyle_carrom') {
+    return new FreeStyleRuleset(config);
+  }
+
   switch (mode) {
     case 'two_player_individual':
       return new StandardTwoPlayerRuleset(config);
@@ -26,4 +32,3 @@ export function createRulesetForMode(mode: GameMode, config?: Partial<GameConfig
       return new StandardTwoPlayerRuleset(config);
   }
 }
-

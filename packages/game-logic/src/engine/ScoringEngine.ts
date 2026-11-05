@@ -100,7 +100,8 @@ export class ScoringEngine {
         // Official SGFI Law 78: 21-point cap
         // "If the score of the winner of a board is 21 or more, he shall not be entitled to the points for Queen."
         const currentPoints = score?.points ?? 0;
-        const pts = currentPoints >= 21 ? 0 : this.ruleset.getPointsForCoin('queen');
+        const isSGFI = this.ruleset.isOfficialSGFI ?? false;
+        const pts = isSGFI && currentPoints >= 21 ? 0 : this.ruleset.getPointsForCoin('queen');
         playerDelta += pts;
         if (score) {
           score.queenPocketed = true;
