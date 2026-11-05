@@ -102,8 +102,8 @@ ${PHASER_MIN_JS}
 
       var WALL_THICKNESS_PX = 5.0 * PX_PER_CM;
 
-      var STRIKER_MIN_SPEED_CM_S = 25.0;
-      var STRIKER_MAX_SPEED_CM_S = 180.0;
+      var STRIKER_MIN_SPEED_CM_S = 35.0;
+      var STRIKER_MAX_SPEED_CM_S = 260.0;
       var REST_SPEED_THRESHOLD_CM_S = 2.0;
       var ANGULAR_REST_THRESHOLD = 0.05;
 
@@ -491,6 +491,39 @@ ${PHASER_MIN_JS}
           ease: 'Quad.easeOut',
           onComplete: function() { foulRing.destroy(); }
         });
+      }
+
+      function createPocketSuctionEffect(scene, px, py, coinType) {
+        if (!scene || !scene.add) return;
+        var color = coinType === 'queen' ? 0xE9B949 : (coinType === 'white' ? 0xF5F0E6 : 0x2BD67B);
+        var ring = scene.add.circle(px, py, POCKET_RADIUS_PX * 1.25);
+        ring.setStrokeStyle(2.5, color, 0.85);
+        ring.setDepth(28);
+        scene.tweens.add({
+          targets: ring,
+          radius: 4,
+          alpha: 0,
+          duration: 320,
+          ease: 'Cubic.easeIn',
+          onComplete: function() { ring.destroy(); }
+        });
+
+        for (var i = 0; i < 4; i++) {
+          var pAngle = (Math.PI / 2) * i;
+          var pDist = POCKET_RADIUS_PX * 0.85;
+          var p = scene.add.circle(px + Math.cos(pAngle) * pDist, py + Math.sin(pAngle) * pDist, 2.5, color, 0.9);
+          p.setDepth(28);
+          scene.tweens.add({
+            targets: p,
+            x: px,
+            y: py,
+            scale: 0.1,
+            alpha: 0,
+            duration: 300,
+            ease: 'Quad.easeIn',
+            onComplete: function() { p.destroy(); }
+          });
+        }
       }
 
       // TEXTURE GENERATOR (DPR-RESPONSIVE, HIGH-FIDELITY VECTOR CANVASES)
