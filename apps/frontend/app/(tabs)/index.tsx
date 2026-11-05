@@ -112,6 +112,13 @@ export default function HomeScreen() {
           style={styles.playButton}
         />
 
+        <Button
+          title="🤖 PRACTICE VS BOT"
+          variant="secondary"
+          onPress={() => router.push('/practice')}
+          style={[styles.playButton, { marginTop: 8, borderColor: '#2BD67B' }]}
+        />
+
         <View style={styles.secondaryRow}>
           <Button
             title="ROOM CODE"

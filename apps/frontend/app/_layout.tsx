@@ -58,6 +58,10 @@ export default function RootLayout() {
         <Stack.Screen name="multiplayer/create" />
         <Stack.Screen name="multiplayer/join" />
         <Stack.Screen name="multiplayer/room" options={{ animation: 'fade' }} />
+        <Stack.Screen name="practice/index" />
+        <Stack.Screen name="practice/config" />
+        <Stack.Screen name="practice/lobby" />
+        <Stack.Screen name="practice/stats" />
         <Stack.Screen name="settings/index" />
       </Stack>
     </SafeAreaProvider>

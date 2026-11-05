@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   GestureResponderEvent,
   StyleSheet,
@@ -22,6 +23,8 @@ import { useGameSetupStore } from '../src/store/gameSetupStore';
 import { useGameSessionStore } from '../src/store/gameSessionStore';
 import { useSettingsStore } from '../src/store/settingsStore';
 import { AudioManager } from '../src/services/audio/AudioManager';
+import { LocalStorageService } from '../src/services/storage/localStorageService';
+import { BotController, BotSessionManager } from '@carromverse/bot-ai';
 import { Player, PlayerSeat } from '@carromverse/shared-types';
 import { createDefaultGameConfig } from '@carromverse/game-logic';
 import { LAYOUT_CONFIG, DEFAULT_PIECE_CONFIG } from '@carromverse/game-engine';
@@ -30,13 +33,22 @@ export default function GameBoardScreen() {
   const router = useRouter();
   const carromRef = useRef<PhaserCarromViewRef>(null);
   const { settings } = useSettingsStore();
-  const { boardTheme, selectedMode, targetPoints, turnTimeLimitSec, teamAName, teamBName } =
-    useGameSetupStore();
+  const {
+    boardTheme,
+    selectedMode,
+    targetPoints,
+    turnTimeLimitSec,
+    teamAName,
+    teamBName,
+    isPracticeMode,
+    botDifficulty,
+  } = useGameSetupStore();
   const {
     stateMachine,
     startSession,
     processSettledShot,
     scores,
+    queenStatus,
     currentTurn,
     activePlayers,
     restartSession,
@@ -79,6 +91,14 @@ export default function GameBoardScreen() {
   const [isStrikerOverlapping, setIsStrikerOverlapping] = useState(false);
   const [pocketToast, setPocketToast] = useState<string | null>(null);
   const [floatingScore, setFloatingScore] = useState<{ text: string; color: string } | null>(null);
+  const [botStatusMessage, setBotStatusMessage] = useState<string | null>(null);
+
+  const lastBoardSnapshotRef = useRef<any>(null);
+  const botControllerRef = useRef<BotController | null>(null);
+  const humanShotsRef = useRef(0);
+  const humanPocketsRef = useRef(0);
+  const humanFoulsRef = useRef(0);
+  const matchStartTimeRef = useRef(Date.now());
 
   const triggerFloatingScore = (text: string, color: string) => {
     setFloatingScore({ text, color });
@@ -128,6 +148,57 @@ export default function GameBoardScreen() {
 
   // Active player seat lookup
   const activeSeat: PlayerSeat = (currentTurn?.activeSeat as PlayerSeat) ?? 0;
+  const activePlayer = activePlayers.find((p) => p.seat === activeSeat);
+  const isBotActive = activePlayer?.type === 'bot';
+
+  // Bot Turn Lifecycle (AI Practice Mode)
+  useEffect(() => {
+    if (!stateMachine || isPaused || isShotActive) return;
+
+    if (isBotActive && activePlayer) {
+      const assignedColor = (activePlayer.assignedCoinType === 'white' ? 'white' : 'black') as 'white' | 'black';
+      const diff = botDifficulty || 'MEDIUM';
+
+      if (!botControllerRef.current) {
+        botControllerRef.current = new BotController(diff);
+      } else {
+        botControllerRef.current.setDifficulty(diff);
+      }
+
+      botControllerRef.current.setCallbacks({
+        onThinkingStart: (msg) => {
+          setBotStatusMessage(msg);
+        },
+        onPositionStriker: (offset) => {
+          setStrikerOffsetRatio(offset);
+          carromRef.current?.setStrikerOffset(offset);
+        },
+        onAimReady: (angle, power) => {
+          setAimAngle(angle);
+          setPowerRatio(power);
+          setIsAiming(true);
+          carromRef.current?.setAimPower(power);
+        },
+        onShoot: (power, angle) => {
+          setIsAiming(false);
+          setIsShotActive(true);
+          setBotStatusMessage(null);
+          carromRef.current?.shoot(power, angle);
+        },
+      });
+
+      // Request latest snapshot or use cached
+      const snapshot = lastBoardSnapshotRef.current;
+      botControllerRef.current.handleBotTurn(snapshot, assignedColor, queenStatus);
+    } else {
+      setBotStatusMessage(null);
+      botControllerRef.current?.cancelPendingActions();
+    }
+
+    return () => {
+      botControllerRef.current?.cancelPendingActions();
+    };
+  }, [currentTurn?.turnNumber, activeSeat, isBotActive, isPaused, isShotActive, queenStatus, stateMachine, botDifficulty]);
 
   // Turn state derived for bridge & visuals
   const turnState: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN' =
@@ -207,7 +278,7 @@ export default function GameBoardScreen() {
 
   // Slider touch handling linearly mapped to striker lane
   const handleSliderTouch = (evt: GestureResponderEvent) => {
-    if (isShotActive || isPaused) return;
+    if (isShotActive || isPaused || isBotActive) return;
     const { locationX } = evt.nativeEvent;
     const centerTrack = sliderTrackWidth / 2;
     const diff = locationX - centerTrack;
@@ -450,6 +521,13 @@ export default function GameBoardScreen() {
           </View>
         )}
 
+        {botStatusMessage && (
+          <View style={styles.botThinkingPill}>
+            <ActivityIndicator size="small" color="#2BD67B" style={{ marginRight: 8 }} />
+            <Text style={styles.botThinkingText}>{botStatusMessage}</Text>
+          </View>
+        )}
+
         <PhaserCarromView
           ref={carromRef}
           size={BOARD_SIZE}
@@ -460,6 +538,14 @@ export default function GameBoardScreen() {
           turnState={turnState}
           soundEnabled={settings.soundEnabled}
           soundVolume={settings.soundVolume}
+          onBoardRendered={(details) => {
+            if (details?.boardSnapshot) {
+              lastBoardSnapshotRef.current = details.boardSnapshot;
+            }
+          }}
+          onBoardSnapshot={(snapshot) => {
+            lastBoardSnapshotRef.current = snapshot;
+          }}
           onStrikerDragged={(offset, isOverlapping) => {
             setStrikerOffsetRatio(offset);
             if (typeof isOverlapping === 'boolean') {
@@ -470,6 +556,9 @@ export default function GameBoardScreen() {
             setIsShotActive(true);
             setIsAiming(false);
             setPowerRatio(0);
+            if (activeSeat === 0) {
+              humanShotsRef.current++;
+            }
           }}
           onAimChanged={(details: any) => {
             setPowerRatio(details?.powerRatio ?? 0);
@@ -477,6 +566,9 @@ export default function GameBoardScreen() {
             setIsAiming(!!details?.isAiming && (details?.powerRatio ?? 0) > 0.02);
           }}
           onObjectPocketed={(details) => {
+            if (activeSeat === 0) {
+              humanPocketsRef.current++;
+            }
             if (details.type === 'white') {
               AudioManager.getInstance().playSound('COIN_POCKET', 0.85);
               triggerFloatingScore(`⚪ +${whitePoints}`, '#FFFFFF');
@@ -492,6 +584,9 @@ export default function GameBoardScreen() {
             }
           }}
           onStrikerPocketed={() => {
+            if (activeSeat === 0) {
+              humanFoulsRef.current++;
+            }
             AudioManager.getInstance().playSound('FOUL', 0.9);
             triggerFloatingScore('⚠️ FOUL (Striker Pocketed)', '#EF4444');
             showToast('⚠️ Striker Pocketed (Scratch Foul)');
@@ -502,6 +597,9 @@ export default function GameBoardScreen() {
             setPowerRatio(0);
             setStrikerOffsetRatio(0);
             setIsStrikerOverlapping(false);
+            if (details?.boardSnapshot) {
+              lastBoardSnapshotRef.current = details.boardSnapshot;
+            }
             const evalResult = processSettledShot({
               pocketedCoins: details?.pocketed ?? [],
               strikerPocketed: !!details?.strikerPocketed,
@@ -538,6 +636,25 @@ export default function GameBoardScreen() {
 
               if (evalResult.isMatchOver) {
                 AudioManager.getInstance().playSound('VICTORY', 1.0);
+                if (isPracticeMode) {
+                  const durationSec = Math.round((Date.now() - matchStartTimeRef.current) / 1000);
+                  const humanWon = evalResult.matchResult?.winnerPlayerId === p1?.id;
+                  LocalStorageService.getPracticeStats().then((currentStats) => {
+                    const updated = BotSessionManager.recordMatchResult(
+                      currentStats,
+                      botDifficulty || 'MEDIUM',
+                      humanWon,
+                      scores[p1?.id ?? '']?.points ?? 0,
+                      scores[p2?.id ?? '']?.points ?? 0,
+                      humanShotsRef.current,
+                      humanPocketsRef.current,
+                      humanFoulsRef.current,
+                      evalResult.queenCoveredThisShot && humanWon,
+                      durationSec
+                    );
+                    LocalStorageService.savePracticeStats(updated);
+                  });
+                }
                 setTimeout(() => {
                   router.replace('/game-result');
                 }, 1800);
@@ -1046,5 +1163,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     letterSpacing: 1,
+  },
+  botThinkingPill: {
+    position: 'absolute',
+    top: 14,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(7, 38, 28, 0.94)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#2BD67B',
+    zIndex: 99,
+    shadowColor: '#2BD67B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  botThinkingText: {
+    color: '#2BD67B',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });
