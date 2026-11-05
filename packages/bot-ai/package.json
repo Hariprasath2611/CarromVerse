@@ -1,0 +1,20 @@
+{
+  "name": "@carromverse/bot-ai",
+  "version": "1.0.0",
+  "description": "Intelligent Carrom Bot AI System with Easy, Medium, and Hard Difficulties",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/**/*.test.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@carromverse/shared-types": "*",
+    "@carromverse/shared-utils": "*",
+    "@carromverse/game-logic": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
