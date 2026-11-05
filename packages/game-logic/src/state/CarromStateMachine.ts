@@ -92,6 +92,10 @@ export class CarromStateMachine extends TypedEventEmitter<GameLogicEvents> {
     return this.engine.getQueenManager().getStatus();
   }
 
+  public getRemainingCoinsCount(): { white: number; black: number; queen: number; total: number } {
+    return this.engine.getRemainingCoinsCount();
+  }
+
   public getSessionState(): GameSession {
     const activePlayer = this.turnManager.getActivePlayer();
     const currentTurn = this.turnManager.getCurrentTurn();
