@@ -46,7 +46,7 @@ export default function HomeScreen() {
   };
 
   const handleRoomCode = () => {
-    router.push('/lobby');
+    router.push('/multiplayer');
   };
 
   const handleNearby = () => {
