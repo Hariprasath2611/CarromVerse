@@ -28,6 +28,9 @@ export class PlayerSchema extends Schema {
   @type('boolean')
   isConnected: boolean = true;
 
+  @type('boolean')
+  isHost: boolean = false;
+
   @type('number')
   score: number = 0;
 
@@ -41,4 +44,3 @@ export class PlayerSchema extends Schema {
     }
   }
 }
-
