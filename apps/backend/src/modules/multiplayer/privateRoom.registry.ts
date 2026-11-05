@@ -239,6 +239,8 @@ export class PrivateRoomRegistry {
    * Clears all rooms (useful in testing).
    */
   public clearAll(): void {
-    this.roomsByCode.clear(this.roomsById.clear(), this.lookupRateLimits.clear());
+    this.roomsByCode.clear();
+    this.roomsById.clear();
+    this.lookupRateLimits.clear();
   }
 }
