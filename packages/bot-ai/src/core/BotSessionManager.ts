@@ -72,16 +72,15 @@ export class BotSessionManager {
   public static createPracticeGameConfig(
     config: Partial<PracticeSessionConfig> = {}
   ): GameConfiguration {
-    const baseConfig = createDefaultGameConfig('two_player_carrom');
+    const baseConfig = createDefaultGameConfig('two_player_individual');
 
     return {
       ...baseConfig,
-      boardTheme: config.boardTheme || 'classic',
+      mode: 'practice',
       targetScore: config.targetPoints || 115,
       turnTimeLimitSeconds: config.turnTimeLimitSec || 20,
       handoverConfirmationEnabled: false, // In practice mode against bot, never block with handover popups!
       soundEnabled: config.soundEnabled ?? true,
-      soundVolume: config.soundVolume ?? 0.8,
     };
   }
 
