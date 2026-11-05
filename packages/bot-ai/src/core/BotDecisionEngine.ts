@@ -1,4 +1,4 @@
-import { PlayerSeat } from '@carromverse/shared-types';
+import { PlayerSeat, QueenStatus } from '@carromverse/shared-types';
 import { BoardAnalyzer } from '../analysis/BoardAnalyzer.js';
 import { CoinAnalyzer } from '../analysis/CoinAnalyzer.js';
 import { StrategySelector } from '../strategy/StrategySelector.js';
@@ -43,7 +43,7 @@ export class BotDecisionEngine {
   public computeShot(
     rawSnapshot: any,
     assignedColor: 'white' | 'black',
-    queenStatus: 'unpocketed' | 'pending_cover' | 'covered' | 'returned_to_center' = 'unpocketed',
+    queenStatus: QueenStatus = 'unpocketed',
     seed?: number
   ): DecisionEngineResult {
     const startTime = performance.now();

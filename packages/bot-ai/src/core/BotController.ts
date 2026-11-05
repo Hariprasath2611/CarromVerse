@@ -1,3 +1,4 @@
+import { QueenStatus } from '@carromverse/shared-types';
 import { BotDecisionEngine, DecisionEngineResult } from './BotDecisionEngine.js';
 import { BotDifficulty, BotPersonality } from '../types/BotTypes.js';
 
@@ -41,7 +42,7 @@ export class BotController {
   public handleBotTurn(
     boardSnapshot: any,
     assignedColor: 'white' | 'black',
-    queenStatus: 'unpocketed' | 'pending_cover' | 'covered' | 'returned_to_center' = 'unpocketed'
+    queenStatus: QueenStatus = 'unpocketed'
   ): Promise<DecisionEngineResult> {
     this.cancelPendingActions();
     this.isThinking = true;
