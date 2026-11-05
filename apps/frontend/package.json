@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@carromverse/bot-ai": "*",
     "@carromverse/game-engine": "*",
     "@carromverse/game-logic": "*",
     "@carromverse/multiplayer": "*",

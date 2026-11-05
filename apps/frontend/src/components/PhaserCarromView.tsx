@@ -61,6 +61,7 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       soundVolume = 0.8,
       onEngineReady,
       onBoardRendered,
+      onBoardSnapshot,
       onStrikerDragged,
       onShotStarted,
       onAimChanged,
@@ -144,6 +145,12 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
       setTurnState: (state: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN') => {
         sendToPhaser('SET_TURN_STATE', { state });
       },
+      getBoardSnapshot: () => {
+        sendToPhaser('GET_BOARD_SNAPSHOT');
+      },
+      setStrikerOffset: (offset: number) => {
+        sendToPhaser('SET_STRIKER_OFFSET', { offset });
+      },
     }));
 
     // Sync audio settings
@@ -221,6 +228,9 @@ export const PhaserCarromView = forwardRef<PhaserCarromViewRef, PhaserCarromView
           break;
         case 'SHOT_SETTLED':
           onShotSettled?.(data.payload);
+          break;
+        case 'BOARD_SNAPSHOT':
+          onBoardSnapshot?.(data.payload);
           break;
         case 'ENGINE_ERROR':
           console.error('[PhaserCarromView] In-engine runtime error:', data.payload);
