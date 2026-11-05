@@ -516,6 +516,7 @@ export class CarromRulesEngine extends TypedEventEmitter<RulesEngineEvents> {
       isMatchOver: this.isMatchOver,
       matchResult,
       nextTurn,
+      remainingCoins: this.getRemainingCoinsCount(),
     };
 
     this.emit('SHOT_SETTLED', { evaluation });
