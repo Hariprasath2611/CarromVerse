@@ -1998,6 +1998,46 @@ ${PHASER_MIN_JS}
             targetCoin.shadow.setAlpha(1);
             targetCoin.shadow.setVisible(true);
           });
+        },
+
+        getBoardSnapshot: function() {
+          var s = this.canvasSize;
+          var coinsData = (this.coins || []).map(function(c) {
+            return {
+              id: c.id,
+              type: c.type,
+              position: {
+                x: c.body ? (c.body.position.x / s) : 0,
+                y: c.body ? (c.body.position.y / s) : 0
+              },
+              isPocketed: !!c.isPocketed
+            };
+          });
+          var sr = this.strikerRadius || STRIKER_RADIUS_PX;
+          var strikerData = {
+            position: {
+              x: this.strikerBody ? (this.strikerBody.position.x / s) : 0,
+              y: this.strikerBody ? (this.strikerBody.position.y / s) : 0
+            },
+            radius: sr / s,
+            seat: currentSeat,
+            offsetRatio: currentOffsetRatio,
+            isPocketed: !!this.strikerIsPocketed
+          };
+          return {
+            boardSize: s,
+            scale: s / 382,
+            coins: coinsData,
+            striker: strikerData,
+            pockets: [
+              { id: 0, position: { x: 24 / 382, y: 22.5 / 382 }, radius: 16.4 / 382, corner: 'top-left' },
+              { id: 1, position: { x: 357.5 / 382, y: 22.5 / 382 }, radius: 16.4 / 382, corner: 'top-right' },
+              { id: 2, position: { x: 24 / 382, y: 356.5 / 382 }, radius: 16.4 / 382, corner: 'bottom-left' },
+              { id: 3, position: { x: 357.5 / 382, y: 356.5 / 382 }, radius: 16.4 / 382, corner: 'bottom-right' }
+            ],
+            activeSeat: currentSeat,
+            timestamp: Date.now()
+          };
         }
       });
 
@@ -2086,6 +2126,15 @@ ${PHASER_MIN_JS}
             case 'RESUME_GAME':
               if (activeScene && activeScene.matter && activeScene.matter.world) {
                 activeScene.isPaused = false;
+              }
+              break;
+            case 'GET_BOARD_SNAPSHOT':
+              if (activeScene && typeof activeScene.getBoardSnapshot === 'function') {
+                sendToReactNative({
+                  type: 'BOARD_SNAPSHOT',
+                  payload: activeScene.getBoardSnapshot(),
+                  timestamp: Date.now()
+                });
               }
               break;
           }
