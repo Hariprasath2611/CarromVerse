@@ -18,7 +18,25 @@ config.resolver.nodeModulesPaths = [
 // 3. Ensure metro resolves .ts and .tsx from symlinked local packages
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
 
-// 4. Enable wasm support for expo-sqlite on web
+// 4. Resolve .js imports pointing to .ts files in TypeScript monorepo packages
+const defaultResolve = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  try {
+    return (defaultResolve || context.resolveRequest)(context, moduleName, platform);
+  } catch (err) {
+    if (typeof moduleName === 'string' && moduleName.startsWith('.') && moduleName.endsWith('.js')) {
+      const stripped = moduleName.slice(0, -3);
+      try {
+        return (defaultResolve || context.resolveRequest)(context, stripped, platform);
+      } catch (_) {
+        throw err;
+      }
+    }
+    throw err;
+  }
+};
+
+// 5. Enable wasm support for expo-sqlite on web
 config.resolver.assetExts = [...config.resolver.assetExts, 'wasm'];
 
 module.exports = config;
