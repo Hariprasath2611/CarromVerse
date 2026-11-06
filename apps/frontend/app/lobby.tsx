@@ -18,7 +18,6 @@ export default function LobbyScreen() {
     boardTheme,
     targetPoints,
     turnTimeLimitSec,
-    handoverConfirmationEnabled,
     soundEnabled,
     musicEnabled,
     teamAName,
@@ -40,7 +39,7 @@ export default function LobbyScreen() {
       blackCoinPoints: isFreeStyle ? 10 : baseConfig.blackCoinPoints,
       queenPoints: isFreeStyle ? 50 : baseConfig.queenPoints,
       turnTimeLimitSeconds: turnTimeLimitSec,
-      handoverConfirmationEnabled,
+      handoverConfirmationEnabled: false,
       soundEnabled,
       musicEnabled,
       teamNames: selectedMode === 'four_player_team'
@@ -185,9 +184,7 @@ export default function LobbyScreen() {
 
           <View style={styles.summaryItem}>
             <Text style={styles.summaryItemLabel}>HANDOVER</Text>
-            <Text style={styles.summaryItemVal}>
-              {handoverConfirmationEnabled ? 'Enabled (Pass & Play)' : 'Immediate'}
-            </Text>
+            <Text style={styles.summaryItemVal}>Immediate</Text>
           </View>
         </View>
       </Card>

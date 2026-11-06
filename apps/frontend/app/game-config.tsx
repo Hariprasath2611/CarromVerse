@@ -192,26 +192,6 @@ export default function GameConfigScreen() {
         </View>
       </View>
 
-      {/* PASS & PLAY SETTINGS */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>PASS & PLAY BEHAVIOR</Text>
-        <Card style={styles.settingCard}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextCol}>
-              <Text style={styles.settingTitle}>Turn Handover Prompt</Text>
-              <Text style={styles.settingDesc}>
-                Show confirmation modal when passing phone to next player
-              </Text>
-            </View>
-            <Switch
-              value={handoverConfirmationEnabled}
-              onValueChange={setHandoverConfirmationEnabled}
-              trackColor={{ false: 'rgba(245, 236, 210, 0.2)', true: '#2BD67B' }}
-              thumbColor={handoverConfirmationEnabled ? '#F5ECD2' : '#888888'}
-            />
-          </View>
-        </Card>
-      </View>
 
       {/* AUDIO SETTINGS */}
       <View style={styles.section}>
