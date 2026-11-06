@@ -46,6 +46,7 @@ export class PrivateRoomApiService {
     maxPlayers: number;
     hasPassword: boolean;
     boardTheme: string;
+    hostUserId?: string;
   }> {
     return this.request('/multiplayer/private/create', {
       method: 'POST',

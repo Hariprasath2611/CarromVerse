@@ -178,10 +178,13 @@ export const useMultiplayerRoomStore = create<MultiplayerRoomState>((set, get) =
       set({ isLoading: true, error: null });
       try {
         const user = useAuthStore.getState().user;
-        const currentUserId = user?.uid || '';
+        let currentUserId = user?.uid || '';
 
         // 1. Reserve room on backend
         const reservation = await PrivateRoomApiService.createPrivateRoom(dto);
+        if (!currentUserId && reservation.hostUserId) {
+          currentUserId = reservation.hostUserId;
+        }
 
         // 2. Join via Colyseus
         const room = await clientService.joinRoom(reservation.roomId, {
