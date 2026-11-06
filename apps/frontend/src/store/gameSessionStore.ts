@@ -113,26 +113,8 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
     const session = sm.getSessionState();
     const nextTurn = evalResult.nextTurn ?? session.currentTurn;
 
-    // Check if player changed and handover modal should show
-    const config = get().savedConfig;
-    const handoverEnabled = !!config?.handoverConfirmationEnabled;
-    const playerSwitched =
-      !evalResult.isMatchOver &&
-      prevTurn &&
-      nextTurn &&
-      nextTurn.activePlayerId !== prevTurn.activePlayerId;
-
-    let nextPlayer: Player | null = null;
-    let handoverPending = false;
-    let matchStatus: OfflineMatchStatus = get().matchStatus;
-
-    if (playerSwitched && handoverEnabled) {
-      nextPlayer = get().activePlayers.find((p) => p.id === nextTurn.activePlayerId) || null;
-      handoverPending = true;
-      matchStatus = 'PLAYER_HANDOVER';
-    } else if (evalResult.isMatchOver) {
-      matchStatus = 'COMPLETED';
-    }
+    // Immediate turn/chance transition - no handover modal popup
+    const matchStatus: OfflineMatchStatus = evalResult.isMatchOver ? 'COMPLETED' : 'IN_PROGRESS';
 
     set({
       scores: session.scores,
@@ -141,8 +123,8 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
       currentTurn: nextTurn,
       gameResult: evalResult.matchResult ?? null,
       isPlaying: !evalResult.isMatchOver,
-      isHandoverPending: handoverPending,
-      nextPlayerToHandover: nextPlayer,
+      isHandoverPending: false,
+      nextPlayerToHandover: null,
       matchStatus,
     });
 
@@ -175,26 +157,8 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
       coinsToReturnToBoard: evalResult.coinsToReturnToBoard,
     };
 
-    // Check if player switched
-    const config = get().savedConfig;
-    const handoverEnabled = !!config?.handoverConfirmationEnabled;
-    const playerSwitched =
-      !evalResult.isMatchOver &&
-      prevTurn &&
-      nextTurn &&
-      nextTurn.activePlayerId !== prevTurn.activePlayerId;
-
-    let nextPlayer: Player | null = null;
-    let handoverPending = false;
-    let matchStatus: OfflineMatchStatus = get().matchStatus;
-
-    if (playerSwitched && handoverEnabled) {
-      nextPlayer = get().activePlayers.find((p) => p.id === nextTurn.activePlayerId) || null;
-      handoverPending = true;
-      matchStatus = 'PLAYER_HANDOVER';
-    } else if (evalResult.isMatchOver) {
-      matchStatus = 'COMPLETED';
-    }
+    // Immediate turn/chance transition - no handover modal popup
+    const matchStatus: OfflineMatchStatus = evalResult.isMatchOver ? 'COMPLETED' : 'IN_PROGRESS';
 
     set({
       scores: session.scores,
@@ -204,8 +168,8 @@ export const useGameSessionStore = create<GameSessionState>((set, get) => ({
       currentTurn: nextTurn,
       gameResult: evalResult.matchResult ?? null,
       isPlaying: !evalResult.isMatchOver,
-      isHandoverPending: handoverPending,
-      nextPlayerToHandover: nextPlayer,
+      isHandoverPending: false,
+      nextPlayerToHandover: null,
       matchStatus,
     });
 

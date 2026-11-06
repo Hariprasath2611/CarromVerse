@@ -18,9 +18,15 @@ config.resolver.nodeModulesPaths = [
 // 3. Ensure metro resolves .ts and .tsx from symlinked local packages
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
 
-// 4. Resolve .js imports pointing to .ts files in TypeScript monorepo packages, and redirect node-only httpie to xhr
+// 4. Resolve .js imports pointing to .ts files in TypeScript monorepo packages, and redirect node-only modules for React Native
 const defaultResolve = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'ws') {
+    return {
+      type: 'sourceFile',
+      filePath: path.resolve(projectRoot, 'src/shims/ws.js'),
+    };
+  }
   if (moduleName === 'httpie') {
     return (defaultResolve || context.resolveRequest)(context, 'httpie/xhr', platform);
   }
