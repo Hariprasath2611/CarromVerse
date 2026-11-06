@@ -219,12 +219,12 @@ export default function GameBoardScreen() {
     }
   }, [stateMachine]);
 
-  // Turn state derived for bridge & visuals
+  // Turn state derived for bridge & visuals (immediate shift on chance change)
   const turnState: 'MY_TURN' | 'AIMING' | 'SHOT_IN_PROGRESS' | 'OPPONENT_TURN' =
-    activeSeat !== 0
-      ? 'OPPONENT_TURN'
-      : isShotActive
-        ? 'SHOT_IN_PROGRESS'
+    isShotActive
+      ? 'SHOT_IN_PROGRESS'
+      : isBotActive
+        ? 'OPPONENT_TURN'
         : isAiming
           ? 'AIMING'
           : 'MY_TURN';
