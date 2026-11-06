@@ -248,8 +248,8 @@ export const useGameSetupStore = create<GameSetupState>((set, get) => ({
     set({ turnTimeLimitSec: seconds });
   },
 
-  setHandoverConfirmationEnabled: (enabled: boolean) => {
-    set({ handoverConfirmationEnabled: enabled });
+  setHandoverConfirmationEnabled: (_enabled: boolean) => {
+    set({ handoverConfirmationEnabled: false });
   },
 
   setSoundEnabled: (enabled: boolean) => {
