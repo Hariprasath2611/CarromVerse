@@ -162,16 +162,44 @@ export function getCurrentUser(): AuthSessionUser | null {
   return transformFirebaseUser(auth.currentUser);
 }
 
-function toBase64Url(str: string): string {
-  const g = typeof globalThis !== 'undefined' ? (globalThis as any) : {};
-  if (typeof g.Buffer !== 'undefined') {
-    return g.Buffer.from(str, 'utf8').toString('base64url');
+const B64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function toBase64(str: string): string {
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    let code = str.charCodeAt(i);
+    if (code < 0x80) bytes.push(code);
+    else if (code < 0x800) {
+      bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+    } else if (code < 0xd800 || code >= 0xe000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    } else {
+      i++;
+      code = 0x10000 + (((code & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+      bytes.push(
+        0xf0 | (code >> 18),
+        0x80 | ((code >> 12) & 0x3f),
+        0x80 | ((code >> 6) & 0x3f),
+        0x80 | (code & 0x3f)
+      );
+    }
   }
-  const encoded = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-    String.fromCharCode(parseInt(p1, 16))
-  );
-  const base64 = typeof btoa !== 'undefined' ? btoa(encoded) : '';
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  let res = '';
+  let i = 0;
+  while (i < bytes.length) {
+    const b0 = bytes[i++];
+    const b1 = i < bytes.length ? bytes[i++] : NaN;
+    const b2 = i < bytes.length ? bytes[i++] : NaN;
+    res += B64_CHARS.charAt(b0 >> 2);
+    res += B64_CHARS.charAt(((b0 & 3) << 4) | (isNaN(b1) ? 0 : b1 >> 4));
+    res += isNaN(b1) ? '=' : B64_CHARS.charAt(((b1 & 15) << 2) | (isNaN(b2) ? 0 : b2 >> 6));
+    res += isNaN(b2) ? '=' : B64_CHARS.charAt(b2 & 63);
+  }
+  return res;
+}
+
+function toBase64Url(str: string): string {
+  return toBase64(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 async function getStoredItem(key: string): Promise<string | null> {

@@ -27,6 +27,7 @@ export class PrivateRoomApiService {
     if (!response.ok || !body.success) {
       const errMessage = body?.error?.message || `Request failed with status ${response.status}`;
       const errCode = body?.error?.code || 'API_ERROR';
+      console.warn(`[PrivateRoomApi] ${options.method || 'GET'} ${endpoint} failed (${response.status}):`, body);
       const error = new Error(errMessage);
       (error as any).code = errCode;
       throw error;

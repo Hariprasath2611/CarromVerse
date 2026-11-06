@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { THEME } from '../constants/theme';
 
 export interface LoadingOverlayProps {
@@ -12,6 +12,17 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   message = 'Loading...',
 }) => {
   if (!visible) return null;
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[StyleSheet.absoluteFill, styles.overlay, styles.webOverlay]} pointerEvents="auto">
+        <View style={styles.card}>
+          <ActivityIndicator size="large" color={THEME.colors.goldBright} />
+          {!!message && <Text style={styles.message}>{message}</Text>}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <Modal transparent animationType="fade" visible={visible}>
@@ -31,6 +42,9 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.overlayHeavy,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  webOverlay: {
+    zIndex: 9999,
   },
   card: {
     backgroundColor: THEME.colors.surfaceElevated,
